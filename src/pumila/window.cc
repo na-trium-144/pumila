@@ -1,13 +1,14 @@
 #include <pumila/window.h>
 #include "drawing.h"
 #include <iostream>
+#include <sstream>
 
 #ifdef PUMILA_SDL2
 #include <SDL2/SDL.h>
 #endif
 
 namespace pumila {
-Window::Window(const std::shared_ptr<GameSim> &sim) : sim(sim) {
+Window::Window(const std::shared_ptr<GameSim> &sim) : sim(sim), key_state(sim) {
 #ifdef PUMILA_SDL2
     SDL_Window *sdl_window = nullptr;
     SDL_Renderer *sdl_renderer = nullptr;
@@ -47,180 +48,188 @@ Window::Window(const std::shared_ptr<GameSim> &sim) : sim(sim) {
 void Window::loop() {
 #ifdef PUMILA_SDL2
     if (sdl_window_p && sdl_renderer_p) {
-        SDL_Window *sdl_window = static_cast<SDL_Window *>(sdl_window_p);
-        SDL_Renderer *sdl_renderer =
-            static_cast<SDL_Renderer *>(sdl_renderer_p);
-        TTF_Font *ttf_font = static_cast<TTF_Font *>(ttf_font_p);
-
-        bool soft_drop = false;
         while (true) {
-            SDL_Event event;
-            while (SDL_PollEvent(&event)) {
-                switch (event.type) {
-                case SDL_QUIT:
-                    SDL_Quit();
-                    return;
-                case SDL_KEYDOWN:
-                    if (!event.key.repeat) {
-                        switch (event.key.keysym.scancode) {
-                        case SDL_SCANCODE_UP:
-                        case SDL_SCANCODE_W:
-                            sim->quickDrop();
-                            break;
-                        case SDL_SCANCODE_DOWN:
-                        case SDL_SCANCODE_S:
-                            soft_drop = true;
-                            break;
-                        case SDL_SCANCODE_LEFT:
-                        case SDL_SCANCODE_A:
-                            sim->movePair(-1);
-                            break;
-                        case SDL_SCANCODE_RIGHT:
-                        case SDL_SCANCODE_D:
-                            sim->movePair(1);
-                            break;
-                        case SDL_SCANCODE_KP_DIVIDE:
-                        case SDL_SCANCODE_N:
-                            sim->rotPair(-1);
-                            break;
-                        case SDL_SCANCODE_KP_MULTIPLY:
-                        case SDL_SCANCODE_M:
-                            sim->rotPair(1);
-                            break;
-                        default:
-                            break;
-                        }
-                    }
-                    break;
-                case SDL_KEYUP:
-                    if (!event.key.repeat) {
-                        switch (event.key.keysym.scancode) {
-                        case SDL_SCANCODE_DOWN:
-                        case SDL_SCANCODE_S:
-                            soft_drop = false;
-                            break;
-                        default:
-                            break;
-                        }
-                    }
-                    break;
-                default:
-                    break;
-                }
-            }
+            handleEvent();
 
-            sim->step(16, soft_drop);
+            key_state.keyFrame();
+            sim->step();
 
-            using namespace pumila::drawing;
-            SDL_SetRenderDrawColor(sdl_renderer, 255, 255, 255, 255);
-            SDL_RenderClear(sdl_renderer);
+            draw();
 
-            SDL_SetRenderDrawColor(sdl_renderer, 0, 0, 0, 255);
-            SDL_Rect field_rect = {FIELD_X, FIELD_Y - PUYO_SIZE * 12,
-                                   PUYO_SIZE * 6, PUYO_SIZE * 12};
-            SDL_RenderDrawRect(sdl_renderer, &field_rect);
-
-            if (sim->phase == GameSim::Phase::free) {
-                drawPuyo(sim->current_pair.bottom, sim->current_pair_x,
-                         sim->field.putTargetY(sim->current_pair_x), true);
-                drawPuyo(sim->current_pair.bottom, sim->current_pair_x,
-                         sim->current_pair_y);
-                switch (static_cast<Rotation>(sim->current_pair_rot)) {
-                case Rotation::vertical:
-                    drawPuyo(sim->current_pair.top, sim->current_pair_x,
-                             sim->field.putTargetY(sim->current_pair_x) + 1,
-                             true);
-                    drawPuyo(sim->current_pair.top, sim->current_pair_x,
-                             sim->current_pair_y + 1);
-                    break;
-                case Rotation::vertical_inverse:
-                    drawPuyo(sim->current_pair.top, sim->current_pair_x,
-                             sim->field.putTargetY(sim->current_pair_x) - 1,
-                             true);
-                    drawPuyo(sim->current_pair.top, sim->current_pair_x,
-                             sim->current_pair_y - 1);
-                    break;
-                case Rotation::horizontal_left:
-                    drawPuyo(sim->current_pair.top, sim->current_pair_x - 1,
-                             sim->field.putTargetY(sim->current_pair_x - 1),
-                             true);
-                    drawPuyo(sim->current_pair.top, sim->current_pair_x - 1,
-                             sim->current_pair_y);
-                    break;
-                case Rotation::horizontal_right:
-                    drawPuyo(sim->current_pair.top, sim->current_pair_x + 1,
-                             sim->field.putTargetY(sim->current_pair_x + 1),
-                             true);
-                    drawPuyo(sim->current_pair.top, sim->current_pair_x + 1,
-                             sim->current_pair_y);
-                    break;
-                }
-            }
-
-            for (int y = 0; y < FieldState::HEIGHT; y++) {
-                for (int x = 0; x < FieldState::WIDTH; x++) {
-                    drawPuyo(sim->field.get(x, y), x, y);
-                }
-            }
-
-            if (ttf_font) {
-                int text_w, text_h;
-                SDL_Texture *score_t =
-                    drawText(sdl_renderer, std::to_string(sim->score).c_str(),
-                             ttf_font, {0, 0, 0, 255}, &text_w, &text_h);
-                SDL_Rect rect = {FIELD_X + PUYO_SIZE * 6 - text_w - 10,
-                                 FIELD_Y + 10, text_w, text_h};
-                SDL_RenderCopy(sdl_renderer, score_t, NULL, &rect);
-                SDL_DestroyTexture(score_t);
-
-                if (sim->current_chain) {
-                    score_t = drawText(
-                        sdl_renderer,
-                        (std::to_string(sim->last_chain.scoreA()) + " x " +
-                         std::to_string(
-                             sim->last_chain.scoreB(sim->current_chain)))
-                            .c_str(),
-                        ttf_font, {0, 0, 0, 255}, &text_w, &text_h);
-                    rect = {FIELD_X + PUYO_SIZE * 6 - text_w - 10, FIELD_Y + 40,
-                            text_w, text_h};
-                    SDL_RenderCopy(sdl_renderer, score_t, NULL, &rect);
-                    SDL_DestroyTexture(score_t);
-
-                    score_t = drawText(
-                        sdl_renderer,
-                        ("(" + std::to_string(sim->current_chain) + ")").c_str(),
-                        ttf_font, {0, 0, 0, 255}, &text_w, &text_h);
-                    rect = {FIELD_X + 10, FIELD_Y + 40, text_w, text_h};
-                    SDL_RenderCopy(sdl_renderer, score_t, NULL, &rect);
-                    SDL_DestroyTexture(score_t);
-                }
-            }
-
-            SDL_RenderPresent(sdl_renderer);
             SDL_Delay(16);
         }
     }
 #endif
 }
-void Window::drawPuyo(Puyo p, double x, double y, bool light) {
+
+void Window::draw() {
+#ifdef PUMILA_SDL2
+    using namespace pumila::drawing;
+    SDL_Renderer *sdl_renderer = static_cast<SDL_Renderer *>(sdl_renderer_p);
+    TTF_Font *ttf_font = static_cast<TTF_Font *>(ttf_font_p);
+
+    SDL_SetRenderDrawBlendMode(sdl_renderer, SDL_BLENDMODE_BLEND);
+
+    // 背景
+    SDL_SetRenderDrawColor(sdl_renderer, 255, 255, 255, 255);
+    SDL_RenderClear(sdl_renderer);
+
+    // 枠
+    SDL_SetRenderDrawColor(sdl_renderer, 0, 0, 0, 255);
+    SDL_Rect field_rect = {FIELD_X, FIELD_Y - PUYO_SIZE * 12, PUYO_SIZE * 6,
+                           PUYO_SIZE * 12};
+    SDL_RenderDrawRect(sdl_renderer, &field_rect);
+
+    if (sim->phase->get() == GameSim::Phase::free) {
+        auto f_phase = dynamic_cast<GameSim::FreePhase *>(sim->phase.get());
+        drawPuyo(f_phase->current_pair.bottom, f_phase->current_pair.bottomX(),
+                 sim->field.putTargetY(f_phase->current_pair, true).first,
+                 false);
+        drawPuyo(f_phase->current_pair.top, f_phase->current_pair.topX(),
+                 sim->field.putTargetY(f_phase->current_pair, true).second,
+                 false);
+        drawPuyo(f_phase->current_pair.bottom, f_phase->current_pair.bottomX(),
+                 f_phase->current_pair.bottomY(), true);
+        drawPuyo(f_phase->current_pair.top, f_phase->current_pair.topX(),
+                 f_phase->current_pair.topY(), true);
+    }
+    for (int y = 0; y < FieldState::HEIGHT; y++) {
+        for (int x = 0; x < FieldState::WIDTH; x++) {
+            drawPuyo(sim->field.get(x, y), x, y, true);
+        }
+    }
+
+    if (ttf_font) {
+        int text_w, text_h;
+        SDL_Texture *score_t =
+            drawText(sdl_renderer, std::to_string(sim->score), ttf_font,
+                     {0, 0, 0, 255}, &text_w, &text_h);
+        SDL_Rect rect = {FIELD_X + PUYO_SIZE * 6 - text_w - 10, FIELD_Y + 10,
+                         text_w, text_h};
+        SDL_RenderCopy(sdl_renderer, score_t, NULL, &rect);
+        SDL_DestroyTexture(score_t);
+
+        if (sim->current_chain) {
+            std::ostringstream ss;
+            ss << sim->current_chain->scoreA() << " x "
+               << sim->current_chain->scoreB();
+            score_t = drawText(sdl_renderer, ss.str(), ttf_font, {0, 0, 0, 255},
+                               &text_w, &text_h);
+            rect = {FIELD_X + PUYO_SIZE * 6 - text_w - 10, FIELD_Y + 40, text_w,
+                    text_h};
+            SDL_RenderCopy(sdl_renderer, score_t, NULL, &rect);
+            SDL_DestroyTexture(score_t);
+
+            ss.str("");
+            ss << "(" << sim->current_chain->chain_num << ")";
+            score_t = drawText(sdl_renderer, ss.str(), ttf_font, {0, 0, 0, 255},
+                               &text_w, &text_h);
+            rect = {FIELD_X + 10, FIELD_Y + 40, text_w, text_h};
+            SDL_RenderCopy(sdl_renderer, score_t, NULL, &rect);
+            SDL_DestroyTexture(score_t);
+        }
+    }
+
+    SDL_RenderPresent(sdl_renderer);
+#endif
+}
+void Window::drawPuyo(Puyo p, double x, double y, bool not_ghost) {
 #ifdef PUMILA_SDL2
     if (sdl_window_p && sdl_renderer_p && p != Puyo::none) {
         using namespace pumila::drawing;
         SDL_Renderer *sdl_renderer =
             static_cast<SDL_Renderer *>(sdl_renderer_p);
         Points points;
-        if (light) {
-            SDL_SetRenderDrawColor(sdl_renderer, lightCol(p).r, lightCol(p).g,
-                                   lightCol(p).b, 255);
-            points = drawCircle(puyoX(x), puyoY(y), PUYO_SIZE * 0.5 / 2);
-        } else {
-            SDL_SetRenderDrawColor(sdl_renderer, col(p).r, col(p).g, col(p).b,
-                                   255);
-            points = drawCircle(puyoX(x), puyoY(y), PUYO_SIZE * 0.9 / 2);
-        }
+        SDL_SetRenderDrawColor(sdl_renderer, col(p).r, col(p).g, col(p).b,
+                               not_ghost ? 255 : 100);
+        points = drawCircle(puyoX(x), puyoY(y),
+                            PUYO_SIZE * (not_ghost ? 0.9 : 0.5) / 2);
         SDL_RenderDrawPoints(sdl_renderer, points.data(), points.size());
     }
 #endif
+}
+
+void Window::handleEvent() {
+#ifdef PUMILA_SDL2
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+        switch (event.type) {
+        case SDL_QUIT:
+            SDL_Quit();
+            return;
+        case SDL_KEYDOWN:
+        case SDL_KEYUP: {
+            if (!event.key.repeat) {
+                bool is_down = event.type == SDL_KEYDOWN;
+                key_state.key_repeat_wait = 0;
+                switch (event.key.keysym.scancode) {
+                case SDL_SCANCODE_UP:
+                case SDL_SCANCODE_W:
+                    key_state.quick_drop = is_down;
+                    break;
+                case SDL_SCANCODE_DOWN:
+                case SDL_SCANCODE_S:
+                    key_state.soft_drop = is_down;
+                    break;
+                case SDL_SCANCODE_LEFT:
+                case SDL_SCANCODE_A:
+                    key_state.left = is_down;
+                    break;
+                case SDL_SCANCODE_RIGHT:
+                case SDL_SCANCODE_D:
+                    key_state.right = is_down;
+                    break;
+                case SDL_SCANCODE_KP_DIVIDE:
+                case SDL_SCANCODE_N:
+                    key_state.rot_left = is_down;
+                    break;
+                case SDL_SCANCODE_KP_MULTIPLY:
+                case SDL_SCANCODE_M:
+                    key_state.rot_right = is_down;
+                    break;
+                default:
+                    break;
+                }
+            }
+            break;
+        }
+        default:
+            break;
+        }
+    }
+#endif
+}
+void Window::KeyState::keyFrame() {
+    if (quick_drop) {
+        sim->quickDrop();
+        quick_drop = false;
+    }
+    if (soft_drop) {
+        sim->softDrop();
+    }
+    if (left) {
+        if (!key_repeat_wait) {
+            sim->movePair(-1);
+        }
+    }
+    if (right) {
+        if (!key_repeat_wait) {
+            sim->movePair(1);
+        }
+    }
+    if (rot_left) {
+        sim->rotPair(-1);
+        rot_left = false;
+    }
+    if (rot_right) {
+        sim->rotPair(1);
+        rot_right = false;
+    }
+    if (key_repeat_wait == 0) {
+        key_repeat_wait = KEY_REPEAT;
+    } else {
+        key_repeat_wait--;
+    }
 }
 
 } // namespace pumila

@@ -2,10 +2,14 @@
 #include "field.h"
 #include "chain.h"
 #include <random>
+#include <memory>
+#include <optional>
 
 namespace pumila {
 /*!
  * \brief fieldに加えてネクスト、落下時間、スコアなども管理する(1プレイヤー分)
+ *
+ * 時間の単位はフレーム (1/60s)
  *
  */
 class GameSim {
@@ -13,40 +17,66 @@ class GameSim {
     std::mt19937 rnd;
     Puyo randomPuyo();
 
-    void initPair();
-    void nextPair();
-
   public:
     FieldState field;
-    PuyoPair current_pair, next_pair, next2_pair;
+    PuyoPair next_pair, next2_pair;
     int score = 0;
-    Chain last_chain;
-
-    // todo: structにわけるなりして管理する
-    double current_pair_y, prev_pair_y;
-    int current_pair_x;
-    int current_pair_rot;
-    double current_pair_wait_t;
-    static constexpr double PAIR_WAIT_T = 2000;
-    static constexpr double CHAIN_ERASE_T = 500;
-    static constexpr double CHAIN_FALL_T = 500;
-
-    enum class Phase{
-        free,
-        fall,
-        chain,
-    } phase = Phase::free;
-    int current_chain = 0;
-    double phase_wait_t = 0;
+    std::optional<Chain> current_chain = std::nullopt;
 
     GameSim();
+    GameSim(const GameSim &sim) = delete;
+    GameSim(GameSim &&sim) = delete;
 
     void movePair(int dx);
     void rotPair(int r);
     void quickDrop();
+    void softDrop();
 
-    void step(double ms = 16, bool soft_drop = false);
+    void step();
 
+    struct Phase {
+        GameSim *sim;
+        explicit Phase(GameSim *sim) : sim(sim) {}
+        virtual ~Phase() {}
+        /*!
+         * \brief 処理を1周期進める
+         * 
+         * \return 別のフェーズに移行する場合新しいフェーズ、
+         * そうでなければnullptr
+         * 
+         */
+        virtual std::unique_ptr<Phase> step() = 0;
+        enum PhaseEnum {
+            free,
+            fall,
+            chain,
+        };
+        virtual PhaseEnum get() const = 0;
+    };
+    std::unique_ptr<Phase> phase;
+
+    struct FreePhase final : Phase {
+        explicit FreePhase(GameSim *sim);
+        PhaseEnum get() const override { return PhaseEnum::free; }
+        std::unique_ptr<Phase> step() override;
+        static constexpr int PUT_T = 100;
+        PuyoPair current_pair;
+        int put_t;
+    };
+    struct FallPhase final : Phase {
+        explicit FallPhase(GameSim *sim);
+        PhaseEnum get() const override { return PhaseEnum::fall; }
+        std::unique_ptr<Phase> step() override;
+        static constexpr int WAIT_T = 30;
+        int wait_t;
+    };
+    struct ChainPhase final : Phase {
+        explicit ChainPhase(GameSim *sim);
+        PhaseEnum get() const override { return PhaseEnum::chain; }
+        std::unique_ptr<Phase> step() override;
+        static constexpr int WAIT_T = 30;
+        int wait_t;
+    };
 };
 
 } // namespace pumila

@@ -25,11 +25,7 @@ inline Color col(Puyo p) {
         return Color{0, 0, 0};
     }
 }
-inline Color lightCol(Puyo p) {
-    Color c = col(p);
-    return Color{255 - (255 - c.r) * 0.3, 255 - (255 - c.g) * 0.3,
-                 255 - (255 - c.b) * 0.3};
-}
+
 using Points = std::vector<SDL_Point>;
 inline Points drawCircle(int cx, int cy, int r) {
     Points points;
@@ -43,9 +39,10 @@ inline Points drawCircle(int cx, int cy, int r) {
     return points;
 }
 
-SDL_Texture *drawText(SDL_Renderer *renderer, const char *text, TTF_Font *font,
-                      SDL_Color textColor, int *width, int *height) {
-    SDL_Surface *surface = TTF_RenderText_Solid(font, text, textColor);
+inline SDL_Texture *drawText(SDL_Renderer *renderer, const std::string &text,
+                             TTF_Font *font, SDL_Color textColor, int *width,
+                             int *height) {
+    SDL_Surface *surface = TTF_RenderText_Solid(font, text.c_str(), textColor);
     SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
     *width = surface->w;
     *height = surface->h;

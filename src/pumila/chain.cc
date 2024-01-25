@@ -8,7 +8,7 @@ int Chain::connectionNum() const {
         connections.begin(), connections.end(), 0,
         [](int acc, const auto &con) { return acc + con.second; });
 }
-int Chain::chainBonus(int chain_num) {
+int Chain::chainBonus() const {
     if (chain_num < 4) {
         return 8 * (chain_num - 1);
     } else {
@@ -41,8 +41,8 @@ int Chain::colorBonus() const {
     }
 }
 int Chain::scoreA() const { return connectionNum() * 10; }
-int Chain::scoreB(int chain_num) const {
-    int b = chainBonus(chain_num) + connectionBonus() + colorBonus();
+int Chain::scoreB() const {
+    int b = chainBonus() + connectionBonus() + colorBonus();
     return b ? b : 1;
 }
 

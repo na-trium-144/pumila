@@ -4,6 +4,8 @@
 #include <cstdint>
 
 namespace pumila {
+struct Chain;
+
 enum class Puyo {
     none = 0,
     red,
@@ -13,16 +15,44 @@ enum class Puyo {
     purple,
     garbage,
 };
+/*!
+ * \brief 降ってくる2個組のぷよ
+ *
+ * bottomが回転中心
+ *
+ */
 struct PuyoPair {
     Puyo bottom, top;
+    /*!
+     * \brief bottomの座標
+     *
+     */
+    int x;
+    double y;
+    enum class Rotation {
+        vertical = 0,
+        horizontal_right = 1,
+        vertical_inverse = 2,
+        horizontal_left = 3,
+    } rot;
+    int bottomX() const { return x; }
+    double bottomY() const { return y; }
+    /*!
+     * \brief x, y, rotからtopの座標を計算
+     *
+     */
+    int topX() const;
+    double topY() const;
+    PuyoPair() = default;
+    PuyoPair(Puyo bottom, Puyo top)
+        : bottom(bottom), top(top), x(2), y(12), rot(Rotation::vertical) {}
+
+    /*!
+     * \brief 右にn回回転する
+     *
+     */
+    void rotate(int right);
 };
-enum class Rotation {
-    vertical,
-    horizontal_right,
-    vertical_inverse,
-    horizontal_left,
-};
-struct Chain;
 
 /*!
  * \brief 1プレイヤーの盤面の情報
@@ -34,6 +64,10 @@ class FieldState {
   public:
     static constexpr std::size_t WIDTH = 6, HEIGHT = 13;
 
+    static bool inRange(std::size_t x, std::size_t y = 0) {
+        return x < WIDTH && y < HEIGHT;
+    }
+
   private:
     std::array<std::array<Puyo, WIDTH>, HEIGHT> field = {};
 
@@ -44,38 +78,52 @@ class FieldState {
     }
 
     /*!
-     * \brief x, y とつながっているぷよの数を数える
-     *
-     * すでに数えたものはフィールドから消してしまう
+     * \brief x, y とつながっているぷよの数を数え、
+     * すでに数えたものをフィールドから消す
      *
      */
-    int findConnect(std::size_t x, std::size_t y);
+    int deleteConnection(std::size_t x, std::size_t y);
 
   public:
+    FieldState copy() const { return *this; }
+
     Puyo get(std::size_t x, std::size_t y) const { return field.at(y).at(x); }
 
     /*!
-     * \brief ツモを置く
+     * \brief puyopairを落とす
      *
      */
-    FieldState put(const PuyoPair &pp, Rotation rot, std::size_t x) const;
+    void put(const PuyoPair &pp);
 
     /*!
-     * \brief ツモが置かれるy座標
-     * 
+     * \brief puyopairを落とした場合のy座標を調べる
+     * \param fall false->ちぎり前、true->ちぎり後の座標
+     * \return bottom, topのそれぞれのy座標
+     *
      */
-    std::size_t putTargetY(Rotation rot, std::size_t x) const;
+    std::pair<std::size_t, std::size_t> putTargetY(const PuyoPair &pp,
+                                                   bool fall) const;
+    /*!
+     * \brief ぷよを1つ落とした場合のy座標を調べる
+     *
+     */
     std::size_t putTargetY(std::size_t x) const;
 
     /*!
-     * \brief 4連結を探す
+     * \brief 4連結を探し、消す
+     *
+     * 盤面に4連結が無かった場合何もせず消したぷよの数は0として返る
+     *
+     * \return 消したぷよの情報
      *
      */
-    Chain findChain() const;
+    Chain deleteChain(int chain_num);
     /*!
      * \brief 空中に浮いているぷよを落とす
      *
+     * \return 落ちたぷよがあったらtrue
+     *
      */
-    FieldState fall() const;
+    bool fall();
 };
 } // namespace pumila
