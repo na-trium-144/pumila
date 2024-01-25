@@ -1,64 +1,52 @@
 #pragma once
-#include <utility>
-#include <array>
-#include <cstdint>
+#include "field.h"
+#include "chain.h"
+#include <random>
 
 namespace pumila {
-enum class Puyo {
-    none = 0,
-    red,
-    blue,
-    green,
-    yellow,
-    purple,
-    garbage,
-};
-struct PuyoPair {
-    Puyo bottom, top;
-};
-enum class Rotation {
-    vertical,
-    horizontal_right,
-    vertical_inverse,
-    horizontal_left,
-};
-constexpr std::size_t WIDTH = 6, HEIGHT = 13;
-struct Chain;
-class GameState {
-    std::array<std::array<Puyo, WIDTH>, HEIGHT> field = {};
+/*!
+ * \brief fieldに加えてネクスト、落下時間、スコアなども管理する(1プレイヤー分)
+ *
+ */
+class GameSim {
+    std::random_device seed;
+    std::mt19937 rnd;
+    Puyo randomPuyo();
 
-    void put(std::size_t x, std::size_t y, Puyo p) {
-        if (y < HEIGHT && x < WIDTH) {
-            field.at(y).at(x) = p;
-        }
-    }
-
-    /*!
-     * \brief x, y とつながっているぷよの数を数える
-     *
-     * すでに数えたものはフィールドから消してしまう
-     *
-     */
-    int findConnect(std::size_t x, std::size_t y);
+    void initPair();
+    void nextPair();
 
   public:
-    Puyo get(std::size_t x, std::size_t y) const { return field.at(y).at(x); }
+    FieldState field;
+    PuyoPair current_pair, next_pair, next2_pair;
+    int score = 0;
+    Chain last_chain;
 
-    /*!
-     * \brief ツモを置く
-     *
-     */
-    GameState put(const PuyoPair &pp, Rotation rot, std::size_t x) const;
+    // todo: structにわけるなりして管理する
+    double current_pair_y, prev_pair_y;
+    int current_pair_x;
+    int current_pair_rot;
+    double current_pair_wait_t;
+    static constexpr double PAIR_WAIT_T = 2000;
+    static constexpr double CHAIN_ERASE_T = 500;
+    static constexpr double CHAIN_FALL_T = 500;
 
-    /*!
-     * \brief 4連結を探す
-     *
-     */
-    Chain findChain() const;
-    /*!
-     * \brief 空中に浮いているぷよを落とす
-     *
-     */
-    void fall();
+    enum class Phase{
+        free,
+        fall,
+        chain,
+    } phase = Phase::free;
+    int current_chain = 0;
+    double phase_wait_t = 0;
+
+    GameSim();
+
+    void movePair(int dx);
+    void rotPair(int r);
+    void quickDrop();
+
+    void step(double ms = 16, bool soft_drop = false);
+
 };
+
 } // namespace pumila

@@ -40,10 +40,10 @@ int Chain::colorBonus() const {
         return 12 * (cn - 3);
     }
 }
-int Chain::score(int chain_num) const {
-    int a = connectionNum() * 10;
+int Chain::scoreA() const { return connectionNum() * 10; }
+int Chain::scoreB(int chain_num) const {
     int b = chainBonus(chain_num) + connectionBonus() + colorBonus();
-    return a * (b ? b : 1);
+    return b ? b : 1;
 }
 
 } // namespace pumila
