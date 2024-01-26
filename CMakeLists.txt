@@ -16,6 +16,18 @@ else()
     message(STATUS "SDL2 and SDL2TTF not found (SDL2_FOUND = '${SDL2_FOUND}', SDL2TTF_FOUND = '${SDL2TTF_FOUND}')")
 endif()
 
+include(FetchContent)
+FetchContent_Declare(roboto-font
+    URL https://github.com/googlefonts/roboto/releases/download/v2.138/roboto-android.zip
+    SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/roboto
+)
+FetchContent_Populate(roboto-font)
+configure_file(
+    ${CMAKE_CURRENT_BINARY_DIR}/roboto/Roboto-Regular.ttf
+    ${CMAKE_CURRENT_BINARY_DIR}/Roboto-Regular.ttf
+    COPYONLY
+)
+
 add_library(pumila SHARED
     src/pumila/field.cc
     src/pumila/chain.cc

@@ -100,8 +100,8 @@ Chain FieldState::deleteChain(int chain_num) {
         for (std::size_t x = 0; x < WIDTH; x++) {
             auto connection = state_tmp.deleteConnection(x, y);
             if (connection.size() >= 4) {
-                deleteConnection(x, y); // thisの盤面にも反映
                 chain.connections.emplace_back(get(x, y), connection.size());
+                deleteConnection(x, y); // thisの盤面にも反映
             }
         }
     }

@@ -35,7 +35,7 @@ Window::Window(const std::shared_ptr<GameSim> &sim) : sim(sim), key_state(sim) {
     }
     TTF_Init();
     TTF_Font *ttf_font =
-        TTF_OpenFont("/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf", 24);
+        TTF_OpenFont("Roboto-Regular.ttf", 24);
     ttf_font_p = static_cast<void *>(ttf_font);
     if (!ttf_font) {
         std::cerr << "Font not found" << std::endl;
