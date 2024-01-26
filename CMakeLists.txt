@@ -5,6 +5,7 @@ if(NOT DEFINED CMAKE_BUILD_TYPE)
 endif()
 
 find_package(Eigen3 REQUIRED)
+
 include(FindPkgConfig)
 pkg_search_module(SDL2 sdl2)
 pkg_search_module(SDL2TTF SDL2_ttf>=2.0)
@@ -17,6 +18,12 @@ else()
 endif()
 
 include(FetchContent)
+FetchContent_Declare(pybind11
+    GIT_REPOSITORY https://github.com/pybind/pybind11.git
+    GIT_TAG stable
+)
+FetchContent_MakeAvailable(pybind11)
+
 FetchContent_Declare(roboto-font
     URL https://github.com/googlefonts/roboto/releases/download/v2.138/roboto-android.zip
     SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/roboto
@@ -43,6 +50,9 @@ if(PUMILA_SDL2)
     target_link_libraries(pumila PRIVATE ${SDL2_LIBRARIES} ${SDL2TTF_LIBRARIES})
     target_compile_definitions(pumila PRIVATE PUMILA_SDL2)
 endif()
+
+pybind11_add_module(pypumila src/pypumila/pypumila.cc)
+target_link_libraries(pypumila PUBLIC pumila)
 
 if(PUMILA_SDL2)
     add_executable(pumila-play src/play/main.cc)
