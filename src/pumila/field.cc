@@ -32,26 +32,34 @@ void PuyoPair::rotate(int right) {
     rot = static_cast<Rotation>(((static_cast<int>(rot) + right) % 4 + 4) % 4);
 }
 
-int FieldState::deleteConnection(std::size_t x, std::size_t y) {
+std::vector<std::pair<std::size_t, std::size_t>>
+FieldState::deleteConnection(std::size_t x, std::size_t y) {
+    std::vector<std::pair<std::size_t, std::size_t>> deleted;
+    deleteConnection(x, y, deleted);
+    return deleted;
+}
+void FieldState::deleteConnection(
+    std::size_t x, std::size_t y,
+    std::vector<std::pair<std::size_t, std::size_t>> &deleted) {
     Puyo here = get(x, y);
     if (here == Puyo::none) {
-        return 0;
+        return;
     } else {
-        int c = 1;
+        deleted.emplace_back(x, y);
         put(x, y, Puyo::none);
         if (inRange(x + 1, y) && get(x + 1, y) == here) {
-            c += deleteConnection(x + 1, y);
+            deleteConnection(x + 1, y, deleted);
         }
         if (inRange(x - 1, y) && get(x - 1, y) == here) {
-            c += deleteConnection(x - 1, y);
+            deleteConnection(x - 1, y, deleted);
         }
         if (inRange(x, y + 1) && get(x, y + 1) == here) {
-            c += deleteConnection(x, y + 1);
+            deleteConnection(x, y + 1, deleted);
         }
         if (inRange(x, y - 1) && get(x, y - 1) == here) {
-            c += deleteConnection(x, y - 1);
+            deleteConnection(x, y - 1, deleted);
         }
-        return c;
+        return;
     }
 }
 
@@ -90,10 +98,10 @@ Chain FieldState::deleteChain(int chain_num) {
     FieldState state_tmp = *this;
     for (std::size_t y = 0; y < HEIGHT; y++) {
         for (std::size_t x = 0; x < WIDTH; x++) {
-            int connection = state_tmp.deleteConnection(x, y);
-            if (connection >= 4) {
+            auto connection = state_tmp.deleteConnection(x, y);
+            if (connection.size() >= 4) {
                 deleteConnection(x, y); // thisの盤面にも反映
-                chain.connections.emplace_back(get(x, y), connection);
+                chain.connections.emplace_back(get(x, y), connection.size());
             }
         }
     }
@@ -116,6 +124,33 @@ bool FieldState::fall() {
         }
     }
     return has_fall;
+}
+
+std::array<std::array<int, FieldState::WIDTH>, FieldState::HEIGHT>
+FieldState::calcChainAll() const {
+    std::array<std::array<int, FieldState::WIDTH>, FieldState::HEIGHT> chains;
+    for (std::size_t y = 0; y < HEIGHT - 1; y++) {
+        for (std::size_t x = 0; x < HEIGHT - 1; x++) {
+            if (get(x, y) == Puyo::none || chains[y][x] != 0) {
+                continue;
+            }
+            FieldState state = this->copy();
+            auto first_connection = state.deleteConnection(x, y);
+            int chain_num = 1;
+            while (true) {
+                state.fall();
+                Chain next_chain = state.deleteChain(chain_num);
+                if (next_chain.isEmpty()) {
+                    break;
+                }
+                chain_num++;
+            }
+            for (const auto &pos : first_connection) {
+                chains[pos.second][pos.first] = chain_num;
+            }
+        }
+    }
+    return chains;
 }
 
 } // namespace pumila

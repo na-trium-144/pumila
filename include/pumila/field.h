@@ -2,6 +2,7 @@
 #include <utility>
 #include <array>
 #include <cstdint>
+#include <vector>
 
 namespace pumila {
 struct Chain;
@@ -80,9 +81,14 @@ class FieldState {
     /*!
      * \brief x, y とつながっているぷよの数を数え、
      * すでに数えたものをフィールドから消す
-     *
+     * \return 削除したぷよ
      */
-    int deleteConnection(std::size_t x, std::size_t y);
+    std::vector<std::pair<std::size_t, std::size_t>>
+    deleteConnection(std::size_t x, std::size_t y);
+
+    void
+    deleteConnection(std::size_t x, std::size_t y,
+                     std::vector<std::pair<std::size_t, std::size_t>> &deleted);
 
   public:
     FieldState copy() const { return *this; }
@@ -118,6 +124,13 @@ class FieldState {
      *
      */
     Chain deleteChain(int chain_num);
+
+    /*!
+     * \brief 盤面の各マスについて消したら何連鎖が起きるかを計算する
+     * 
+     */
+    std::array<std::array<int, WIDTH>, HEIGHT> calcChainAll() const;
+
     /*!
      * \brief 空中に浮いているぷよを落とす
      *

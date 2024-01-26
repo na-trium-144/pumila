@@ -21,9 +21,11 @@ add_library(pumila SHARED
     src/pumila/chain.cc
     src/pumila/window.cc
     src/pumila/game.cc
+    src/pumila/models/pumila1.cc
 )
 target_include_directories(pumila PUBLIC include)
 target_compile_features(pumila PUBLIC cxx_std_11)
+target_link_libraries(pumila PUBLIC Eigen3::Eigen)
 if(PUMILA_SDL2)
     target_link_directories(pumila PRIVATE ${SDL2_LIBDIR} ${SDL2TTF_LIBDIR})
     target_link_libraries(pumila PRIVATE ${SDL2_LIBRARIES} ${SDL2TTF_LIBRARIES})
