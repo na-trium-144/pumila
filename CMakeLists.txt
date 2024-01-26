@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.11)
 project(pumila CXX)
 if(NOT DEFINED CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug)
@@ -26,11 +26,10 @@ FetchContent_MakeAvailable(pybind11)
 
 FetchContent_Declare(roboto-font
     URL https://github.com/googlefonts/roboto/releases/download/v2.138/roboto-android.zip
-    SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/roboto
 )
 FetchContent_Populate(roboto-font)
 configure_file(
-    ${CMAKE_CURRENT_BINARY_DIR}/roboto/Roboto-Regular.ttf
+    ${roboto-font_SOURCE_DIR}/Roboto-Regular.ttf
     ${CMAKE_CURRENT_BINARY_DIR}/Roboto-Regular.ttf
     COPYONLY
 )
@@ -43,7 +42,7 @@ add_library(pumila SHARED
     src/pumila/models/pumila1.cc
 )
 target_include_directories(pumila PUBLIC include)
-target_compile_features(pumila PUBLIC cxx_std_11)
+target_compile_features(pumila PUBLIC cxx_std_17)
 target_link_libraries(pumila PUBLIC Eigen3::Eigen)
 if(PUMILA_SDL2)
     target_link_directories(pumila PRIVATE ${SDL2_LIBDIR} ${SDL2TTF_LIBDIR})
