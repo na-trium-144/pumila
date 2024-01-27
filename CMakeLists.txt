@@ -4,9 +4,21 @@ if(NOT DEFINED CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug)
 endif()
 
-find_package(Eigen3 REQUIRED)
-
 include(FindPkgConfig)
+include(FetchContent)
+
+find_package(Eigen3 QUIET)
+if(Eigen3_FOUND)
+    message(STATUS "Eigen3 found")
+else()
+    message(STATUS "Eigen3 not found, fetching source...")
+    FetchContent_Declare(Eigen3
+        GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+        GIT_TAG 3.4
+    )
+    FetchContent_MakeAvailable(Eigen3)
+endif()
+
 pkg_search_module(SDL2 sdl2)
 pkg_search_module(SDL2TTF SDL2_ttf>=2.0)
 if(SDL2_FOUND AND SDL2TTF_FOUND)
@@ -17,13 +29,14 @@ else()
     message(STATUS "SDL2 and SDL2TTF not found (SDL2_FOUND = '${SDL2_FOUND}', SDL2TTF_FOUND = '${SDL2TTF_FOUND}')")
 endif()
 
-include(FetchContent)
+message(STATUS "Fetching pybind11 source...")
 FetchContent_Declare(pybind11
     GIT_REPOSITORY https://github.com/pybind/pybind11.git
     GIT_TAG stable
 )
 FetchContent_MakeAvailable(pybind11)
 
+message(STATUS "Fetching roboto font...")
 FetchContent_Declare(roboto-font
     URL https://github.com/googlefonts/roboto/releases/download/v2.138/roboto-android.zip
 )
