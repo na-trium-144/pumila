@@ -1,60 +1,10 @@
 #pragma once
+#include "action.h"
+#include "chain.h"
 #include <utility>
-#include <array>
-#include <cstdint>
 #include <vector>
 
 namespace pumila {
-struct Chain;
-
-enum class Puyo {
-    none = 0,
-    red,
-    blue,
-    green,
-    yellow,
-    purple,
-    garbage,
-};
-/*!
- * \brief 降ってくる2個組のぷよ
- *
- * bottomが回転中心
- *
- */
-struct PuyoPair {
-    Puyo bottom, top;
-    /*!
-     * \brief bottomの座標
-     *
-     */
-    int x;
-    double y;
-    enum class Rotation {
-        vertical = 0,
-        horizontal_right = 1,
-        vertical_inverse = 2,
-        horizontal_left = 3,
-    } rot;
-    int bottomX() const { return x; }
-    double bottomY() const { return y; }
-    /*!
-     * \brief x, y, rotからtopの座標を計算
-     *
-     */
-    int topX() const;
-    double topY() const;
-    PuyoPair() = default;
-    PuyoPair(Puyo bottom, Puyo top)
-        : bottom(bottom), top(top), x(2), y(12), rot(Rotation::vertical) {}
-
-    /*!
-     * \brief 右にn回回転する
-     *
-     */
-    void rotate(int right);
-};
-
 /*!
  * \brief 1プレイヤーの盤面の情報
  *
@@ -100,6 +50,7 @@ class FieldState {
      *
      */
     void put(const PuyoPair &pp);
+    void put(const PuyoPair &pp, const Action &action) { put({pp, action}); }
 
     /*!
      * \brief puyopairを落とした場合のy座標を調べる
@@ -119,15 +70,21 @@ class FieldState {
      * \brief 4連結を探し、消す
      *
      * 盤面に4連結が無かった場合何もせず消したぷよの数は0として返る
-     *
+     * \param chain_num 今消すぷよが何連鎖目か (chain_num >= 1)
      * \return 消したぷよの情報
      *
      */
     Chain deleteChain(int chain_num);
 
     /*!
+     * \brief 連鎖が止まるまでdeleteChainをする
+     *
+     */
+    std::vector<Chain> deleteChainRecurse();
+
+    /*!
      * \brief 盤面の各マスについて消したら何連鎖が起きるかを計算する
-     * 
+     *
      */
     std::array<std::array<int, WIDTH>, HEIGHT> calcChainAll() const;
 

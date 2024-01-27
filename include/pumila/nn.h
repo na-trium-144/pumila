@@ -1,19 +1,22 @@
 #pragma once
-#include "field.h"
+#include "game.h"
 
 namespace pumila {
 class Pumila {
   public:
     virtual ~Pumila() {}
     /*!
-     * \brief 状態を入力として受け取り評価値を返す関数
+     * \brief 現在の状態s(t)を入力として受け取り、
+     * 22個の操作に対する評価値Q(s(t), a(t))を返す
      *
      */
-    virtual double forward(const FieldState &fs) = 0;
+    virtual std::array<double, ACTIONS_NUM>
+    forward(std::shared_ptr<GameSim> sim) = 0;
+
     /*!
-     * \brief 誤差を受け取り逆伝播を計算、モデルに反映
-     * 
+     * \brief 教師信号r(t)を受け取り逆伝播を計算、モデルに反映
+     *
      */
-    virtual void backward(double target) = 0;
+    virtual void backward(int action, double target) = 0;
 };
 } // namespace pumila

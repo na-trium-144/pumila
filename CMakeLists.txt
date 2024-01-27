@@ -36,6 +36,15 @@ FetchContent_Declare(pybind11
 )
 FetchContent_MakeAvailable(pybind11)
 
+message(STATUS "Fetching BS::thread_pool source...")
+FetchContent_Declare(bs_thread_pool
+    GIT_REPOSITORY https://github.com/bshoshany/thread-pool.git
+    GIT_TAG v4.0.1
+)
+FetchContent_Populate(bs_thread_pool)
+add_library(bs_thread_pool INTERFACE)
+target_include_directories(bs_thread_pool INTERFACE ${bs_thread_pool_SOURCE_DIR}/include)
+
 message(STATUS "Fetching roboto font...")
 FetchContent_Declare(roboto-font
     URL https://github.com/googlefonts/roboto/releases/download/v2.138/roboto-android.zip
@@ -48,6 +57,7 @@ configure_file(
 )
 
 add_library(pumila SHARED
+    src/pumila/action.cc
     src/pumila/field.cc
     src/pumila/chain.cc
     src/pumila/window.cc
@@ -56,7 +66,7 @@ add_library(pumila SHARED
 )
 target_include_directories(pumila PUBLIC include)
 target_compile_features(pumila PUBLIC cxx_std_17)
-target_link_libraries(pumila PUBLIC Eigen3::Eigen)
+target_link_libraries(pumila PUBLIC Eigen3::Eigen bs_thread_pool)
 if(PUMILA_SDL2)
     target_link_directories(pumila PRIVATE ${SDL2_LIBDIR} ${SDL2TTF_LIBDIR})
     target_link_libraries(pumila PRIVATE ${SDL2_LIBRARIES} ${SDL2TTF_LIBRARIES})

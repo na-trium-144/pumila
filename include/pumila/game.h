@@ -20,6 +20,7 @@ class GameSim {
   public:
     FieldState field;
     PuyoPair next_pair, next2_pair;
+    PuyoPair getCurrentPair() const;
     int score = 0;
     std::optional<Chain> current_chain = std::nullopt;
 

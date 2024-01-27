@@ -22,6 +22,13 @@ Puyo GameSim::randomPuyo() {
     }
 }
 
+PuyoPair GameSim::getCurrentPair() const {
+    if (phase->get() == Phase::free) {
+        auto f_phase = dynamic_cast<FreePhase *>(phase.get());
+        return f_phase->current_pair;
+    }
+    return PuyoPair{};
+}
 void GameSim::movePair(int dx) {
     if (phase->get() == Phase::free) {
         auto f_phase = dynamic_cast<FreePhase *>(phase.get());

@@ -1,37 +1,8 @@
 #include <pumila/field.h>
-#include <pumila/chain.h>
 #include <algorithm>
+#include <cassert>
 
 namespace pumila {
-
-int PuyoPair::topX() const {
-    switch (rot) {
-    case Rotation::vertical:
-    case Rotation::vertical_inverse:
-        return x;
-    case Rotation::horizontal_left:
-        return x - 1;
-    case Rotation::horizontal_right:
-        return x + 1;
-    }
-    return 0;
-}
-double PuyoPair::topY() const {
-    switch (rot) {
-    case Rotation::vertical:
-        return y + 1;
-    case Rotation::vertical_inverse:
-        return y - 1;
-    case Rotation::horizontal_left:
-    case Rotation::horizontal_right:
-        return y;
-    }
-    return 0;
-}
-void PuyoPair::rotate(int right) {
-    rot = static_cast<Rotation>(((static_cast<int>(rot) + right) % 4 + 4) % 4);
-}
-
 std::vector<std::pair<std::size_t, std::size_t>>
 FieldState::deleteConnection(std::size_t x, std::size_t y) {
     std::vector<std::pair<std::size_t, std::size_t>> deleted;
@@ -94,6 +65,7 @@ void FieldState::put(const PuyoPair &pp) {
 }
 
 Chain FieldState::deleteChain(int chain_num) {
+    assert(chain_num >= 1);
     Chain chain(chain_num);
     FieldState state_tmp = *this;
     for (std::size_t y = 0; y < HEIGHT; y++) {
@@ -128,27 +100,33 @@ bool FieldState::fall() {
 
 std::array<std::array<int, FieldState::WIDTH>, FieldState::HEIGHT>
 FieldState::calcChainAll() const {
-    std::array<std::array<int, FieldState::WIDTH>, FieldState::HEIGHT> chains;
+    std::array<std::array<int, FieldState::WIDTH>, FieldState::HEIGHT>
+        chain_map;
     for (std::size_t y = 0; y < HEIGHT - 1; y++) {
         for (std::size_t x = 0; x < HEIGHT - 1; x++) {
-            if (get(x, y) == Puyo::none || chains[y][x] != 0) {
+            if (get(x, y) == Puyo::none || chain_map[y][x] != 0) {
                 continue;
             }
             FieldState state = this->copy();
             auto first_connection = state.deleteConnection(x, y);
-            int chain_num = 1;
-            while (true) {
-                state.fall();
-                Chain next_chain = state.deleteChain(chain_num);
-                if (next_chain.isEmpty()) {
-                    break;
-                }
-                chain_num++;
-            }
+            auto chains = state.deleteChainRecurse();
             for (const auto &pos : first_connection) {
-                chains[pos.second][pos.first] = chain_num;
+                chain_map[pos.second][pos.first] = chains.size();
             }
         }
+    }
+    return chain_map;
+}
+
+std::vector<Chain> FieldState::deleteChainRecurse() {
+    std::vector<Chain> chains;
+    while (true) {
+        fall();
+        Chain chain = deleteChain(chains.size() + 1);
+        if (chain.isEmpty()) {
+            break;
+        }
+        chains.push_back(chain);
     }
     return chains;
 }

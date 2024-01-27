@@ -1,6 +1,7 @@
 #pragma once
-#include "field.h"
+#include "action.h"
 #include "chain.h"
+#include "field.h"
 #include "game.h"
 #include "window.h"
 #include "nn.h"
