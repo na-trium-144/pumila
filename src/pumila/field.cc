@@ -1,8 +1,20 @@
 #include <pumila/field.h>
 #include <algorithm>
 #include <cassert>
+#include <stdexcept>
+#include <sstream>
 
 namespace pumila {
+Puyo FieldState::get(std::size_t x, std::size_t y) const {
+    if (!inRange(x, y)) {
+        std::ostringstream ss;
+        ss << "out of range in FieldState::get(x = " << x << ", y = " << y
+           << ")";
+        throw std::out_of_range(ss.str());
+    }
+    return field.at(y).at(x);
+}
+
 std::vector<std::pair<std::size_t, std::size_t>>
 FieldState::deleteConnection(std::size_t x, std::size_t y) {
     std::vector<std::pair<std::size_t, std::size_t>> deleted;
@@ -101,9 +113,9 @@ bool FieldState::fall() {
 std::array<std::array<int, FieldState::WIDTH>, FieldState::HEIGHT>
 FieldState::calcChainAll() const {
     std::array<std::array<int, FieldState::WIDTH>, FieldState::HEIGHT>
-        chain_map;
+        chain_map = {};
     for (std::size_t y = 0; y < HEIGHT - 1; y++) {
-        for (std::size_t x = 0; x < HEIGHT - 1; x++) {
+        for (std::size_t x = 0; x < WIDTH - 1; x++) {
             if (get(x, y) == Puyo::none || chain_map[y][x] != 0) {
                 continue;
             }

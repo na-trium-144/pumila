@@ -4,5 +4,5 @@
 #include "field.h"
 #include "game.h"
 #include "window.h"
-#include "nn.h"
+#include "model_base.h"
 #include "models/pumila1.h"

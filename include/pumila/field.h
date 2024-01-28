@@ -11,15 +11,13 @@ namespace pumila {
  * nextやスコアなどは含まない
  *
  */
-class FieldState {
-  public:
+struct FieldState {
     static constexpr std::size_t WIDTH = 6, HEIGHT = 13;
 
     static bool inRange(std::size_t x, std::size_t y = 0) {
         return x < WIDTH && y < HEIGHT;
     }
 
-  private:
     std::array<std::array<Puyo, WIDTH>, HEIGHT> field = {};
 
     void put(std::size_t x, std::size_t y, Puyo p) {
@@ -40,10 +38,9 @@ class FieldState {
     deleteConnection(std::size_t x, std::size_t y,
                      std::vector<std::pair<std::size_t, std::size_t>> &deleted);
 
-  public:
     FieldState copy() const { return *this; }
 
-    Puyo get(std::size_t x, std::size_t y) const { return field.at(y).at(x); }
+    Puyo get(std::size_t x, std::size_t y) const;
 
     /*!
      * \brief puyopairを落とす

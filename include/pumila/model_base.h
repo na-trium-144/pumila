@@ -16,7 +16,12 @@ class Pumila {
     /*!
      * \brief 教師信号r(t)を受け取り逆伝播を計算、モデルに反映
      *
+     * \param sim_after アクション実行後の状態
+     * \param action_prev 最後に選択したアクション (0 <= a < 22)
+     * \param target 教師信号
+     *
      */
-    virtual void backward(int action, double target) = 0;
+    virtual void backward(std::shared_ptr<GameSim> sim_after, int action_prev,
+                          double target) = 0;
 };
 } // namespace pumila

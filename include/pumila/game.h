@@ -28,12 +28,30 @@ class GameSim {
     GameSim(const GameSim &sim) = delete;
     GameSim(GameSim &&sim) = delete;
 
+    /*!
+     * \brief freePhase時のみぷよを操作する
+     *
+     * 時間は進まないので適宜step()を呼ぶこと
+     *
+     */
     void movePair(int dx);
     void rotPair(int r);
     void quickDrop();
     void softDrop();
 
+    /*!
+     * \brief 1フレーム時間を進める
+     *
+     */
     void step();
+
+    /*!
+     * \brief ぷよを置く
+     *
+     * 時間は進まないので適宜step()を呼ぶこと
+     *
+     */
+    void put(const Action &action);
 
     struct Phase {
         GameSim *sim;
@@ -41,10 +59,10 @@ class GameSim {
         virtual ~Phase() {}
         /*!
          * \brief 処理を1周期進める
-         * 
+         *
          * \return 別のフェーズに移行する場合新しいフェーズ、
          * そうでなければnullptr
-         * 
+         *
          */
         virtual std::unique_ptr<Phase> step() = 0;
         enum PhaseEnum {
@@ -55,6 +73,8 @@ class GameSim {
         virtual PhaseEnum get() const = 0;
     };
     std::unique_ptr<Phase> phase;
+
+    bool isFreePhase() const { return phase->get() == Phase::free; }
 
     struct FreePhase final : Phase {
         explicit FreePhase(GameSim *sim);

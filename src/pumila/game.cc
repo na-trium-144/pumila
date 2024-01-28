@@ -23,14 +23,14 @@ Puyo GameSim::randomPuyo() {
 }
 
 PuyoPair GameSim::getCurrentPair() const {
-    if (phase->get() == Phase::free) {
+    if (isFreePhase()) {
         auto f_phase = dynamic_cast<FreePhase *>(phase.get());
         return f_phase->current_pair;
     }
     return PuyoPair{};
 }
 void GameSim::movePair(int dx) {
-    if (phase->get() == Phase::free) {
+    if (isFreePhase()) {
         auto f_phase = dynamic_cast<FreePhase *>(phase.get());
         auto &pp = f_phase->current_pair;
         if (FieldState::inRange(pp.bottomX() + dx) &&
@@ -42,7 +42,7 @@ void GameSim::movePair(int dx) {
     }
 }
 void GameSim::rotPair(int r) {
-    if (phase->get() == Phase::free) {
+    if (isFreePhase()) {
         auto f_phase = dynamic_cast<FreePhase *>(phase.get());
         PuyoPair &pp = f_phase->current_pair;
         PuyoPair new_pp = pp;
@@ -61,7 +61,7 @@ void GameSim::rotPair(int r) {
     }
 }
 void GameSim::quickDrop() {
-    if (phase->get() == Phase::free) {
+    if (isFreePhase()) {
         auto f_phase = dynamic_cast<FreePhase *>(phase.get());
         PuyoPair &pp = f_phase->current_pair;
         pp.y -= 12;
@@ -69,7 +69,7 @@ void GameSim::quickDrop() {
     }
 }
 void GameSim::softDrop() {
-    if (phase->get() == Phase::free) {
+    if (isFreePhase()) {
         auto f_phase = dynamic_cast<FreePhase *>(phase.get());
         PuyoPair &pp = f_phase->current_pair;
         pp.y -= 20.0 / 60;
@@ -81,6 +81,15 @@ void GameSim::step() {
     std::unique_ptr<Phase> next_phase = phase->step();
     if (next_phase) {
         phase = std::move(next_phase);
+    }
+}
+void GameSim::put(const Action &action){
+    if (isFreePhase()) {
+        auto f_phase = dynamic_cast<FreePhase *>(phase.get());
+        auto &pp = f_phase->current_pair;
+        pp = PuyoPair{pp, action};
+        quickDrop();
+        step();
     }
 }
 
