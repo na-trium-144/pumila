@@ -34,8 +34,7 @@ Window::Window(const std::shared_ptr<GameSim> &sim) : sim(sim), key_state(sim) {
         }
     }
     TTF_Init();
-    TTF_Font *ttf_font =
-        TTF_OpenFont("Roboto-Regular.ttf", 24);
+    TTF_Font *ttf_font = TTF_OpenFont("Roboto-Regular.ttf", 24);
     ttf_font_p = static_cast<void *>(ttf_font);
     if (!ttf_font) {
         std::cerr << "Font not found" << std::endl;
@@ -45,19 +44,32 @@ Window::Window(const std::shared_ptr<GameSim> &sim) : sim(sim), key_state(sim) {
 #endif
 }
 
-void Window::loop() {
+Window::~Window() { quit(); }
+void Window::quit() {
 #ifdef PUMILA_SDL2
-    if (sdl_window_p && sdl_renderer_p) {
-        while (true) {
-            handleEvent();
+    if (isRunning()) {
+        SDL_Quit();
+        sdl_window_p = nullptr;
+        sdl_renderer_p = nullptr;
+    }
+#endif
+}
+bool Window::isRunning() const { return sdl_window_p && sdl_renderer_p; }
 
-            key_state.keyFrame();
-            sim->step();
-
-            draw();
-
-            SDL_Delay(16);
-        }
+void Window::step(bool sim_step, bool player) {
+#ifdef PUMILA_SDL2
+    if (isRunning()) {
+        handleEvent();
+    }
+    if (player) {
+        key_state.keyFrame();
+    }
+    if (sim_step) {
+        sim->step();
+    }
+    if (isRunning()) {
+        draw();
+        SDL_Delay(16);
     }
 #endif
 }
@@ -135,7 +147,7 @@ void Window::draw() {
 }
 void Window::drawPuyo(Puyo p, double x, double y, bool not_ghost) {
 #ifdef PUMILA_SDL2
-    if (sdl_window_p && sdl_renderer_p && p != Puyo::none) {
+    if (isRunning() && p != Puyo::none) {
         using namespace pumila::drawing;
         SDL_Renderer *sdl_renderer =
             static_cast<SDL_Renderer *>(sdl_renderer_p);
@@ -156,6 +168,8 @@ void Window::handleEvent() {
         switch (event.type) {
         case SDL_QUIT:
             SDL_Quit();
+            sdl_window_p = nullptr;
+            sdl_renderer_p = nullptr;
             return;
         case SDL_KEYDOWN:
         case SDL_KEYUP: {

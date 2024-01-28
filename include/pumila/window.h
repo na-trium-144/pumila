@@ -30,9 +30,19 @@ class Window {
 
   public:
     explicit Window(const std::shared_ptr<GameSim> &sim);
+    ~Window();
     Window(const Window &win) = delete;
     Window(Window &&win) = delete;
 
-    void loop();
+    /*!
+     * \brief 画面更新をする
+     *
+     * \param sim_step 画面更新周期にあわせてsim.step()を回すかどうか
+     * \param player 入力でsimを操作可能にするかどうか
+     *
+     */
+    void step(bool sim_step, bool player);
+    void quit();
+    bool isRunning() const;
 };
 } // namespace pumila

@@ -51,7 +51,7 @@ PYBIND11_MODULE(pypumila, m) {
         .def("__repr__", [](const PuyoPair &a) {
             return "<PuyoPair bottom = " +
                    std::to_string(static_cast<int>(a.bottom)) +
-                   ", top = " + std::to_string(static_cast<int>(a.bottom)) +
+                   ", top = " + std::to_string(static_cast<int>(a.top)) +
                    ", x = " + std::to_string(a.x) +
                    ", y = " + std::to_string(a.y) +
                    ", rot = " + std::to_string(static_cast<int>(a.rot)) + ">";
@@ -99,7 +99,9 @@ PYBIND11_MODULE(pypumila, m) {
         .def("is_free_phase", &GameSim::isFreePhase);
     py::class_<Window>(m, "Window")
         .def(py::init<std::shared_ptr<GameSim>>())
-        .def("loop", &Window::loop);
+        .def("step", &Window::step)
+        .def("quit", &Window::quit)
+        .def("is_running", &Window::isRunning);
     py::class_<Pumila>(m, "Pumila")
         .def("forward", &Pumila::forward)
         .def("backward", &Pumila::backward);
@@ -109,7 +111,8 @@ PYBIND11_MODULE(pypumila, m) {
                        .def_readwrite("target", &Pumila1::target)
                        .def_readwrite("gamma", &Pumila1::gamma)
                        .def_readwrite("last_result", &Pumila1::last_result)
-                       .def("get_in_nodes", &Pumila1::getInNodes);
+                       .def("get_in_nodes", &Pumila1::getInNodes)
+                       .def("copy", &Pumila1::copy);
     py::class_<Pumila1::NNModel>(pumila1, "NNModel")
         .def_readwrite("alpha", &Pumila1::NNModel::alpha)
         .def_readwrite("learning_rate", &Pumila1::NNModel::learning_rate)

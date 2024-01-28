@@ -1,8 +1,12 @@
 #pragma once
 #include "game.h"
+#include <BS_thread_pool.hpp>
 
 namespace pumila {
 class Pumila {
+  protected:
+    inline static BS::thread_pool pool;
+
   public:
     virtual ~Pumila() {}
     /*!

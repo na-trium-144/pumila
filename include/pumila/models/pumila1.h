@@ -1,14 +1,11 @@
 #pragma once
 #include "../model_base.h"
 #include <Eigen/Dense>
-#include <BS_thread_pool.hpp>
 #include <array>
 #include <memory>
 
 namespace pumila {
 class Pumila1 : public Pumila {
-    BS::thread_pool pool;
-
   public:
     struct NNModel {
         struct InNodes {
@@ -44,7 +41,8 @@ class Pumila1 : public Pumila {
     int back_count = 0;
 
     explicit Pumila1(double alpha, double gamma, double learning_rate);
-
+    Pumila1 copy() const { return *this; }
+    
     Eigen::MatrixXd getInNodes(std::shared_ptr<GameSim> sim);
     std::array<double, ACTIONS_NUM>
     forward(std::shared_ptr<GameSim> sim) override;

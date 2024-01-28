@@ -8,8 +8,8 @@ Pumila1::NNModel::NNModel(double alpha, double learning_rate)
       learning_rate(learning_rate) {}
 
 Pumila1::Pumila1(double alpha, double gamma, double learning_rate)
-    : main(alpha, learning_rate), target(main), gamma(gamma), pool(),
-      last_result(), back_count(0) {}
+    : main(alpha, learning_rate), target(main), gamma(gamma), last_result(),
+      back_count(0) {}
 
 Eigen::MatrixXd Pumila1::getInNodes(std::shared_ptr<GameSim> sim) {
     std::array<std::future<Eigen::VectorXd>, ACTIONS_NUM> actions_result;
@@ -113,9 +113,9 @@ void Pumila1::backward(std::shared_ptr<GameSim> sim_after, int action_prev,
             .matrix();
     assert(delta_1.rows() == ACTIONS_NUM);
     assert(delta_1.cols() == NNModel::HIDDEN_NODES);
-    main.matrix_hq -=
+    main.matrix_hq +=
         main.learning_rate * last_result.hidden.transpose() * delta_2;
-    main.matrix_ih -= main.learning_rate * last_result.in.transpose() * delta_1;
+    main.matrix_ih += main.learning_rate * last_result.in.transpose() * delta_1;
 
     if (++back_count > 10) {
         back_count = 0;

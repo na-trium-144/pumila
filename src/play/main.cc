@@ -3,6 +3,8 @@
 int main(int argc, char const *argv[]) {
     auto sim = std::make_shared<pumila::GameSim>();
     pumila::Window window(sim);
-    window.loop();
+    while (true) {
+        window.step(true, true);
+    }
     return 0;
 }
