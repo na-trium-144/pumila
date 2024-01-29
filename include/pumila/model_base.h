@@ -28,13 +28,16 @@ class Pumila {
      * second: learnResultに渡すid
      *
      */
-    virtual std::pair<int, int>
-    getLearnAction(std::shared_ptr<GameSim> sim) = 0;
+    virtual std::pair<int, int> getLearnAction(std::shared_ptr<GameSim> sim) {
+        return std::make_pair(getAction(sim), 0);
+    }
 
     /*!
      * \brief getLearnActionで得た手を実行した結果を渡し学習させる
      *
      */
-    virtual double learnResult(int id, std::shared_ptr<GameSim> sim_after) = 0;
+    virtual double learnResult(int id, std::shared_ptr<GameSim> sim_after) {
+        return 0;
+    }
 };
 } // namespace pumila

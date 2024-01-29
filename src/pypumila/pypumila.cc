@@ -124,4 +124,5 @@ PYBIND11_MODULE(pypumila, m) {
         .def_readwrite("in", &Pumila1::NNResult::in)
         .def_readwrite("hidden", &Pumila1::NNResult::hidden)
         .def_readwrite("q", &Pumila1::NNResult::q);
+    py::class_<Pumila1N, Pumila>(m, "Pumila1N").def(py::init<int>());
 }

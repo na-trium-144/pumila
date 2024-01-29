@@ -63,6 +63,7 @@ add_library(pumila SHARED
     src/pumila/window.cc
     src/pumila/game.cc
     src/pumila/models/pumila1.cc
+    src/pumila/models/pumila1n.cc
 )
 target_include_directories(pumila PUBLIC include)
 target_compile_features(pumila PUBLIC cxx_std_17)
