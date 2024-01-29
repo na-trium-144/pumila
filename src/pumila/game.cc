@@ -83,7 +83,7 @@ void GameSim::step() {
         phase = std::move(next_phase);
     }
 }
-void GameSim::put(const Action &action){
+void GameSim::put(const Action &action) {
     if (isFreePhase()) {
         auto f_phase = dynamic_cast<FreePhase *>(phase.get());
         auto &pp = f_phase->current_pair;
@@ -111,6 +111,8 @@ std::unique_ptr<GameSim::Phase> GameSim::FreePhase::step() {
         if (put_t < 0) {
             sim->field.put(current_pair);
             sim->current_chain = std::nullopt;
+            sim->prev_chain_num = 0;
+            sim->prev_chain_score = 0;
             return std::make_unique<GameSim::FallPhase>(sim);
         }
     }
@@ -140,6 +142,8 @@ GameSim::ChainPhase::ChainPhase(GameSim *sim) : Phase(sim), wait_t(WAIT_T) {
         sim->current_chain = std::nullopt;
     } else {
         sim->score += chain.score();
+        sim->prev_chain_score += chain.score();
+        sim->prev_chain_num++;
         sim->current_chain = std::move(chain);
     }
 }

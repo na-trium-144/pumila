@@ -89,6 +89,8 @@ PYBIND11_MODULE(pypumila, m) {
         .def_readwrite("next2_pair", &GameSim::next2_pair)
         .def_readwrite("score", &GameSim::score)
         .def_readwrite("current_chain", &GameSim::current_chain)
+        .def_readwrite("prev_chain_num", &GameSim::prev_chain_num)
+        .def_readwrite("prev_chain_score", &GameSim::prev_chain_score)
         .def("get_current_pair", &GameSim::getCurrentPair)
         .def("move_pair", &GameSim::movePair)
         .def("rot_pair", &GameSim::rotPair)
@@ -103,24 +105,21 @@ PYBIND11_MODULE(pypumila, m) {
         .def("quit", &Window::quit)
         .def("is_running", &Window::isRunning);
     py::class_<Pumila>(m, "Pumila")
-        .def("forward", &Pumila::forward)
-        .def("backward", &Pumila::backward);
+        .def("get_action", &Pumila::getAction)
+        .def("get_learn_action", &Pumila::getLearnAction)
+        .def("learn_result", &Pumila::learnResult);
     auto pumila1 = py::class_<Pumila1, Pumila>(m, "Pumila1")
                        .def(py::init<double, double, double>())
                        .def_readwrite("main", &Pumila1::main)
                        .def_readwrite("target", &Pumila1::target)
-                       .def_readwrite("gamma", &Pumila1::gamma)
-                       .def_readwrite("last_result", &Pumila1::last_result)
                        .def("get_in_nodes", &Pumila1::getInNodes)
+                       .def("calc_reward", &Pumila1::calcReward)
                        .def("copy", &Pumila1::copy);
     py::class_<Pumila1::NNModel>(pumila1, "NNModel")
-        .def_readwrite("alpha", &Pumila1::NNModel::alpha)
-        .def_readwrite("learning_rate", &Pumila1::NNModel::learning_rate)
         .def_readwrite("matrix_ih", &Pumila1::NNModel::matrix_ih)
         .def_readwrite("matrix_hq", &Pumila1::NNModel::matrix_hq)
-        .def_readwrite("last_result", &Pumila1::NNModel::matrix_hq)
         .def("forward", &Pumila1::NNModel::forward)
-        .def("forward_max", &Pumila1::NNModel::forwardMax);
+        .def("backward", &Pumila1::NNModel::backward);
     py::class_<Pumila1::NNResult>(pumila1, "NNResult")
         .def_readwrite("in", &Pumila1::NNResult::in)
         .def_readwrite("hidden", &Pumila1::NNResult::hidden)

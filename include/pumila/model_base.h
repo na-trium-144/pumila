@@ -1,31 +1,40 @@
 #pragma once
 #include "game.h"
 #include <BS_thread_pool.hpp>
+#include <random>
+#include <utility>
 
 namespace pumila {
 class Pumila {
   protected:
     inline static BS::thread_pool pool;
+    inline static std::random_device seed;
+    inline static std::mt19937 rnd{seed()};
 
   public:
+    Pumila() = default;
     virtual ~Pumila() {}
-    /*!
-     * \brief 現在の状態s(t)を入力として受け取り、
-     * 22個の操作に対する評価値Q(s(t), a(t))を返す
-     *
-     */
-    virtual std::array<double, ACTIONS_NUM>
-    forward(std::shared_ptr<GameSim> sim) = 0;
 
     /*!
-     * \brief 教師信号r(t)を受け取り逆伝播を計算、モデルに反映
-     *
-     * \param sim_after アクション実行後の状態
-     * \param action_prev 最後に選択したアクション (0 <= a < 22)
-     * \param target 教師信号
+     * \brief 次の手を取得する
+     * \return 0〜21 (actionsに対応)
      *
      */
-    virtual void backward(std::shared_ptr<GameSim> sim_after, int action_prev,
-                          double target) = 0;
+    virtual int getAction(std::shared_ptr<GameSim> sim) = 0;
+
+    /*!
+     * \brief 次の手を取得する (学習用)
+     * \return first: 0〜21 (actionsに対応)
+     * second: learnResultに渡すid
+     *
+     */
+    virtual std::pair<int, int>
+    getLearnAction(std::shared_ptr<GameSim> sim) = 0;
+
+    /*!
+     * \brief getLearnActionで得た手を実行した結果を渡し学習させる
+     *
+     */
+    virtual double learnResult(int id, std::shared_ptr<GameSim> sim_after) = 0;
 };
 } // namespace pumila

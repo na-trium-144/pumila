@@ -121,8 +121,8 @@ void Window::draw() {
         SDL_RenderCopy(sdl_renderer, score_t, NULL, &rect);
         SDL_DestroyTexture(score_t);
 
+        std::ostringstream ss;
         if (sim->current_chain) {
-            std::ostringstream ss;
             ss << sim->current_chain->scoreA() << " x "
                << sim->current_chain->scoreB();
             score_t = drawText(sdl_renderer, ss.str(), ttf_font, {0, 0, 0, 255},
@@ -131,14 +131,16 @@ void Window::draw() {
                     text_h};
             SDL_RenderCopy(sdl_renderer, score_t, NULL, &rect);
             SDL_DestroyTexture(score_t);
-
             ss.str("");
-            ss << "(" << sim->current_chain->chain_num << ")";
+        } else {
+            ss << "(" << sim->prev_chain_num << ", " << sim->prev_chain_score
+               << ")";
             score_t = drawText(sdl_renderer, ss.str(), ttf_font, {0, 0, 0, 255},
                                &text_w, &text_h);
             rect = {FIELD_X + 10, FIELD_Y + 40, text_w, text_h};
             SDL_RenderCopy(sdl_renderer, score_t, NULL, &rect);
             SDL_DestroyTexture(score_t);
+            ss.str("");
         }
     }
 
