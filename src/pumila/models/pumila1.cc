@@ -45,7 +45,7 @@ Pumila1::NNResult Pumila1::NNModel::forward(const Eigen::MatrixXd &in) const {
     ret.hidden = in * matrix_ih;
     ret.hidden.leftCols<1>().array() = 1; // bias
     ret.hidden =
-        (1 / (1 + (ret.hidden.array() * alpha).exp())).matrix(); // sigmoid
+        (1 / (1 + (-alpha * ret.hidden.array()).exp())).matrix(); // sigmoid
     assert(ret.hidden.cols() == HIDDEN_NODES);
     ret.q = ret.hidden * matrix_hq;
     assert(ret.q.cols() == 1);

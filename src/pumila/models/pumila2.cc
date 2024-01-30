@@ -143,7 +143,7 @@ Pumila2::NNResult Pumila2::NNModel::forward(const Eigen::MatrixXd &in) const {
     ret.hidden = in * *ret.matrix_ih;
     ret.hidden.leftCols<1>().array() = 1; // bias
     ret.hidden =
-        (1 / (1 + (ret.hidden.array() * alpha).exp())).matrix(); // sigmoid
+        (1 / (1 + (-alpha * ret.hidden.array()).exp())).matrix(); // sigmoid
     assert(ret.hidden.cols() == HIDDEN_NODES);
     ret.q = ret.hidden * *ret.matrix_hq;
     assert(ret.q.cols() == 1);
@@ -247,11 +247,13 @@ void Pumila2::learnStep(const FieldState &field) {
                 std::shared_lock lock(target_m);
                 fw_next = target.forward(in_next);
             }
-            double diff =
-                (calcReward(field_next[a]) + gamma * fw_next.q.maxCoeff()) -
-                fw_result.q(a, 0);
-            diff_sum += diff;
-            delta_2(a, 0) = diff;
+            for(int r = a; r < delta_2.rows(); r += ACTIONS_NUM){
+                double diff =
+                    (calcReward(field_next[a]) + gamma * fw_next.q.maxCoeff()) -
+                    fw_result.q(r, 0);
+                diff_sum += diff;
+                delta_2(r, 0) = diff;
+            }
         }
         {
             std::unique_lock lock(learning_m);
@@ -266,7 +268,7 @@ void Pumila2::learnStep(const FieldState &field) {
                 }
             })
             .get();
-        mean_diff = diff_sum / ACTIONS_NUM;
+        mean_diff = diff_sum / delta_2.rows();
         {
             std::unique_lock lock(learning_m);
             batch_count--;
