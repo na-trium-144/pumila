@@ -7,3 +7,4 @@
 #include "model_base.h"
 #include "models/pumila1.h"
 #include "models/pumila1n.h"
+#include "models/pumila2.h"

@@ -1,10 +1,12 @@
 #include <pumila/pumila.h>
 #include <pybind11/pybind11.h>
-#include <pybind11/eigen.h>
 #include <pybind11/stl.h>
 
 using namespace pumila;
 namespace py = pybind11;
+
+void initPumila1Module(py::module_ &m);
+void initPumila2Module(py::module_ &m);
 
 PYBIND11_MODULE(pypumila, m) {
     py::enum_<Puyo>(m, "Puyo")
@@ -109,32 +111,7 @@ PYBIND11_MODULE(pypumila, m) {
              py::overload_cast<const FieldState &>(&Pumila::getAction))
         .def("get_action", py::overload_cast<const std::shared_ptr<GameSim> &>(
                                &Pumila::getAction));
-    auto pumila1 =
-        py::class_<Pumila1, Pumila, std::shared_ptr<Pumila1>>(m, "Pumila1")
-            .def("make_shared",
-                 [](double a, double g, double l) {
-                     return std::make_shared<Pumila1>(a, g, l);
-                 })
-            .def_readwrite("main", &Pumila1::main)
-            .def_readwrite("target", &Pumila1::target)
-            .def_readwrite("mean_diff", &Pumila1::mean_diff)
-            .def("get_action_rnd", &Pumila1::getActionRnd)
-            .def("get_in_nodes", &Pumila1::getInNodes)
-            .def("calc_reward", &Pumila1::calcReward)
-            .def("learn_step", &Pumila1::learnStep)
-            .def("copy", &Pumila1::copy);
-    py::class_<Pumila1::NNModel>(pumila1, "NNModel")
-        .def("get_matrix_ih",
-             [](const Pumila1::NNModel &model) { return *model.matrix_ih; })
-        .def("get_matrix_hq",
-             [](const Pumila1::NNModel &model) { return *model.matrix_hq; })
-        .def("truncate_in_nodes", &Pumila1::NNModel::truncateInNodes)
-        .def("forward", &Pumila1::NNModel::forward)
-        .def("backward", &Pumila1::NNModel::backward);
-    py::class_<Pumila1::NNResult>(pumila1, "NNResult")
-        .def_readwrite("in", &Pumila1::NNResult::in)
-        .def_readwrite("hidden", &Pumila1::NNResult::hidden)
-        .def_readwrite("q", &Pumila1::NNResult::q);
-    py::class_<Pumila1N, Pumila, std::shared_ptr<Pumila1N>>(m, "Pumila1N")
-        .def(py::init<int>());
+
+    initPumila1Module(m);
+    initPumila2Module(m);
 }

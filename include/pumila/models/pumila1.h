@@ -3,18 +3,11 @@
 #include <Eigen/Dense>
 #include <array>
 #include <memory>
-#include <utility>
-#include <mutex>
-#include <condition_variable>
 
 namespace pumila {
 class Pumila1 : public Pumila {
     double gamma;
-
-    int batch_count = 0;
-    std::mutex learning_m;
-    std::condition_variable learning_cond;
-    static constexpr int BATCH_SIZE = 10;
+    int back_count = 0;
 
   public:
     struct NNModel {
@@ -30,29 +23,16 @@ class Pumila1 : public Pumila {
         static constexpr int IN_NODES = sizeof(InNodes) / sizeof(double);
         static constexpr int HIDDEN_NODES = 200;
 
-        std::shared_ptr<Eigen::MatrixXd> matrix_ih;
-        std::shared_ptr<Eigen::VectorXd> matrix_hq;
-        mutable std::mutex matrix_m;
 
+        Eigen::MatrixXd matrix_ih;
+        Eigen::VectorXd matrix_hq;
         struct NNResult {
             Eigen::MatrixXd in;
             Eigen::MatrixXd hidden;
             Eigen::VectorXd q;
-            std::shared_ptr<Eigen::MatrixXd> matrix_ih;
-            std::shared_ptr<Eigen::VectorXd> matrix_hq;
         };
 
         NNModel(double alpha, double learning_rate);
-        NNModel(const NNModel &rhs) { *this = rhs; }
-        NNModel &operator=(const NNModel &rhs) {
-            alpha = rhs.alpha;
-            learning_rate = rhs.learning_rate;
-            std::lock_guard lock(matrix_m);
-            std::lock_guard lock2(rhs.matrix_m);
-            matrix_ih = rhs.matrix_ih;
-            matrix_hq = rhs.matrix_hq;
-            return *this;
-        }
 
         /*!
          * \brief 順伝播
@@ -69,17 +49,12 @@ class Pumila1 : public Pumila {
          */
         void backward(const NNResult &result, const Eigen::VectorXd &diff);
 
-        /*!
-         * \brief 色を並べ替えた特徴量を計算
-         * \return in.rows() * 24, IN_NODES の行列
-         *
-         */
-        static Eigen::MatrixXd truncateInNodes(const Eigen::MatrixXd &in);
-
     } main, target;
-    std::mutex model_m;
-
     using NNResult = NNModel::NNResult;
+
+    std::unordered_map<int, NNResult> learn_results;
+    std::unordered_map<int, int> learn_actions;
+    int learn_results_index = 0;
 
     explicit Pumila1(double alpha, double gamma, double learning_rate);
     std::shared_ptr<Pumila1> copy() {
@@ -90,33 +65,24 @@ class Pumila1 : public Pumila {
         return copied;
     }
 
-    double mean_diff = 0;
-
     /*!
      * \brief フィールドから特徴量を計算
-     * (Pumila::poolで実行され完了するまで待機)
      * \return 22 * IN_NODES の行列
      */
-    static std::pair<std::array<FieldState, ACTIONS_NUM>, Eigen::MatrixXd>
-    getInNodes(const FieldState &field);
+    Eigen::MatrixXd getInNodes(std::shared_ptr<GameSim> sim) const{
+        return getInNodes(sim->field);
+    }
+    Eigen::MatrixXd getInNodes(const FieldState &field) const;
 
     /*!
      * \brief 報酬を計算
      *
      */
-    static double calcReward(const FieldState &field);
+    double calcReward(std::shared_ptr<GameSim> sim_after) const;
 
     int getAction(const FieldState &field) override;
-    /*!
-     * \brief 評価値最大の手を返すのではなく評価値を確率分布としてランダムな手を返す
-     *
-     */
-    int getActionRnd(const FieldState &field);
+    std::pair<int, int> getLearnAction(std::shared_ptr<GameSim> sim);
+    double learnResult(int id, std::shared_ptr<GameSim> sim_after);
 
-    /*!
-     * \brief フィールドから次の手22通りを計算し学習
-     * (Pumila::poolで実行される)
-     */
-    void learnStep(const FieldState &field);
 };
 } // namespace pumila

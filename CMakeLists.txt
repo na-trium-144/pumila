@@ -64,6 +64,7 @@ add_library(pumila SHARED
     src/pumila/game.cc
     src/pumila/models/pumila1.cc
     src/pumila/models/pumila1n.cc
+    src/pumila/models/pumila2.cc
 )
 target_include_directories(pumila PUBLIC include)
 target_compile_features(pumila PUBLIC cxx_std_17)
@@ -74,7 +75,11 @@ if(PUMILA_SDL2)
     target_compile_definitions(pumila PRIVATE PUMILA_SDL2)
 endif()
 
-pybind11_add_module(pypumila src/pypumila/pypumila.cc)
+pybind11_add_module(pypumila
+    src/pypumila/pypumila.cc
+    src/pypumila/pumila1.cc
+    src/pypumila/pumila2.cc
+)
 target_link_libraries(pypumila PUBLIC pumila)
 
 if(PUMILA_SDL2)
