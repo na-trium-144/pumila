@@ -183,7 +183,7 @@ int Pumila1::getActionRnd(const FieldState &field) {
     NNResult fw_result = main.forward(getInNodes(field).second);
     fw_result.q.array() -= fw_result.q.minCoeff();
     fw_result.q.array() /= fw_result.q.sum();
-    double r = static_cast<double>(rnd() - rnd.min()) / (rnd.max() - rnd.min());
+    double r = getRndD();
     for (int a = 0; a < ACTIONS_NUM; a++) {
         r -= fw_result.q(a, 0);
         if (r <= 0) {
@@ -203,8 +203,9 @@ void Pumila1::learnStep(const FieldState &field) {
     std::thread([this, pumila = shared_from_this(), field] {
         auto [field_next, in] = getInNodes(field);
         auto fw_result =
-            pool.submit_task(
-                    [&] { return target.forward(NNModel::truncateInNodes(in)); })
+            pool.submit_task([&] {
+                    return target.forward(NNModel::truncateInNodes(in));
+                })
                 .get();
         Eigen::VectorXd delta_2(fw_result.q.rows());
         double diff_sum = 0;
@@ -232,7 +233,7 @@ void Pumila1::learnStep(const FieldState &field) {
             std::unique_lock lock(learning_m);
             batch_count--;
             // if(batch_count == 0){
-                // target = main;
+            // target = main;
             // }
             learning_cond.notify_one();
         }

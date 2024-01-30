@@ -15,6 +15,13 @@ namespace pumila {
 class GameSim {
     std::random_device seed;
     std::mt19937 rnd;
+    double getRndD() {
+        return static_cast<double>(rnd() - rnd.min()) / (rnd.max() - rnd.min());
+    }
+    int getRndRange(int num) {
+        return static_cast<int>(static_cast<double>(rnd() - rnd.min()) /
+                                (rnd.max() - rnd.min()) * num);
+    }
     Puyo randomPuyo();
 
   public:
@@ -26,7 +33,7 @@ class GameSim {
      *
      */
     std::optional<Chain> current_chain = std::nullopt;
-    
+
     GameSim();
     GameSim(const GameSim &sim) = delete;
     GameSim(GameSim &&sim) = delete;

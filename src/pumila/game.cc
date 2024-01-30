@@ -8,8 +8,7 @@ GameSim::GameSim() : field(), seed(), rnd(seed()), phase(nullptr) {
     phase = std::make_unique<GameSim::FreePhase>(this);
 }
 Puyo GameSim::randomPuyo() {
-    switch (static_cast<int>(static_cast<double>(rnd() - rnd.min()) /
-                             (rnd.max() - rnd.min()) * 4)) {
+    switch (getRndRange(4)) {
     case 0:
         return Puyo::red;
     case 1:

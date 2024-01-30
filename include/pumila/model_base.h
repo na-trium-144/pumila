@@ -11,6 +11,13 @@ class Pumila : public std::enable_shared_from_this<Pumila> {
     inline static BS::thread_pool pool;
     inline static std::random_device seed;
     inline static std::mt19937 rnd{seed()};
+    static double getRndD() {
+        return static_cast<double>(rnd() - rnd.min()) / (rnd.max() - rnd.min());
+    }
+    static int getRndRange(int num) {
+        return static_cast<int>(static_cast<double>(rnd() - rnd.min()) /
+                                (rnd.max() - rnd.min()) * num);
+    }
 
   public:
     Pumila() = default;
@@ -26,7 +33,7 @@ class Pumila : public std::enable_shared_from_this<Pumila> {
      */
     virtual int getAction(const FieldState &field) = 0;
     int getAction(const std::shared_ptr<GameSim> &sim) {
-      return getAction(sim->field);
+        return getAction(sim->field);
     }
 };
 } // namespace pumila
