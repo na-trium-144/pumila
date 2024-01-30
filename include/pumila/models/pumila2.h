@@ -17,6 +17,10 @@ class Pumila2 : public Pumila {
     std::condition_variable learning_cond;
     static constexpr int BATCH_SIZE = 10;
 
+    void load(std::istream &is) override;
+    void save(std::ostream &os) override;
+    std::string name() const override { return "pumila2"; }
+
   public:
     struct NNModel {
         double alpha; // sigmoid coef
@@ -76,7 +80,6 @@ class Pumila2 : public Pumila {
          *
          */
         static Eigen::MatrixXd truncateInNodes(const Eigen::MatrixXd &in);
-
     };
     /*!
      * getAction時はmainを使う
@@ -117,7 +120,8 @@ class Pumila2 : public Pumila {
 
     int getAction(const FieldState &field) override;
     /*!
-     * \brief 評価値最大の手を返すのではなく評価値を確率分布としてランダムな手を返す
+     * \brief
+     * 評価値最大の手を返すのではなく評価値を確率分布としてランダムな手を返す
      *
      */
     int getActionRnd(const FieldState &field);

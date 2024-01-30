@@ -14,6 +14,29 @@ Pumila2::NNModel::NNModel(double alpha, double learning_rate)
 Pumila2::Pumila2(double alpha, double gamma, double learning_rate)
     : Pumila(), gamma(gamma), main(alpha, learning_rate), target(main) {}
 
+void Pumila2::load(std::istream &is) {
+    std::lock_guard lock_target(target_m);
+    {
+        std::lock_guard lock_matrix(main.matrix_m);
+        is.read(reinterpret_cast<char *>(&main.alpha), sizeof(main.alpha));
+        is.read(reinterpret_cast<char *>(main.matrix_ih->data()),
+                main.matrix_ih->rows() * main.matrix_ih->cols() *
+                    sizeof(double));
+        is.read(reinterpret_cast<char *>(main.matrix_hq->data()),
+                main.matrix_hq->rows() * main.matrix_hq->cols() *
+                    sizeof(double));
+    }
+    target = main;
+}
+void Pumila2::save(std::ostream &os) {
+    std::lock_guard lock_matrix(main.matrix_m);
+    os.write(reinterpret_cast<char *>(&main.alpha), sizeof(main.alpha));
+    os.write(reinterpret_cast<char *>(main.matrix_ih->data()),
+             main.matrix_ih->rows() * main.matrix_ih->cols() * sizeof(double));
+    os.write(reinterpret_cast<char *>(main.matrix_hq->data()),
+             main.matrix_hq->rows() * main.matrix_hq->cols() * sizeof(double));
+}
+
 std::pair<std::array<FieldState, ACTIONS_NUM>, Eigen::MatrixXd>
 Pumila2::getInNodes(const FieldState &field) {
     auto actions_result = pool.submit_blocks(
@@ -29,8 +52,8 @@ Pumila2::getInNodes(const FieldState &field) {
                 *reinterpret_cast<NNModel::InNodes *>(in.data());
             in_nodes.bias = 1;
             auto chain_all = field_next.calcChainAll();
-            for (int y = 0; y < FieldState::HEIGHT; y++) {
-                for (int x = 0; x < FieldState::WIDTH; x++) {
+            for (std::size_t y = 0; y < FieldState::HEIGHT; y++) {
+                for (std::size_t x = 0; x < FieldState::WIDTH; x++) {
                     int p;
                     switch (field_next.get(x, y)) {
                     case Puyo::red:
@@ -91,8 +114,8 @@ Eigen::MatrixXd Pumila2::NNModel::truncateInNodes(const Eigen::MatrixXd &in) {
         assert(r < 24);
         Eigen::MatrixXd transform =
             Eigen::MatrixXd::Identity(IN_NODES, IN_NODES);
-        for (int p = 0; p < FieldState::WIDTH * FieldState::HEIGHT * 4 * 2;
-             p += 4) {
+        for (std::size_t p = 0;
+             p < FieldState::WIDTH * FieldState::HEIGHT * 4 * 2; p += 4) {
             for (int i = 0; i < 4; i++) {
                 transform(1 + p + i, 1 + p + i) = 0;
                 transform(1 + p + i, 1 + p + index[i]) = 1;

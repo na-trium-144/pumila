@@ -4,6 +4,8 @@
 #include <BS_thread_pool.hpp>
 #include <random>
 #include <memory>
+#include <string>
+#include <iostream>
 
 namespace pumila {
 class Pumila : public std::enable_shared_from_this<Pumila> {
@@ -19,12 +21,29 @@ class Pumila : public std::enable_shared_from_this<Pumila> {
                                 (rnd.max() - rnd.min()) * num);
     }
 
+    virtual void load(std::istream &) {}
+    virtual void save(std::ostream &) {}
+    /*!
+     * \brief ファイル名に使う
+     * 空文字列の場合loadもsaveもされない
+     */
+    virtual std::string name() const { return ""; };
+
   public:
     Pumila() = default;
     virtual ~Pumila() = default;
 
     Pumila(const Pumila &) = delete;
     Pumila(Pumila &&) = delete;
+
+    /*!
+     * \brief ファイルを開き load() を呼ぶ
+     */
+    void loadFile();
+    /*!
+     * \brief ファイルを開き save() を呼ぶ
+     */
+    void saveFile();
 
     /*!
      * \brief 次の手を取得する

@@ -9,6 +9,10 @@ class Pumila1 : public Pumila {
     double gamma;
     int back_count = 0;
 
+    void load(std::istream &is) override;
+    void save(std::ostream &os) override;
+    std::string name() const override { return "pumila1"; }
+
   public:
     struct NNModel {
         double alpha; // sigmoid coef
@@ -69,7 +73,7 @@ class Pumila1 : public Pumila {
      * \brief フィールドから特徴量を計算
      * \return 22 * IN_NODES の行列
      */
-    Eigen::MatrixXd getInNodes(std::shared_ptr<GameSim> sim) const{
+    Eigen::MatrixXd getInNodes(std::shared_ptr<GameSim> sim) const {
         return getInNodes(sim->field);
     }
     Eigen::MatrixXd getInNodes(const FieldState &field) const;
@@ -83,6 +87,5 @@ class Pumila1 : public Pumila {
     int getAction(const FieldState &field) override;
     std::pair<int, int> getLearnAction(std::shared_ptr<GameSim> sim);
     double learnResult(int id, std::shared_ptr<GameSim> sim_after);
-
 };
 } // namespace pumila

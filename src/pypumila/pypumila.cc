@@ -110,7 +110,9 @@ PYBIND11_MODULE(pypumila, m) {
         .def("get_action",
              py::overload_cast<const FieldState &>(&Pumila::getAction))
         .def("get_action", py::overload_cast<const std::shared_ptr<GameSim> &>(
-                               &Pumila::getAction));
+                               &Pumila::getAction))
+        .def("load_file", &Pumila::loadFile)
+        .def("save_file", &Pumila::saveFile);
 
     initPumila1Module(m);
     initPumila2Module(m);

@@ -13,6 +13,22 @@ Pumila1::Pumila1(double alpha, double gamma, double learning_rate)
     : Pumila(), gamma(gamma), back_count(0), main(alpha, learning_rate),
       target(main) {}
 
+void Pumila1::load(std::istream &is) {
+    is.read(reinterpret_cast<char *>(&main.alpha), sizeof(main.alpha));
+    is.read(reinterpret_cast<char *>(main.matrix_ih.data()),
+            main.matrix_ih.rows() * main.matrix_ih.cols() * sizeof(double));
+    is.read(reinterpret_cast<char *>(main.matrix_hq.data()),
+            main.matrix_hq.rows() * main.matrix_hq.cols() * sizeof(double));
+    target = main;
+}
+void Pumila1::save(std::ostream &os) {
+    os.write(reinterpret_cast<char *>(&main.alpha), sizeof(main.alpha));
+    os.write(reinterpret_cast<char *>(main.matrix_ih.data()),
+             main.matrix_ih.rows() * main.matrix_ih.cols() * sizeof(double));
+    os.write(reinterpret_cast<char *>(main.matrix_hq.data()),
+             main.matrix_hq.rows() * main.matrix_hq.cols() * sizeof(double));
+}
+
 Eigen::MatrixXd Pumila1::getInNodes(const FieldState &field) const {
     std::array<std::future<Eigen::VectorXd>, ACTIONS_NUM> actions_result;
     for (int a = 0; a < ACTIONS_NUM; a++) {
@@ -26,8 +42,8 @@ Eigen::MatrixXd Pumila1::getInNodes(const FieldState &field) const {
                 *reinterpret_cast<NNModel::InNodes *>(in.data());
             in_nodes.bias = 1;
             auto chain_all = field_next.calcChainAll();
-            for (int y = 0; y < FieldState::HEIGHT; y++) {
-                for (int x = 0; x < FieldState::WIDTH; x++) {
+            for (std::size_t y = 0; y < FieldState::HEIGHT; y++) {
+                for (std::size_t x = 0; x < FieldState::WIDTH; x++) {
                     int p;
                     switch (field_next.get(x, y)) {
                     case Puyo::red:

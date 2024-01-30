@@ -56,12 +56,15 @@ configure_file(
     COPYONLY
 )
 
+add_compile_options(-Wall -Wpedantic -Wextra)
+
 add_library(pumila SHARED
     src/pumila/action.cc
     src/pumila/field.cc
     src/pumila/chain.cc
     src/pumila/window.cc
     src/pumila/game.cc
+    src/pumila/model_base.cc
     src/pumila/models/pumila1.cc
     src/pumila/models/pumila1n.cc
     src/pumila/models/pumila2.cc
