@@ -1,4 +1,5 @@
 #include <pumila/models/pumila1.h>
+#include <pumila/models/pumila2.h>
 #include <cassert>
 #include <stdexcept>
 #include <string>
@@ -30,62 +31,9 @@ void Pumila1::save(std::ostream &os) {
 }
 
 Eigen::MatrixXd Pumila1::getInNodes(const FieldState &field) const {
-    std::array<std::future<Eigen::VectorXd>, ACTIONS_NUM> actions_result;
-    for (int a = 0; a < ACTIONS_NUM; a++) {
-        actions_result[a] = pool.submit_task([field, a]() {
-            FieldState field_next = field.copy();
-            field_next.put(actions[a]);
-            std::vector<Chain> chains = field_next.deleteChainRecurse();
-
-            Eigen::VectorXd in = Eigen::VectorXd::Zero(NNModel::IN_NODES);
-            NNModel::InNodes &in_nodes =
-                *reinterpret_cast<NNModel::InNodes *>(in.data());
-            in_nodes.bias = 1;
-            auto chain_all = field_next.calcChainAll();
-            for (std::size_t y = 0; y < FieldState::HEIGHT; y++) {
-                for (std::size_t x = 0; x < FieldState::WIDTH; x++) {
-                    int p;
-                    switch (field_next.get(x, y)) {
-                    case Puyo::red:
-                        p = 0;
-                        break;
-                    case Puyo::blue:
-                        p = 1;
-                        break;
-                    case Puyo::green:
-                        p = 2;
-                        break;
-                    case Puyo::yellow:
-                        p = 3;
-                        break;
-                    default:
-                        p = -1;
-                        break;
-                    }
-                    if (p >= 0) {
-                        in_nodes
-                            .field_colors[(y * FieldState::WIDTH + x) * 4 + p] =
-                            1;
-                        in_nodes
-                            .field_chains[(y * FieldState::WIDTH + x) * 4 + p] =
-                            chain_all[y][x];
-                    }
-                }
-            }
-            in_nodes.score_diff = 0;
-            for (const auto &c : chains) {
-                in_nodes.score_diff += c.score();
-            }
-            return in;
-        });
-    }
-
-    Eigen::MatrixXd in(ACTIONS_NUM, NNModel::IN_NODES);
-    for (int a = 0; a < ACTIONS_NUM; a++) {
-        in.middleRows<1>(a) = actions_result[a].get().transpose();
-    }
-    return in;
+    return Pumila2::getInNodes(field).second;
 }
+
 Pumila1::NNResult Pumila1::NNModel::forward(const Eigen::MatrixXd &in) const {
     if (in.cols() != IN_NODES) {
         throw std::invalid_argument("invalid size in forward: in -> " +
@@ -121,24 +69,7 @@ void Pumila1::NNModel::backward(const NNResult &result,
 }
 
 double Pumila1::calcReward(std::shared_ptr<GameSim> sim_after) const {
-    double r = -1;
-    std::size_t max_y = 0;
-    for (std::size_t x = 0; x < FieldState::WIDTH; x++) {
-        auto y = sim_after->field.getHeight(x);
-        max_y = y > max_y ? y : max_y;
-    }
-    if (max_y >= 4) {
-        /*
-        4段 -> 1 (1連鎖)
-        5段 -> 9 (2連鎖)
-        8段 -> 57 (4連鎖)
-        に相当するとし、適当に2次で近似
-
-        */
-        r -= 10 * (2 * max_y * max_y - 10 * max_y + 9);
-    }
-    r += sim_after->field.prev_chain_score / 4;
-    return r;
+    return Pumila2::calcReward(sim_after->field);
 }
 
 int Pumila1::getAction(const FieldState &field) {
