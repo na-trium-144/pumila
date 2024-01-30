@@ -5,6 +5,7 @@
 #include <memory>
 #include <utility>
 #include <mutex>
+#include <shared_mutex>
 #include <condition_variable>
 
 namespace pumila {
@@ -76,8 +77,16 @@ class Pumila2 : public Pumila {
          */
         static Eigen::MatrixXd truncateInNodes(const Eigen::MatrixXd &in);
 
-    } main, target;
-    std::mutex model_m;
+    };
+    /*!
+     * getAction時はmainを使う
+     * learn時はtargetで計算し、mainに反映し、targetをmainで上書き
+     */
+    NNModel main, target;
+    /*!
+     * \brief targetを上書きするときのロック
+     */
+    std::shared_mutex target_m;
 
     using NNResult = NNModel::NNResult;
 
