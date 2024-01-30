@@ -33,14 +33,6 @@ class Pumila1 : public Pumila {
         std::shared_ptr<Eigen::MatrixXd> matrix_ih;
         std::shared_ptr<Eigen::VectorXd> matrix_hq;
         mutable std::mutex matrix_m;
-        auto getMatrixIH() const {
-            std::lock_guard lock(matrix_m);
-            return matrix_ih;
-        }
-        auto getMatrixHQ() const {
-            std::lock_guard lock(matrix_m);
-            return matrix_hq;
-        }
 
         struct NNResult {
             Eigen::MatrixXd in;
@@ -85,6 +77,8 @@ class Pumila1 : public Pumila {
         static Eigen::MatrixXd truncateInNodes(const Eigen::MatrixXd &in);
 
     } main, target;
+    std::mutex model_m;
+
     using NNResult = NNModel::NNResult;
 
     explicit Pumila1(double alpha, double gamma, double learning_rate);

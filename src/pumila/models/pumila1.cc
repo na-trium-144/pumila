@@ -111,8 +111,11 @@ Pumila1::NNResult Pumila1::NNModel::forward(const Eigen::MatrixXd &in) const {
                                     std::to_string(IN_NODES));
     }
     NNResult ret;
-    ret.matrix_ih = getMatrixIH();
-    ret.matrix_hq = getMatrixHQ();
+    {
+        std::lock_guard lock(matrix_m);
+        ret.matrix_ih = matrix_ih;
+        ret.matrix_hq = matrix_hq;
+    }
     ret.in = in;
     ret.hidden = in * *ret.matrix_ih;
     ret.hidden.leftCols<1>().array() = 1; // bias
@@ -174,13 +177,21 @@ double Pumila1::calcReward(const FieldState &field) {
 }
 
 int Pumila1::getAction(const FieldState &field) {
-    NNResult fw_result = main.forward(getInNodes(field).second);
+    NNResult fw_result;
+    {
+        std::lock_guard lock(model_m);
+        fw_result = main.forward(getInNodes(field).second);
+    }
     int action = 0;
     fw_result.q.maxCoeff(&action);
     return action;
 }
 int Pumila1::getActionRnd(const FieldState &field) {
-    NNResult fw_result = main.forward(getInNodes(field).second);
+    NNResult fw_result;
+    {
+        std::lock_guard lock(model_m);
+        fw_result = main.forward(getInNodes(field).second);
+    }
     fw_result.q.array() -= fw_result.q.minCoeff();
     fw_result.q.array() /= fw_result.q.sum();
     double r = getRndD();
@@ -203,17 +214,21 @@ void Pumila1::learnStep(const FieldState &field) {
     std::thread([this, pumila = shared_from_this(), field] {
         auto [field_next, in] = getInNodes(field);
         auto fw_result =
-            pool.submit_task([&] {
+            pool.submit_task([&, in = in] {
+                    std::lock_guard lock(model_m);
                     return target.forward(NNModel::truncateInNodes(in));
                 })
                 .get();
         Eigen::VectorXd delta_2(fw_result.q.rows());
         double diff_sum = 0;
         for (std::size_t a = 0; a < ACTIONS_NUM; a++) {
+            NNResult fw_next;
+            {
+                std::lock_guard lock(model_m);
+                fw_next = target.forward(getInNodes(field_next[a]).second);
+            }
             double diff =
-                (calcReward(field_next[a]) +
-                 gamma * target.forward(getInNodes(field_next[a]).second)
-                             .q.maxCoeff()) -
+                (calcReward(field_next[a]) + gamma * fw_next.q.maxCoeff()) -
                 fw_result.q(a, 0);
             diff_sum += diff;
             delta_2(a, 0) = diff;
@@ -223,18 +238,16 @@ void Pumila1::learnStep(const FieldState &field) {
             diff_sum /= batch_count;
             delta_2.array() /= batch_count;
         }
-        pool.submit_task([&] { main.backward(fw_result, delta_2); }).get();
-        // if (++back_count > 10) {
-        //     back_count = 0;
-        target = main;
-        // }
+        pool.submit_task([&] {
+                std::lock_guard lock(model_m);
+                main.backward(fw_result, delta_2);
+                target = main;
+            })
+            .get();
         mean_diff = diff_sum / ACTIONS_NUM;
         {
             std::unique_lock lock(learning_m);
             batch_count--;
-            // if(batch_count == 0){
-            // target = main;
-            // }
             learning_cond.notify_one();
         }
     }).detach();
