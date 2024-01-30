@@ -124,8 +124,10 @@ PYBIND11_MODULE(pypumila, m) {
             .def("learn_step", &Pumila1::learnStep)
             .def("copy", &Pumila1::copy);
     py::class_<Pumila1::NNModel>(pumila1, "NNModel")
-        .def("get_matrix_ih", &Pumila1::NNModel::getMatrixIH)
-        .def("get_matrix_hq", &Pumila1::NNModel::getMatrixHQ)
+        .def("get_matrix_ih",
+             [](const Pumila1::NNModel &model) { return *model.getMatrixIH(); })
+        .def("get_matrix_hq",
+             [](const Pumila1::NNModel &model) { return *model.getMatrixHQ(); })
         .def("truncate_in_nodes", &Pumila1::NNModel::truncateInNodes)
         .def("forward", &Pumila1::NNModel::forward)
         .def("backward", &Pumila1::NNModel::backward);

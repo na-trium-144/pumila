@@ -5,11 +5,16 @@
 #include <memory>
 #include <utility>
 #include <mutex>
+#include <condition_variable>
 
 namespace pumila {
 class Pumila1 : public Pumila {
     double gamma;
-    int back_count = 0;
+
+    int batch_count = 0;
+    std::mutex learning_m;
+    std::condition_variable learning_cond;
+    static constexpr int BATCH_SIZE = 10;
 
   public:
     struct NNModel {
@@ -25,14 +30,14 @@ class Pumila1 : public Pumila {
         static constexpr int IN_NODES = sizeof(InNodes) / sizeof(double);
         static constexpr int HIDDEN_NODES = 200;
 
-        Eigen::MatrixXd matrix_ih;
-        Eigen::VectorXd matrix_hq;
+        std::shared_ptr<Eigen::MatrixXd> matrix_ih;
+        std::shared_ptr<Eigen::VectorXd> matrix_hq;
         mutable std::mutex matrix_m;
-        Eigen::MatrixXd getMatrixIH() const {
+        auto getMatrixIH() const {
             std::lock_guard lock(matrix_m);
             return matrix_ih;
         }
-        Eigen::MatrixXd getMatrixHQ() const {
+        auto getMatrixHQ() const {
             std::lock_guard lock(matrix_m);
             return matrix_hq;
         }
@@ -41,6 +46,8 @@ class Pumila1 : public Pumila {
             Eigen::MatrixXd in;
             Eigen::MatrixXd hidden;
             Eigen::VectorXd q;
+            std::shared_ptr<Eigen::MatrixXd> matrix_ih;
+            std::shared_ptr<Eigen::VectorXd> matrix_hq;
         };
 
         NNModel(double alpha, double learning_rate);

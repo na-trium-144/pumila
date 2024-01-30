@@ -6,12 +6,13 @@
 namespace pumila {
 Pumila1::NNModel::NNModel(double alpha, double learning_rate)
     : alpha(alpha), learning_rate(learning_rate),
-      matrix_ih(Eigen::MatrixXd::Random(IN_NODES, HIDDEN_NODES)),
-      matrix_hq(Eigen::VectorXd::Random(HIDDEN_NODES)) {}
+      matrix_ih(std::make_shared<Eigen::MatrixXd>(
+          Eigen::MatrixXd::Random(IN_NODES, HIDDEN_NODES))),
+      matrix_hq(std::make_shared<Eigen::VectorXd>(
+          Eigen::VectorXd::Random(HIDDEN_NODES))) {}
 
 Pumila1::Pumila1(double alpha, double gamma, double learning_rate)
-    : Pumila(), gamma(gamma), back_count(0), main(alpha, learning_rate),
-      target(main) {}
+    : Pumila(), gamma(gamma), main(alpha, learning_rate), target(main) {}
 
 std::pair<std::array<FieldState, ACTIONS_NUM>, Eigen::MatrixXd>
 Pumila1::getInNodes(const FieldState &field) {
@@ -110,13 +111,15 @@ Pumila1::NNResult Pumila1::NNModel::forward(const Eigen::MatrixXd &in) const {
                                     std::to_string(IN_NODES));
     }
     NNResult ret;
+    ret.matrix_ih = getMatrixIH();
+    ret.matrix_hq = getMatrixHQ();
     ret.in = in;
-    ret.hidden = in * getMatrixIH();
+    ret.hidden = in * *ret.matrix_ih;
     ret.hidden.leftCols<1>().array() = 1; // bias
     ret.hidden =
         (1 / (1 + (ret.hidden.array() * alpha).exp())).matrix(); // sigmoid
     assert(ret.hidden.cols() == HIDDEN_NODES);
-    ret.q = ret.hidden * getMatrixHQ();
+    ret.q = ret.hidden * *ret.matrix_hq;
     assert(ret.q.cols() == 1);
     return ret;
 }
@@ -135,7 +138,7 @@ void Pumila1::NNModel::backward(const NNResult &result,
     }
     auto f1_dif = alpha * result.hidden.array() * (1 - result.hidden.array());
     auto delta_1 =
-        ((delta_2 * matrix_hq.transpose()).array() * f1_dif).matrix();
+        ((delta_2 * result.matrix_hq->transpose()).array() * f1_dif).matrix();
     assert(delta_1.rows() == result.q.rows());
     assert(delta_1.cols() == NNModel::HIDDEN_NODES);
     auto diff_hq =
@@ -144,8 +147,8 @@ void Pumila1::NNModel::backward(const NNResult &result,
         learning_rate * result.in.transpose() * delta_1 / delta_1.rows();
     {
         std::lock_guard lock(matrix_m);
-        matrix_hq += diff_hq;
-        matrix_ih += diff_ih;
+        matrix_hq = std::make_shared<Eigen::VectorXd>(*matrix_hq + diff_hq);
+        matrix_ih = std::make_shared<Eigen::MatrixXd>(*matrix_ih + diff_ih);
     }
 }
 
@@ -190,13 +193,19 @@ int Pumila1::getActionRnd(const FieldState &field) {
     return ACTIONS_NUM - 1;
 }
 void Pumila1::learnStep(const FieldState &field) {
+    {
+        std::unique_lock lock(learning_m);
+        if (batch_count >= BATCH_SIZE) {
+            learning_cond.wait(lock, [&] { return batch_count < BATCH_SIZE; });
+        }
+        batch_count++;
+    }
     std::thread([this, pumila = shared_from_this(), field] {
         auto [field_next, in] = getInNodes(field);
         auto fw_result =
             pool.submit_task(
-                    [&] { return main.forward(NNModel::truncateInNodes(in)); })
+                    [&] { return target.forward(NNModel::truncateInNodes(in)); })
                 .get();
-
         Eigen::VectorXd delta_2(fw_result.q.rows());
         double diff_sum = 0;
         for (std::size_t a = 0; a < ACTIONS_NUM; a++) {
@@ -208,20 +217,25 @@ void Pumila1::learnStep(const FieldState &field) {
             diff_sum += diff;
             delta_2(a, 0) = diff;
         }
-        pool.submit_task([&] {
-                for (int r = ACTIONS_NUM; r < delta_2.rows();
-                     r += ACTIONS_NUM) {
-                    delta_2.middleRows(r, ACTIONS_NUM) =
-                        delta_2.topRows(ACTIONS_NUM);
-                }
-                main.backward(fw_result, delta_2);
-            })
-            .get();
-        if (++back_count > 10) {
-            back_count = 0;
-            target = main;
+        {
+            std::unique_lock lock(learning_m);
+            diff_sum /= batch_count;
+            delta_2.array() /= batch_count;
         }
+        pool.submit_task([&] { main.backward(fw_result, delta_2); }).get();
+        // if (++back_count > 10) {
+        //     back_count = 0;
+        target = main;
+        // }
         mean_diff = diff_sum / ACTIONS_NUM;
+        {
+            std::unique_lock lock(learning_m);
+            batch_count--;
+            // if(batch_count == 0){
+                // target = main;
+            // }
+            learning_cond.notify_one();
+        }
     }).detach();
 }
 
