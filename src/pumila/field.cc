@@ -46,9 +46,9 @@ void FieldState::deleteConnection(
     }
 }
 
-std::pair<std::size_t, std::size_t> FieldState::putTargetY(const PuyoPair &pp,
-                                                           bool fall) const {
-    std::size_t yb = putTargetY(pp.bottomX()), yt = putTargetY(pp.topX());
+std::pair<std::size_t, std::size_t> FieldState::getHeight(const PuyoPair &pp,
+                                                          bool fall) const {
+    std::size_t yb = getHeight(pp.bottomX()), yt = getHeight(pp.topX());
     if (!fall) {
         yb = yt = yb > yt ? yb : yt;
     }
@@ -60,7 +60,7 @@ std::pair<std::size_t, std::size_t> FieldState::putTargetY(const PuyoPair &pp,
     }
     return std::make_pair(yb, yt);
 }
-std::size_t FieldState::putTargetY(std::size_t x) const {
+std::size_t FieldState::getHeight(std::size_t x) const {
     std::size_t y = HEIGHT - 1;
     for (; y >= 1; y--) {
         if (get(x, y - 1) != Puyo::none) {
@@ -71,7 +71,7 @@ std::size_t FieldState::putTargetY(std::size_t x) const {
 }
 
 void FieldState::put(const PuyoPair &pp) {
-    auto [yb, yt] = putTargetY(pp, true);
+    auto [yb, yt] = getHeight(pp, true);
     put(pp.topX(), yt, pp.top);
     put(pp.bottomX(), yb, pp.bottom);
 }

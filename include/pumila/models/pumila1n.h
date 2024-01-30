@@ -16,6 +16,6 @@ class Pumila1N : public Pumila {
     explicit Pumila1N(int target_chain)
         : Pumila(), target_chain(target_chain) {}
 
-    int getAction(std::shared_ptr<GameSim> sim) override;
+    int getAction(const FieldState &field) override;
 };
 } // namespace pumila

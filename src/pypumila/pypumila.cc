@@ -59,17 +59,23 @@ PYBIND11_MODULE(pypumila, m) {
     py::class_<FieldState>(m, "FieldState")
         .def(py::init<>())
         .def_readwrite("field", &FieldState::field)
+        .def_readwrite("total_score", &FieldState::total_score)
+        .def_readwrite("next", &FieldState::next)
+        .def_readwrite("prev_chain_num", &FieldState::prev_chain_num)
+        .def_readwrite("prev_chain_score", &FieldState::prev_chain_score)
         .def("copy", &FieldState::copy)
         .def("get", &FieldState::get)
         .def("put", py::overload_cast<std::size_t, std::size_t, Puyo>(
                         &FieldState::put))
         .def("put", py::overload_cast<const PuyoPair &>(&FieldState::put))
+        .def("put", py::overload_cast<>(&FieldState::put))
         .def("put", py::overload_cast<const PuyoPair &, const Action &>(
                         &FieldState::put))
-        .def("put_target_y", py::overload_cast<const PuyoPair &, bool>(
-                                 &FieldState::putTargetY, py::const_))
-        .def("put_target_y", py::overload_cast<std::size_t>(
-                                 &FieldState::putTargetY, py::const_))
+        .def("put", py::overload_cast<const Action &>(&FieldState::put))
+        .def("get_height", py::overload_cast<const PuyoPair &, bool>(
+                               &FieldState::getHeight, py::const_))
+        .def("get_height",
+             py::overload_cast<std::size_t>(&FieldState::getHeight, py::const_))
         .def("delete_connection", py::overload_cast<std::size_t, std::size_t>(
                                       &FieldState::deleteConnection))
         .def("delete_chain", &FieldState::deleteChain)
@@ -85,13 +91,7 @@ PYBIND11_MODULE(pypumila, m) {
     py::class_<GameSim, std::shared_ptr<GameSim>>(m, "GameSim")
         .def(py::init<>())
         .def_readwrite("field", &GameSim::field)
-        .def_readwrite("next_pair", &GameSim::next_pair)
-        .def_readwrite("next2_pair", &GameSim::next2_pair)
-        .def_readwrite("score", &GameSim::score)
         .def_readwrite("current_chain", &GameSim::current_chain)
-        .def_readwrite("prev_chain_num", &GameSim::prev_chain_num)
-        .def_readwrite("prev_chain_score", &GameSim::prev_chain_score)
-        .def("get_current_pair", &GameSim::getCurrentPair)
         .def("move_pair", &GameSim::movePair)
         .def("rot_pair", &GameSim::rotPair)
         .def("quick_drop", &GameSim::quickDrop)
@@ -104,25 +104,35 @@ PYBIND11_MODULE(pypumila, m) {
         .def("step", &Window::step)
         .def("quit", &Window::quit)
         .def("is_running", &Window::isRunning);
-    py::class_<Pumila>(m, "Pumila")
-        .def("get_action", &Pumila::getAction)
-        .def("get_learn_action", &Pumila::getLearnAction)
-        .def("learn_result", &Pumila::learnResult);
-    auto pumila1 = py::class_<Pumila1, Pumila>(m, "Pumila1")
-                       .def(py::init<double, double, double>())
-                       .def_readwrite("main", &Pumila1::main)
-                       .def_readwrite("target", &Pumila1::target)
-                       .def("get_in_nodes", &Pumila1::getInNodes)
-                       .def("calc_reward", &Pumila1::calcReward)
-                       .def("copy", &Pumila1::copy);
+    py::class_<Pumila, std::shared_ptr<Pumila>>(m, "Pumila")
+        .def("get_action",
+             py::overload_cast<const FieldState &>(&Pumila::getAction))
+        .def("get_action", py::overload_cast<const std::shared_ptr<GameSim> &>(
+                               &Pumila::getAction));
+    auto pumila1 =
+        py::class_<Pumila1, Pumila, std::shared_ptr<Pumila1>>(m, "Pumila1")
+            .def("make_shared",
+                 [](double a, double g, double l) {
+                     return std::make_shared<Pumila1>(a, g, l);
+                 })
+            .def_readwrite("main", &Pumila1::main)
+            .def_readwrite("target", &Pumila1::target)
+            .def_readwrite("mean_diff", &Pumila1::mean_diff)
+            .def("get_action_rnd", &Pumila1::getActionRnd)
+            .def("get_in_nodes", &Pumila1::getInNodes)
+            .def("calc_reward", &Pumila1::calcReward)
+            .def("learn_step", &Pumila1::learnStep)
+            .def("copy", &Pumila1::copy);
     py::class_<Pumila1::NNModel>(pumila1, "NNModel")
-        .def_readwrite("matrix_ih", &Pumila1::NNModel::matrix_ih)
-        .def_readwrite("matrix_hq", &Pumila1::NNModel::matrix_hq)
+        .def("get_matrix_ih", &Pumila1::NNModel::getMatrixIH)
+        .def("get_matrix_hq", &Pumila1::NNModel::getMatrixHQ)
+        .def("truncate_in_nodes", &Pumila1::NNModel::truncateInNodes)
         .def("forward", &Pumila1::NNModel::forward)
         .def("backward", &Pumila1::NNModel::backward);
     py::class_<Pumila1::NNResult>(pumila1, "NNResult")
         .def_readwrite("in", &Pumila1::NNResult::in)
         .def_readwrite("hidden", &Pumila1::NNResult::hidden)
         .def_readwrite("q", &Pumila1::NNResult::q);
-    py::class_<Pumila1N, Pumila>(m, "Pumila1N").def(py::init<int>());
+    py::class_<Pumila1N, Pumila, std::shared_ptr<Pumila1N>>(m, "Pumila1N")
+        .def(py::init<int>());
 }

@@ -4,8 +4,7 @@
 namespace pumila {
 GameSim::GameSim() : field(), seed(), rnd(seed()), phase(nullptr) {
     // todo: 最初のツモは完全ランダムではなかった気がする
-    next_pair = {randomPuyo(), randomPuyo()};
-    next2_pair = {randomPuyo(), randomPuyo()};
+    field.next = {{randomPuyo(), randomPuyo()}, {randomPuyo(), randomPuyo()}};
     phase = std::make_unique<GameSim::FreePhase>(this);
 }
 Puyo GameSim::randomPuyo() {
@@ -22,17 +21,9 @@ Puyo GameSim::randomPuyo() {
     }
 }
 
-PuyoPair GameSim::getCurrentPair() const {
-    if (isFreePhase()) {
-        auto f_phase = dynamic_cast<FreePhase *>(phase.get());
-        return f_phase->current_pair;
-    }
-    return PuyoPair{};
-}
 void GameSim::movePair(int dx) {
-    if (isFreePhase()) {
-        auto f_phase = dynamic_cast<FreePhase *>(phase.get());
-        auto &pp = f_phase->current_pair;
+    if (isFreePhase() && !field.next.empty()) {
+        auto &pp = field.next[0];
         if (FieldState::inRange(pp.bottomX() + dx) &&
             FieldState::inRange(pp.topX() + dx) &&
             field.get(pp.bottomX() + dx, pp.bottomY()) == Puyo::none &&
@@ -42,9 +33,8 @@ void GameSim::movePair(int dx) {
     }
 }
 void GameSim::rotPair(int r) {
-    if (isFreePhase()) {
-        auto f_phase = dynamic_cast<FreePhase *>(phase.get());
-        PuyoPair &pp = f_phase->current_pair;
+    if (isFreePhase() && !field.next.empty()) {
+        PuyoPair &pp = field.next[0];
         PuyoPair new_pp = pp;
         new_pp.rotate(r);
         if (new_pp.bottomX() > static_cast<int>(FieldState::WIDTH) - 1 ||
@@ -61,18 +51,18 @@ void GameSim::rotPair(int r) {
     }
 }
 void GameSim::quickDrop() {
-    if (isFreePhase()) {
-        auto f_phase = dynamic_cast<FreePhase *>(phase.get());
-        PuyoPair &pp = f_phase->current_pair;
+    if (isFreePhase() && !field.next.empty()) {
+        PuyoPair &pp = field.next[0];
         pp.y -= 12;
+        auto f_phase = dynamic_cast<FreePhase *>(phase.get());
         f_phase->put_t = 0;
     }
 }
 void GameSim::softDrop() {
-    if (isFreePhase()) {
-        auto f_phase = dynamic_cast<FreePhase *>(phase.get());
-        PuyoPair &pp = f_phase->current_pair;
+    if (isFreePhase() && !field.next.empty()) {
+        PuyoPair &pp = field.next[0];
         pp.y -= 20.0 / 60;
+        auto f_phase = dynamic_cast<FreePhase *>(phase.get());
         f_phase->put_t -= 10;
     }
 }
@@ -84,9 +74,8 @@ void GameSim::step() {
     }
 }
 void GameSim::put(const Action &action) {
-    if (isFreePhase()) {
-        auto f_phase = dynamic_cast<FreePhase *>(phase.get());
-        auto &pp = f_phase->current_pair;
+    if (isFreePhase() && !field.next.empty()) {
+        PuyoPair &pp = field.next[0];
         pp = PuyoPair{pp, action};
         quickDrop();
         step();
@@ -94,15 +83,16 @@ void GameSim::put(const Action &action) {
 }
 
 GameSim::FreePhase::FreePhase(GameSim *sim) : Phase(sim), put_t(PUT_T) {
-    current_pair = sim->next_pair;
-    sim->next_pair = sim->next2_pair;
-    sim->next2_pair = {sim->randomPuyo(), sim->randomPuyo()};
+    while (sim->field.next.size() < 3) {
+        sim->field.next.emplace_back(sim->randomPuyo(), sim->randomPuyo());
+    }
 }
 
 std::unique_ptr<GameSim::Phase> GameSim::FreePhase::step() {
+    auto &current_pair = sim->field.next[0];
     current_pair.y -= 0.5 / 60;
-    auto [yb, yt] = sim->field.putTargetY(current_pair, false);
-    auto [yb_f, yt_f] = sim->field.putTargetY(current_pair, true);
+    auto [yb, yt] = sim->field.getHeight(current_pair, false);
+    auto [yb_f, yt_f] = sim->field.getHeight(current_pair, true);
     if (yb < current_pair.y) {
         put_t = PUT_T;
     } else {
@@ -110,9 +100,10 @@ std::unique_ptr<GameSim::Phase> GameSim::FreePhase::step() {
         current_pair.y = yb;
         if (put_t < 0) {
             sim->field.put(current_pair);
+            sim->field.next.pop_front();
             sim->current_chain = std::nullopt;
-            sim->prev_chain_num = 0;
-            sim->prev_chain_score = 0;
+            sim->field.prev_chain_num = 0;
+            sim->field.prev_chain_score = 0;
             return std::make_unique<GameSim::FallPhase>(sim);
         }
     }
@@ -141,9 +132,9 @@ GameSim::ChainPhase::ChainPhase(GameSim *sim) : Phase(sim), wait_t(WAIT_T) {
         wait_t = 0;
         sim->current_chain = std::nullopt;
     } else {
-        sim->score += chain.score();
-        sim->prev_chain_score += chain.score();
-        sim->prev_chain_num++;
+        sim->field.total_score += chain.score();
+        sim->field.prev_chain_score += chain.score();
+        sim->field.prev_chain_num++;
         sim->current_chain = std::move(chain);
     }
 }

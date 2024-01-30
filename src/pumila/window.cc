@@ -93,17 +93,15 @@ void Window::draw() {
     SDL_RenderDrawRect(sdl_renderer, &field_rect);
 
     if (sim->phase->get() == GameSim::Phase::free) {
-        auto f_phase = dynamic_cast<GameSim::FreePhase *>(sim->phase.get());
-        drawPuyo(f_phase->current_pair.bottom, f_phase->current_pair.bottomX(),
-                 sim->field.putTargetY(f_phase->current_pair, true).first,
-                 false);
-        drawPuyo(f_phase->current_pair.top, f_phase->current_pair.topX(),
-                 sim->field.putTargetY(f_phase->current_pair, true).second,
-                 false);
-        drawPuyo(f_phase->current_pair.bottom, f_phase->current_pair.bottomX(),
-                 f_phase->current_pair.bottomY(), true);
-        drawPuyo(f_phase->current_pair.top, f_phase->current_pair.topX(),
-                 f_phase->current_pair.topY(), true);
+        auto &current_pair = sim->field.next[0];
+        drawPuyo(current_pair.bottom, current_pair.bottomX(),
+                 sim->field.getHeight(current_pair, true).first, false);
+        drawPuyo(current_pair.top, current_pair.topX(),
+                 sim->field.getHeight(current_pair, true).second, false);
+        drawPuyo(current_pair.bottom, current_pair.bottomX(),
+                 current_pair.bottomY(), true);
+        drawPuyo(current_pair.top, current_pair.topX(), current_pair.topY(),
+                 true);
     }
     for (int y = 0; y < FieldState::HEIGHT; y++) {
         for (int x = 0; x < FieldState::WIDTH; x++) {
@@ -114,8 +112,8 @@ void Window::draw() {
     if (ttf_font) {
         int text_w, text_h;
         SDL_Texture *score_t =
-            drawText(sdl_renderer, std::to_string(sim->score), ttf_font,
-                     {0, 0, 0, 255}, &text_w, &text_h);
+            drawText(sdl_renderer, std::to_string(sim->field.total_score),
+                     ttf_font, {0, 0, 0, 255}, &text_w, &text_h);
         SDL_Rect rect = {FIELD_X + PUYO_SIZE * 6 - text_w - 10, FIELD_Y + 10,
                          text_w, text_h};
         SDL_RenderCopy(sdl_renderer, score_t, NULL, &rect);
@@ -133,8 +131,8 @@ void Window::draw() {
             SDL_DestroyTexture(score_t);
             ss.str("");
         } else {
-            ss << "(" << sim->prev_chain_num << ", " << sim->prev_chain_score
-               << ")";
+            ss << "(" << sim->field.prev_chain_num << ", "
+               << sim->field.prev_chain_score << ")";
             score_t = drawText(sdl_renderer, ss.str(), ttf_font, {0, 0, 0, 255},
                                &text_w, &text_h);
             rect = {FIELD_X + 10, FIELD_Y + 40, text_w, text_h};

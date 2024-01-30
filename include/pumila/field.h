@@ -3,6 +3,7 @@
 #include "chain.h"
 #include <utility>
 #include <vector>
+#include <deque>
 
 namespace pumila {
 /*!
@@ -19,6 +20,17 @@ struct FieldState {
     }
 
     std::array<std::array<Puyo, WIDTH>, HEIGHT> field = {};
+
+    /*!
+     * \brief nextのぷよ
+     *
+     * freePhase中は操作中のぷよ+next2つで合計3組になり、それ以外の場合2組
+     *
+     */
+    std::deque<PuyoPair> next = {};
+    int prev_chain_num = 0;
+    int prev_chain_score = 0;
+    int total_score = 0;
 
     void put(std::size_t x, std::size_t y, Puyo p) {
         if (y < HEIGHT && x < WIDTH) {
@@ -47,7 +59,17 @@ struct FieldState {
      *
      */
     void put(const PuyoPair &pp);
+    void put() {
+        if (!next.empty()) {
+            put(next[0]);
+        }
+    }
     void put(const PuyoPair &pp, const Action &action) { put({pp, action}); }
+    void put(const Action &action) {
+        if (!next.empty()) {
+            put({next[0], action});
+        }
+    }
 
     /*!
      * \brief puyopairを落とした場合のy座標を調べる
@@ -55,13 +77,13 @@ struct FieldState {
      * \return bottom, topのそれぞれのy座標
      *
      */
-    std::pair<std::size_t, std::size_t> putTargetY(const PuyoPair &pp,
-                                                   bool fall) const;
+    std::pair<std::size_t, std::size_t> getHeight(const PuyoPair &pp,
+                                                  bool fall) const;
     /*!
      * \brief ぷよを1つ落とした場合のy座標を調べる
      *
      */
-    std::size_t putTargetY(std::size_t x) const;
+    std::size_t getHeight(std::size_t x) const;
 
     /*!
      * \brief 4連結を探し、消す

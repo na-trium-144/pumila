@@ -19,9 +19,6 @@ class GameSim {
 
   public:
     FieldState field;
-    PuyoPair next_pair, next2_pair;
-    PuyoPair getCurrentPair() const;
-    int score = 0;
     /*!
      * \brief 現在の連鎖情報
      *
@@ -29,15 +26,7 @@ class GameSim {
      *
      */
     std::optional<Chain> current_chain = std::nullopt;
-    /*!
-     * \brief 直近のChainPhaseでの連鎖数
-     *
-     * ぷよを置くとリセット
-     *
-     */
-    int prev_chain_num = 0;
-    int prev_chain_score = 0;
-
+    
     GameSim();
     GameSim(const GameSim &sim) = delete;
     GameSim(GameSim &&sim) = delete;
