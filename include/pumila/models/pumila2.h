@@ -10,7 +10,13 @@
 #include <future>
 
 namespace pumila {
+/*!
+ * * learnStep時、getActionで選んだ手1通りだけでなく22通りすべてを学習対象にした
+ * * 色の順番を24通り並べ替えたデータを同様に学習の入力にした
+ * * マルチスレッド化
+ */
 class Pumila2 : public Pumila {
+  protected:
     double gamma;
 
     int batch_count = 0;
@@ -141,7 +147,7 @@ class Pumila2 : public Pumila {
      * \param rnd_p ランダムな手を返す割合 0〜1
      *
      */
-    int getActionRnd(const FieldState &field, double rnd_p);
+    virtual int getActionRnd(const FieldState &field, double rnd_p);
     int getActionRnd(const std::shared_ptr<GameSim> &sim, double rnd_p) {
         return getActionRnd(sim->field, rnd_p);
     }
@@ -150,6 +156,6 @@ class Pumila2 : public Pumila {
      * \brief フィールドから次の手22通りを計算し学習
      * (Pumila::poolで実行される)
      */
-    void learnStep(const FieldState &field);
+    virtual void learnStep(const FieldState &field);
 };
 } // namespace pumila

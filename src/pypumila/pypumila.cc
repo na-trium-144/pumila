@@ -7,6 +7,7 @@ namespace py = pybind11;
 
 void initPumila1Module(py::module_ &m);
 void initPumila2Module(py::module_ &m);
+void initPumila3Module(py::module_ &m);
 
 PYBIND11_MODULE(pypumila, m) {
     py::enum_<Puyo>(m, "Puyo")
@@ -65,6 +66,7 @@ PYBIND11_MODULE(pypumila, m) {
         .def_readwrite("next", &FieldState::next)
         .def_readwrite("prev_chain_num", &FieldState::prev_chain_num)
         .def_readwrite("prev_chain_score", &FieldState::prev_chain_score)
+        .def_readwrite("is_valid", &FieldState::is_valid)
         .def("copy", &FieldState::copy)
         .def("get", &FieldState::get)
         .def("put", py::overload_cast<std::size_t, std::size_t, Puyo>(
@@ -116,4 +118,5 @@ PYBIND11_MODULE(pypumila, m) {
 
     initPumila1Module(m);
     initPumila2Module(m);
+    initPumila3Module(m);
 }

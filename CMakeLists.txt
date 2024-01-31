@@ -32,7 +32,7 @@ else()
 endif()
 
 if(PUMILA_MKL)
-    pkg_search_module(MKL mkl-dynamic-lp64-iomp)
+    pkg_search_module(MKL REQUIRED mkl-dynamic-lp64-iomp)
     if(MKL_FOUND)
         message(STATUS "mkl-dynamic-lp64-iomp found")
     else()
@@ -79,6 +79,7 @@ add_library(pumila SHARED
     src/pumila/models/pumila1.cc
     src/pumila/models/pumila1n.cc
     src/pumila/models/pumila2.cc
+    src/pumila/models/pumila3.cc
 )
 target_include_directories(pumila PUBLIC include)
 target_compile_features(pumila PUBLIC cxx_std_17)
@@ -98,8 +99,9 @@ endif()
 
 pybind11_add_module(pypumila
     src/pypumila/pypumila.cc
-    src/pypumila/pumila1.cc
-    src/pypumila/pumila2.cc
+    src/pypumila/pypumila1.cc
+    src/pypumila/pypumila2.cc
+    src/pypumila/pypumila3.cc
 )
 target_link_libraries(pypumila PUBLIC pumila)
 

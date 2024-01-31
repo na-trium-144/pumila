@@ -61,7 +61,7 @@ std::pair<std::size_t, std::size_t> FieldState::getHeight(const PuyoPair &pp,
     return std::make_pair(yb, yt);
 }
 std::size_t FieldState::getHeight(std::size_t x) const {
-    std::size_t y = HEIGHT - 1;
+    std::size_t y = HEIGHT;
     for (; y >= 1; y--) {
         if (get(x, y - 1) != Puyo::none) {
             break;
@@ -94,9 +94,9 @@ Chain FieldState::deleteChain(int chain_num) {
 bool FieldState::fall() {
     bool has_fall = false;
     for (std::size_t x = 0; x < WIDTH; x++) {
-        for (std::size_t y = 0; y < HEIGHT - 1; y++) {
+        for (std::size_t y = 0; y < HEIGHT; y++) {
             if (get(x, y) == Puyo::none) {
-                for (std::size_t dy = 1; y + dy < HEIGHT - 1; dy++) {
+                for (std::size_t dy = 1; y + dy < HEIGHT; dy++) {
                     if (get(x, y + dy) != Puyo::none) {
                         put(x, y, get(x, y + dy));
                         put(x, y + dy, Puyo::none);

@@ -31,10 +31,16 @@ struct FieldState {
     int prev_chain_num = 0;
     int prev_chain_score = 0;
     int total_score = 0;
+    /*!
+     * \brief 直前に操作した手が無効な場合false
+     */
+    bool is_valid = true;
 
     void put(std::size_t x, std::size_t y, Puyo p) {
         if (y < HEIGHT && x < WIDTH) {
             field.at(y).at(x) = p;
+        }else{
+            is_valid = false;
         }
     }
 
