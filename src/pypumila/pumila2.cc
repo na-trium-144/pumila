@@ -24,7 +24,7 @@ void initPumila2Module(py::module_ &m) {
                      &Pumila2::getActionRnd))
             .def("get_in_nodes",
                  [](Pumila2 &pumila2, const FieldState &field) {
-                     return pumila2.getInNodes(field);
+                     return pumila2.getInNodes(field).get();
                  })
             .def("calc_reward", &Pumila2::calcReward)
             .def("learn_step", &Pumila2::learnStep)
@@ -41,4 +41,7 @@ void initPumila2Module(py::module_ &m) {
         .def_readwrite("in", &Pumila2::NNResult::in)
         .def_readwrite("hidden", &Pumila2::NNResult::hidden)
         .def_readwrite("q", &Pumila2::NNResult::q);
+    py::class_<Pumila2::InFeatures>(pumila2, "InFeatures")
+        .def_readwrite("field_next", &Pumila2::InFeatures::field_next)
+        .def_readwrite("in_nodes", &Pumila2::InFeatures::in);
 }
