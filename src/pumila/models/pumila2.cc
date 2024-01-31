@@ -226,26 +226,25 @@ double Pumila2::calcReward(const FieldState &field) {
     return r;
 }
 
-int Pumila2::getAction(const FieldState &field) {
+int Pumila2::getActionRnd(const FieldState &field, double rnd_p) {
     NNResult fw_result;
     fw_result = main.forward(getInNodes(field).get().in);
-    int action = 0;
-    fw_result.q.maxCoeff(&action);
-    return action;
-}
-int Pumila2::getActionRnd(const FieldState &field) {
-    NNResult fw_result;
-    fw_result = main.forward(getInNodes(field).get().in);
-    fw_result.q.array() -= fw_result.q.minCoeff();
-    fw_result.q.array() /= fw_result.q.sum();
-    double r = getRndD();
-    for (int a = 0; a < ACTIONS_NUM; a++) {
-        r -= fw_result.q(a, 0);
-        if (r <= 0) {
-            return a;
+    if (getRndD() >= rnd_p) {
+        int action = 0;
+        fw_result.q.maxCoeff(&action);
+        return action;
+    } else {
+        fw_result.q.array() -= fw_result.q.minCoeff();
+        fw_result.q.array() /= fw_result.q.sum();
+        double r = getRndD();
+        for (int a = 0; a < ACTIONS_NUM; a++) {
+            r -= fw_result.q(a, 0);
+            if (r <= 0) {
+                return a;
+            }
         }
+        return ACTIONS_NUM - 1;
     }
-    return ACTIONS_NUM - 1;
 }
 void Pumila2::learnStep(const FieldState &field) {
     {

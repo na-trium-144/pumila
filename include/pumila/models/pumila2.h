@@ -114,13 +114,16 @@ class Pumila2 : public Pumila {
         Eigen::VectorXd in;
     };
     /*!
-     * \brief フィールドから特徴量を計算
+     * \brief 現在のフィールドから次の22通りのフィールドと特徴量を計算
      * (Pumila::poolで実行され完了するまで待機)
      * \return 22 * IN_NODES の行列
      */
     static std::future<InFeatures> getInNodes(const FieldState &field);
     static std::future<InFeatures>
     getInNodes(std::shared_future<InFeatures> feature, int feat_a);
+    /*!
+     * \brief フィールドにaのアクションをしたあとの特徴量を計算
+     */
     static InFeatureSingle getInNodeSingle(const FieldState &field, int a);
 
     /*!
@@ -129,15 +132,18 @@ class Pumila2 : public Pumila {
      */
     static double calcReward(const FieldState &field);
 
-    int getAction(const FieldState &field) override;
+    int getAction(const FieldState &field) override {
+        return getActionRnd(field, 0);
+    }
     /*!
      * \brief
-     * 評価値最大の手を返すのではなく評価値を確率分布としてランダムな手を返す
+     * 評価値最大の手を返すのではなく評価値を確率分布としてランダムな手を返す場合もある
+     * \param rnd_p ランダムな手を返す割合 0〜1
      *
      */
-    int getActionRnd(const FieldState &field);
-    int getActionRnd(const std::shared_ptr<GameSim> &sim) {
-        return getActionRnd(sim->field);
+    int getActionRnd(const FieldState &field, double rnd_p);
+    int getActionRnd(const std::shared_ptr<GameSim> &sim, double rnd_p) {
+        return getActionRnd(sim->field, rnd_p);
     }
 
     /*!
