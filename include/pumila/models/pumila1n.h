@@ -1,6 +1,5 @@
 #pragma once
 #include "../model_base.h"
-#include <Eigen/Dense>
 #include <array>
 #include <memory>
 
