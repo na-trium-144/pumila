@@ -31,7 +31,7 @@ void Pumila1::save(std::ostream &os) {
 }
 
 Eigen::MatrixXd Pumila1::getInNodes(const FieldState &field) const {
-    return Pumila2::getInNodes(field).second;
+    return Pumila2::getInNodes(field).get().in;
 }
 
 Pumila1::NNResult Pumila1::NNModel::forward(const Eigen::MatrixXd &in) const {

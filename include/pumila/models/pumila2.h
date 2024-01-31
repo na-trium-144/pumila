@@ -7,6 +7,7 @@
 #include <mutex>
 #include <shared_mutex>
 #include <condition_variable>
+#include <future>
 
 namespace pumila {
 class Pumila2 : public Pumila {
@@ -104,13 +105,23 @@ class Pumila2 : public Pumila {
 
     double mean_diff = 0;
 
+    struct InFeatures {
+        std::array<FieldState, ACTIONS_NUM> field_next;
+        Eigen::MatrixXd in;
+    };
+    struct InFeatureSingle {
+        FieldState field_next;
+        Eigen::VectorXd in;
+    };
     /*!
      * \brief フィールドから特徴量を計算
      * (Pumila::poolで実行され完了するまで待機)
      * \return 22 * IN_NODES の行列
      */
-    static std::pair<std::array<FieldState, ACTIONS_NUM>, Eigen::MatrixXd>
-    getInNodes(const FieldState &field);
+    static std::future<InFeatures> getInNodes(const FieldState &field);
+    static std::future<InFeatures>
+    getInNodes(std::shared_future<InFeatures> feature, int feat_a);
+    static InFeatureSingle getInNodeSingle(const FieldState &field, int a);
 
     /*!
      * \brief 報酬を計算
@@ -125,6 +136,9 @@ class Pumila2 : public Pumila {
      *
      */
     int getActionRnd(const FieldState &field);
+    int getActionRnd(const std::shared_ptr<GameSim> &sim) {
+        return getActionRnd(sim->field);
+    }
 
     /*!
      * \brief フィールドから次の手22通りを計算し学習

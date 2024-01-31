@@ -16,8 +16,15 @@ void initPumila2Module(py::module_ &m) {
             .def_readwrite("main", &Pumila2::main)
             .def_readwrite("target", &Pumila2::target)
             .def_readwrite("mean_diff", &Pumila2::mean_diff)
-            .def("get_action_rnd", &Pumila2::getActionRnd)
-            .def("get_in_nodes", &Pumila2::getInNodes)
+            .def("get_action_rnd",
+                 py::overload_cast<const FieldState &>(&Pumila2::getActionRnd))
+            .def("get_action_rnd",
+                 py::overload_cast<const std::shared_ptr<GameSim> &>(
+                     &Pumila2::getActionRnd))
+            .def("get_in_nodes",
+                 [](Pumila2 &pumila2, const FieldState &field) {
+                     return pumila2.getInNodes(field);
+                 })
             .def("calc_reward", &Pumila2::calcReward)
             .def("learn_step", &Pumila2::learnStep)
             .def("copy", &Pumila2::copy);

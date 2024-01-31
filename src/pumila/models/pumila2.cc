@@ -37,70 +37,97 @@ void Pumila2::save(std::ostream &os) {
              main.matrix_hq->rows() * main.matrix_hq->cols() * sizeof(double));
 }
 
-std::pair<std::array<FieldState, ACTIONS_NUM>, Eigen::MatrixXd>
-Pumila2::getInNodes(const FieldState &field) {
-    auto actions_result = pool.submit_blocks(
-        0, ACTIONS_NUM,
-        [&field](int a, int) {
-            FieldState field_next = field.copy();
-            field_next.put(actions[a]);
-            field_next.next.pop_front();
-            std::vector<Chain> chains = field_next.deleteChainRecurse();
+Pumila2::InFeatureSingle Pumila2::getInNodeSingle(const FieldState &field,
+                                                  int a) {
+    InFeatureSingle feat;
+    feat.field_next = field.copy();
+    feat.field_next.put(actions[a]);
+    feat.field_next.next.pop_front();
+    std::vector<Chain> chains = feat.field_next.deleteChainRecurse();
 
-            Eigen::VectorXd in = Eigen::VectorXd::Zero(NNModel::IN_NODES);
-            NNModel::InNodes &in_nodes =
-                *reinterpret_cast<NNModel::InNodes *>(in.data());
-            in_nodes.bias = 1;
-            auto chain_all = field_next.calcChainAll();
-            for (std::size_t y = 0; y < FieldState::HEIGHT; y++) {
-                for (std::size_t x = 0; x < FieldState::WIDTH; x++) {
-                    int p;
-                    switch (field_next.get(x, y)) {
-                    case Puyo::red:
-                        p = 0;
-                        break;
-                    case Puyo::blue:
-                        p = 1;
-                        break;
-                    case Puyo::green:
-                        p = 2;
-                        break;
-                    case Puyo::yellow:
-                        p = 3;
-                        break;
-                    default:
-                        p = -1;
-                        break;
-                    }
-                    if (p >= 0) {
-                        in_nodes
-                            .field_colors[(y * FieldState::WIDTH + x) * 4 + p] =
-                            1;
-                        in_nodes
-                            .field_chains[(y * FieldState::WIDTH + x) * 4 + p] =
-                            chain_all[y][x];
-                    }
-                }
+    feat.in = Eigen::VectorXd::Zero(NNModel::IN_NODES);
+    NNModel::InNodes &in_nodes =
+        *reinterpret_cast<NNModel::InNodes *>(feat.in.data());
+    in_nodes.bias = 1;
+    auto chain_all = feat.field_next.calcChainAll();
+    for (std::size_t y = 0; y < FieldState::HEIGHT; y++) {
+        for (std::size_t x = 0; x < FieldState::WIDTH; x++) {
+            int p;
+            switch (feat.field_next.get(x, y)) {
+            case Puyo::red:
+                p = 0;
+                break;
+            case Puyo::blue:
+                p = 1;
+                break;
+            case Puyo::green:
+                p = 2;
+                break;
+            case Puyo::yellow:
+                p = 3;
+                break;
+            default:
+                p = -1;
+                break;
             }
-            in_nodes.score_diff = 0;
-            for (const auto &c : chains) {
-                in_nodes.score_diff += c.score();
+            if (p >= 0) {
+                in_nodes.field_colors[(y * FieldState::WIDTH + x) * 4 + p] = 1;
+                in_nodes.field_chains[(y * FieldState::WIDTH + x) * 4 + p] =
+                    chain_all[y][x];
             }
-            return std::make_pair(field_next, in);
-        },
-        ACTIONS_NUM);
-
-    std::array<FieldState, ACTIONS_NUM> field_next;
-    Eigen::MatrixXd in(ACTIONS_NUM, NNModel::IN_NODES);
-    int a = 0;
-    for (auto &res : actions_result) {
-        auto r = res.get();
-        field_next[a] = r.first;
-        in.middleRows<1>(a) = r.second.transpose();
-        a++;
+        }
     }
-    return std::make_pair(field_next, in);
+    in_nodes.score_diff = 0;
+    for (const auto &c : chains) {
+        in_nodes.score_diff += c.score();
+    }
+    return feat;
 }
+
+std::future<Pumila2::InFeatures> Pumila2::getInNodes(const FieldState &field) {
+    std::array<std::shared_future<InFeatureSingle>, ACTIONS_NUM> feat;
+    for (int a = 0; a < ACTIONS_NUM; a++) {
+        feat[a] =
+            pool.submit_task([field, a] { return getInNodeSingle(field, a); })
+                .share();
+    }
+    return pool.submit_task([feat]() {
+        InFeatures feats;
+        feats.in = Eigen::MatrixXd(ACTIONS_NUM, NNModel::IN_NODES);
+        int a = 0;
+        for (auto &res : feat) {
+            auto r = res.get();
+            feats.field_next[a] = r.field_next;
+            feats.in.middleRows<1>(a) = r.in.transpose();
+            a++;
+        }
+        return feats;
+    });
+}
+std::future<Pumila2::InFeatures>
+Pumila2::getInNodes(std::shared_future<InFeatures> feature, int feat_a) {
+    std::array<std::shared_future<InFeatureSingle>, ACTIONS_NUM> feat;
+    for (int a = 0; a < ACTIONS_NUM; a++) {
+        feat[a] =
+            pool.submit_task([feature, feat_a, a] {
+                    return getInNodeSingle(feature.get().field_next[feat_a], a);
+                })
+                .share();
+    }
+    return pool.submit_task([feat]() {
+        InFeatures feats;
+        feats.in = Eigen::MatrixXd(ACTIONS_NUM, NNModel::IN_NODES);
+        int a = 0;
+        for (auto &res : feat) {
+            auto r = res.get();
+            feats.field_next[a] = r.field_next;
+            feats.in.middleRows<1>(a) = r.in.transpose();
+            a++;
+        }
+        return feats;
+    });
+}
+
 Eigen::MatrixXd Pumila2::NNModel::truncateInNodes(const Eigen::MatrixXd &in) {
     if (in.cols() != IN_NODES) {
         throw std::invalid_argument("invalid size in truncate: in -> " +
@@ -201,14 +228,14 @@ double Pumila2::calcReward(const FieldState &field) {
 
 int Pumila2::getAction(const FieldState &field) {
     NNResult fw_result;
-    fw_result = main.forward(getInNodes(field).second);
+    fw_result = main.forward(getInNodes(field).get().in);
     int action = 0;
     fw_result.q.maxCoeff(&action);
     return action;
 }
 int Pumila2::getActionRnd(const FieldState &field) {
     NNResult fw_result;
-    fw_result = main.forward(getInNodes(field).second);
+    fw_result = main.forward(getInNodes(field).get().in);
     fw_result.q.array() -= fw_result.q.minCoeff();
     fw_result.q.array() /= fw_result.q.sum();
     double r = getRndD();
@@ -228,53 +255,57 @@ void Pumila2::learnStep(const FieldState &field) {
         }
         batch_count++;
     }
-    std::thread([this, pumila = shared_from_this(), field] {
-        auto [field_next, in] = getInNodes(field);
-        auto fw_result = pool.submit_task([&, in = in] {
-                                 auto in_t = NNModel::truncateInNodes(in);
-                                 {
-                                     std::shared_lock lock(target_m);
-                                     return target.forward(in_t);
-                                 }
-                             })
-                             .get();
-        Eigen::VectorXd delta_2(fw_result.q.rows());
-        double diff_sum = 0;
-        for (std::size_t a = 0; a < ACTIONS_NUM; a++) {
-            NNResult fw_next;
-            auto in_next = getInNodes(field_next[a]).second;
-            {
-                std::shared_lock lock(target_m);
-                fw_next = target.forward(in_next);
-            }
-            for(int r = a; r < delta_2.rows(); r += ACTIONS_NUM){
-                double diff =
-                    (calcReward(field_next[a]) + gamma * fw_next.q.maxCoeff()) -
-                    fw_result.q(r, 0);
-                diff_sum += diff;
-                delta_2(r, 0) = diff;
-            }
-        }
-        {
-            std::unique_lock lock(learning_m);
-            diff_sum /= batch_count;
-            delta_2.array() /= batch_count;
-        }
-        pool.submit_task([&] {
-                main.backward(fw_result, delta_2);
-                {
-                    std::lock_guard lock(target_m);
-                    target = main;
+    auto pumila = shared_from_this();
+    auto next = getInNodes(field).share();
+    auto fw_result = pool.submit_task([this, pumila, next] {
+                             auto in_t =
+                                 NNModel::truncateInNodes(next.get().in);
+                             {
+                                 std::shared_lock lock(target_m);
+                                 return target.forward(in_t);
+                             }
+                         })
+                         .share();
+    std::array<std::shared_future<InFeatures>, ACTIONS_NUM> next2;
+    for (std::size_t a = 0; a < ACTIONS_NUM; a++) {
+        next2[a] = getInNodes(next, a).share();
+    }
+    auto delta_2 =
+        pool.submit_task([this, pumila, next, next2, fw_result]() {
+                Eigen::VectorXd delta_2(fw_result.get().q.rows());
+                for (std::size_t a = 0; a < ACTIONS_NUM; a++) {
+                    NNResult fw_next;
+                    {
+                        std::shared_lock lock(target_m);
+                        fw_next = target.forward(next2[a].get().in);
+                    }
+                    for (int r = a; r < delta_2.rows(); r += ACTIONS_NUM) {
+                        double diff = (calcReward(next.get().field_next[a]) +
+                                       gamma * fw_next.q.maxCoeff()) -
+                                      fw_result.get().q(r, 0);
+                        delta_2(r, 0) = diff;
+                    }
                 }
+                {
+                    std::unique_lock lock(learning_m);
+                    delta_2.array() /= batch_count;
+                    mean_diff = delta_2.sum() / delta_2.rows();
+                }
+                return delta_2;
             })
-            .get();
-        mean_diff = diff_sum / delta_2.rows();
+            .share();
+    pool.detach_task([this, pumila, fw_result, delta_2] {
+        main.backward(fw_result.get(), delta_2.get());
+        {
+            std::lock_guard lock(target_m);
+            target = main;
+        }
         {
             std::unique_lock lock(learning_m);
             batch_count--;
             learning_cond.notify_one();
         }
-    }).detach();
+    });
 }
 
 } // namespace pumila
