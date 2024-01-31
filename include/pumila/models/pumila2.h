@@ -82,7 +82,8 @@ class Pumila2 : public Pumila {
         void backward(const NNResult &result, const Eigen::VectorXd &diff);
 
         /*!
-         * \brief 色を並べ替えた特徴量を計算
+         * \brief 色を並べ替えた特徴量(4!=24通り)を計算し、
+         * 縦に並べて返す(inの行数が24倍になる)
          * \return in.rows() * 24, IN_NODES の行列
          *
          */
