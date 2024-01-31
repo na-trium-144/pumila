@@ -3,19 +3,18 @@
 ## ビルド
 * C++17が使えるコンパイラが必要です
 * Eigen3がインストールされていればそれを使い、なければFetchContentで自動的にダウンロードします
+    * ubuntu: `sudo apt install libeigen3-dev`
+    * mac: `brew install eigen3`
 * GUI(`pumila::Window`)を使うにはSDL2とSDL2_TTFをインストールする必要があります
     * インストールされてない場合GUI関係の機能が無効化されますがビルドは可能です
-* pybind11とroboto-font(GUIの表示に必要)がFetchContentでダウンロードされます
-* ubuntuの場合
-```sh
-sudo apt install libeigen3-dev libsdl2-dev libsdl2-ttf-dev
-```
-* macの場合
-```sh
-brew install eigen3 sdl2 sdl2_ttf
-```
+    * ubuntu: `sudo apt install libsdl2-dev libsdl2-ttf-dev`
+    * mac: `brew install sdl2 sdl2_ttf`
+* [pybind11](https://github.com/pybind/pybind11), [BS::thread_pool](https://github.com/bshoshany/thread-pool)とroboto-font(GUIの表示に必要)がFetchContentでダウンロードされます
+* IntelCPUの場合cmake時に`-DPUMILA_MKL=ON`オプションを追加してIntel MKLを使用することができます
+    * ubuntu: `sudo apt install libmkl-dev`
 * ビルド
 ```sh
 cmake -Bbuild
 cmake --build build
 ```
+
