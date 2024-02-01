@@ -13,7 +13,6 @@ namespace pumila {
 /*!
  * * learnStepでtaskの建て方を改良(できるだけfuture.get()で待機しないようにした)
  * * 14段目に置こうとしたときの報酬を最小値にした
- * * truncateInNodesをやめた
  */
 class Pumila3 : public Pumila2 {
     std::string name() const override { return "pumila3"; }
