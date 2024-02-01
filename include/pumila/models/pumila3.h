@@ -1,13 +1,5 @@
 #pragma once
 #include "./pumila2.h"
-#include <Eigen/Dense>
-#include <array>
-#include <memory>
-#include <utility>
-#include <mutex>
-#include <shared_mutex>
-#include <condition_variable>
-#include <future>
 
 namespace pumila {
 /*!

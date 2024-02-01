@@ -8,6 +8,7 @@ namespace py = pybind11;
 void initPumila1Module(py::module_ &m);
 void initPumila2Module(py::module_ &m);
 void initPumila3Module(py::module_ &m);
+void initPumila4Module(py::module_ &m);
 
 PYBIND11_MODULE(pypumila, m) {
     py::enum_<Puyo>(m, "Puyo")
@@ -119,4 +120,5 @@ PYBIND11_MODULE(pypumila, m) {
     initPumila1Module(m);
     initPumila2Module(m);
     initPumila3Module(m);
+    initPumila4Module(m);
 }
