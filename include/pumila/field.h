@@ -35,14 +35,12 @@ struct FieldState {
      * \brief 直前に操作した手が無効な場合false
      */
     bool is_valid = true;
+    /*!
+     * \brief fall()後に(2,12)が埋まったらtrue
+     */
+    bool is_over = false;
 
-    void put(std::size_t x, std::size_t y, Puyo p) {
-        if (y < HEIGHT && x < WIDTH) {
-            field.at(y).at(x) = p;
-        }else{
-            is_valid = false;
-        }
-    }
+    void put(std::size_t x, std::size_t y, Puyo p);
 
     /*!
      * \brief x, y とつながっているぷよの数を数え、

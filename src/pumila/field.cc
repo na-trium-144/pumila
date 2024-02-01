@@ -15,6 +15,14 @@ Puyo FieldState::get(std::size_t x, std::size_t y) const {
     return field.at(y).at(x);
 }
 
+void FieldState::put(std::size_t x, std::size_t y, Puyo p) {
+    if (inRange(x, y)) {
+        field.at(y).at(x) = p;
+    } else {
+        is_valid = false;
+    }
+}
+
 std::vector<std::pair<std::size_t, std::size_t>>
 FieldState::deleteConnection(std::size_t x, std::size_t y) {
     std::vector<std::pair<std::size_t, std::size_t>> deleted;
@@ -106,6 +114,9 @@ bool FieldState::fall() {
                 }
             }
         }
+    }
+    if (get(Action::START_X, Action::START_Y) != Puyo::none) {
+        is_over = true;
     }
     return has_fall;
 }

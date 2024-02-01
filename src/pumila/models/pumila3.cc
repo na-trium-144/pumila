@@ -9,7 +9,8 @@ int Pumila3::getActionRnd(const FieldState &field, double rnd_p) {
     auto in_feat = getInNodes(field).get();
     fw_result = main.forward(in_feat.in);
     for (int a2 = 0; a2 < ACTIONS_NUM; a2++) {
-        if (!in_feat.field_next[a2].is_valid) {
+        if (!in_feat.field_next[a2].is_valid ||
+            in_feat.field_next[a2].is_over) {
             fw_result.q(a2, 0) = fw_result.q.minCoeff();
         }
     }
@@ -61,7 +62,8 @@ void Pumila3::learnStep(const FieldState &field) {
                     fw_next = target.forward(next2[a].get().in);
                 }
                 for (int a2 = 0; a2 < ACTIONS_NUM; a2++) {
-                    if (!next2[a].get().field_next[a2].is_valid) {
+                    if (!next2[a].get().field_next[a2].is_valid ||
+                        next2[a].get().field_next[a2].is_over) {
                         fw_next.q(a2, 0) = fw_next.q.minCoeff();
                     }
                 }

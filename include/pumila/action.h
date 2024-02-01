@@ -17,7 +17,9 @@ enum class Puyo {
  *
  */
 struct Action {
-    int x = 2;
+    static constexpr int START_X = 2;
+    static constexpr int START_Y = 12;
+    int x = START_X;
     enum class Rotation {
         vertical = 0,
         horizontal_right = 1,
@@ -45,7 +47,7 @@ struct PuyoPair : Action {
      * \brief bottomの座標
      *
      */
-    double y = 12;
+    double y = START_Y;
     /*!
      * \brief ぷよの色
      *
