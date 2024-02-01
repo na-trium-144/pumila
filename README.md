@@ -1,5 +1,11 @@
 # pumila
 
+ニューラルネットワークにぷよぷよを学習させたい
+
+現在は1〜3連鎖が打てます
+
+![pumila3.gif](pumila3.gif)
+
 ## ビルド
 * C++17が使えるコンパイラが必要です
 * Eigen3がインストールされていればそれを使い、なければFetchContentで自動的にダウンロードします
@@ -19,3 +25,24 @@ cmake -Bbuild
 cmake --build build
 ```
 
+## 使い方
+
+### シミュレータ
+buildディレクトリの`pumila-play`を実行するとシミュレータが起動します
+がAIを読み込んだり対戦する機能がまだないので意味なし
+
+### 学習させる
+notebook/ ディレクトリのnotebookで学習させています
+
+jupyter, tqdm, numpy, matplotlib があれば動くと思います
+
+AIの実装は複数ありますが、これは実装を変更するときに比較のため前のバージョンも動くよう残しているからです。
+それぞれのモデルの違いは[include/pumila/models](https://github.com/na-trium-144/pumila/tree/main/include/pumila/models)内の各ファイルにコメントを書いています
+
+学習後のモデルは`model.save_file()`によりbuildディレクトリに保存されます。
+`model.load_file()`で読み込めます。[Releases](https://github.com/na-trium-144/pumila/releases)に適当に学習後のモデルを置いています
+
+### API
+C++、PythonからシミュレータとAIを使用できます
+
+使い方はヘッダーやnodebookを読んで
