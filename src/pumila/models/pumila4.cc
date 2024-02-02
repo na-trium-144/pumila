@@ -6,7 +6,10 @@ Pumila4::NNModel::NNModel(double learning_rate)
       matrix_ih(std::make_shared<Eigen::MatrixXd>(
           Eigen::MatrixXd::Random(IN_NODES, HIDDEN_NODES))),
       matrix_hq(std::make_shared<Eigen::VectorXd>(
-          Eigen::VectorXd::Random(HIDDEN_NODES))) {}
+          Eigen::VectorXd::Random(HIDDEN_NODES))) {
+    matrix_ih->array() += 1;
+    matrix_hq->array() += 1;
+}
 
 Pumila4::Pumila4(double learning_rate)
     : Pumila(), main(learning_rate), target(main) {}
@@ -31,6 +34,53 @@ void Pumila4::save(std::ostream &os) {
     os.write(reinterpret_cast<char *>(main.matrix_hq->data()),
              main.matrix_hq->rows() * main.matrix_hq->cols() * sizeof(double));
 }
+Pumila4::InFeatureSingle Pumila4::getInNodeSingle(const FieldState &field,
+                                                  int a) {
+    InFeatureSingle feat;
+    feat.field_next = field.copy();
+    feat.field_next.put(actions[a]);
+    feat.field_next.next.pop_front();
+    std::vector<Chain> chains = feat.field_next.deleteChainRecurse();
+
+    feat.in = Eigen::VectorXd::Zero(NNModel::IN_NODES);
+    NNModel::InNodes &in_nodes =
+        *reinterpret_cast<NNModel::InNodes *>(feat.in.data());
+    in_nodes.bias = 1;
+    auto chain_all = feat.field_next.calcChainAll();
+    for (std::size_t y = 0; y < FieldState::HEIGHT; y++) {
+        for (std::size_t x = 0; x < FieldState::WIDTH; x++) {
+            int p;
+            switch (feat.field_next.get(x, y)) {
+            case Puyo::red:
+                p = 0;
+                break;
+            case Puyo::blue:
+                p = 1;
+                break;
+            case Puyo::green:
+                p = 2;
+                break;
+            case Puyo::yellow:
+                p = 3;
+                break;
+            default:
+                p = -1;
+                break;
+            }
+            if (p >= 0) {
+                in_nodes.field_colors[(y * FieldState::WIDTH + x) * 4 + p] = 1;
+                in_nodes.field_chains[(y * FieldState::WIDTH + x) * 4 + p] =
+                    chain_all[y][x];
+            }
+        }
+    }
+    in_nodes.score_diff = 0;
+    for (const auto &c : chains) {
+        in_nodes.score_diff += c.score() / 40.0;
+    }
+    return feat;
+}
+
 
 Pumila4::NNResult Pumila4::NNModel::forward(const Eigen::MatrixXd &in) const {
     if (in.cols() != IN_NODES) {
@@ -47,7 +97,8 @@ Pumila4::NNResult Pumila4::NNModel::forward(const Eigen::MatrixXd &in) const {
     ret.in = in;
     ret.hidden = in * *ret.matrix_ih;
     ret.hidden.leftCols<1>().array() = 1; // bias
-    ret.hidden = (ret.hidden.array() * (ret.hidden.array() > 0).cast<double>()).matrix(); // relu
+    ret.hidden = (ret.hidden.array() * (ret.hidden.array() > 0).cast<double>())
+                     .matrix(); // relu
     assert(ret.hidden.cols() == HIDDEN_NODES);
     ret.q = ret.hidden * *ret.matrix_hq;
     assert(ret.q.cols() == 1);

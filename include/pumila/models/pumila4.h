@@ -81,9 +81,7 @@ class Pumila4 : public Pumila {
         return Pumila2::getInNodes(feature, feat_a);
     }
     inline static InFeatureSingle getInNodeSingle(const FieldState &field,
-                                                  int a) {
-        return Pumila2::getInNodeSingle(field, a);
-    }
+                                                  int a);
 
 
     Pumila4(double learning_rate);
