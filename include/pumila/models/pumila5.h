@@ -3,6 +3,9 @@
 
 namespace pumila {
 /*!
+ * pumila3ベース
+ * * 報酬をスコアのみにした
+ * * 教師信号のgammaを0.99にした
  */
 class Pumila5 : public Pumila3 {
     std::string name() const override { return "pumila5"; }
