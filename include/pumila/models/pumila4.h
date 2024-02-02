@@ -4,6 +4,8 @@
 namespace pumila {
 /*!
  * * 中間層の活性化関数をsigmoidからreluに変更
+ * → 中間層がすべて0になって学習しなくなった
+ * * scoreの入力を40で割って小さくした
  */
 class Pumila4 : public Pumila {
     double gamma = 0.9;
