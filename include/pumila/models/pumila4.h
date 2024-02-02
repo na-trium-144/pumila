@@ -17,9 +17,9 @@ class Pumila4 : public Pumila {
 
     void load(std::istream &is) override;
     void save(std::ostream &os) override;
-    std::string name() const override { return "pumila4"; }
 
   public:
+    std::string name() const override { return "pumila4"; }
     struct NNModel {
         double learning_rate;
 

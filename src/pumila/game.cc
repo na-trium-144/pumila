@@ -1,12 +1,37 @@
 #include <pumila/game.h>
+#include <pumila/model_base.h>
 #include <iostream>
 
 namespace pumila {
-GameSim::GameSim() : field(), seed(), rnd(seed()), phase(nullptr) {
+GameSim::GameSim(std::shared_ptr<Pumila> model)
+    : seed(), rnd(seed()), model_action_thread(std::nullopt), running(true),
+      field(), current_chain(std::nullopt), model(model),
+      phase(nullptr) {
     // todo: 最初のツモは完全ランダムではなかった気がする
     field.next = {{randomPuyo(), randomPuyo()}, {randomPuyo(), randomPuyo()}};
-    phase = std::make_unique<GameSim::FreePhase>(this);
+    phase = std::make_unique<GameSim::FreePhase>(this); // nextが補充される
+    if (model) {
+        model->loadFile();
+        model_action_thread = std::make_optional<std::thread>([this] {
+            while (running.load()) {
+                while (running.load() && !isFreePhase()) {
+                    std::this_thread::yield();
+                }
+                softPut(actions.at(this->model->getAction(this->field)));
+                while (running.load() && isFreePhase()) {
+                    std::this_thread::yield();
+                }
+            }
+        });
+    }
 }
+GameSim::~GameSim() {
+    running.store(false);
+    if (model_action_thread) {
+        model_action_thread->join();
+    }
+}
+
 Puyo GameSim::randomPuyo() {
     switch (getRndRange(4)) {
     case 0:
@@ -21,17 +46,21 @@ Puyo GameSim::randomPuyo() {
 }
 
 void GameSim::movePair(int dx) {
+    std::lock_guard lock(step_m);
     if (isFreePhase() && !field.next.empty()) {
         auto &pp = field.next[0];
         if (FieldState::inRange(pp.bottomX() + dx) &&
             FieldState::inRange(pp.topX() + dx) &&
-            field.get(pp.bottomX() + dx, pp.bottomY()) == Puyo::none &&
-            field.get(pp.topX() + dx, pp.topY()) == Puyo::none) {
+            (pp.bottomY() > 12 ||
+             field.get(pp.bottomX() + dx, pp.bottomY()) == Puyo::none) &&
+            (pp.topY() > 12 ||
+             field.get(pp.topX() + dx, pp.topY()) == Puyo::none)) {
             pp.x += dx;
         }
     }
 }
 void GameSim::rotPair(int r) {
+    std::lock_guard lock(step_m);
     if (isFreePhase() && !field.next.empty()) {
         PuyoPair &pp = field.next[0];
         PuyoPair new_pp = pp;
@@ -50,6 +79,7 @@ void GameSim::rotPair(int r) {
     }
 }
 void GameSim::quickDrop() {
+    std::lock_guard lock(step_m);
     if (isFreePhase() && !field.next.empty()) {
         PuyoPair &pp = field.next[0];
         pp.y -= 12;
@@ -58,6 +88,7 @@ void GameSim::quickDrop() {
     }
 }
 void GameSim::softDrop() {
+    std::lock_guard lock(step_m);
     if (isFreePhase() && !field.next.empty()) {
         PuyoPair &pp = field.next[0];
         pp.y -= 20.0 / 60;
@@ -67,18 +98,52 @@ void GameSim::softDrop() {
 }
 
 void GameSim::step() {
+    std::lock_guard lock(step_m);
+    if (soft_put_target) {
+        const PuyoPair &pp = field.next[0];
+        if (static_cast<Action>(pp) == soft_put_target) {
+            softDrop();
+        } else {
+            soft_put_cnt--;
+            if (soft_put_cnt <= 0) {
+                soft_put_cnt = soft_put_interval;
+                if ((static_cast<int>(soft_put_target->rot) -
+                     static_cast<int>(pp.rot) + 4) %
+                        4 ==
+                    1) {
+                    rotPair(1);
+                } else if (soft_put_target->rot != pp.rot) {
+                    rotPair(-1);
+                } else if (pp.x < soft_put_target->x) {
+                    movePair(1);
+                } else if (pp.x > soft_put_target->x) {
+                    movePair(-1);
+                }
+            }
+        }
+    }
     std::unique_ptr<Phase> next_phase = phase->step();
     if (next_phase) {
         phase = std::move(next_phase);
     }
 }
 void GameSim::put(const Action &action) {
+    std::lock_guard lock(step_m);
     if (isFreePhase() && !field.next.empty()) {
         PuyoPair &pp = field.next[0];
         pp = PuyoPair{pp, action};
         quickDrop();
         step();
     }
+}
+void GameSim::softPut(const Action &action) {
+    std::lock_guard lock(step_m);
+    soft_put_target = action;
+}
+
+bool GameSim::isFreePhase() {
+    std::lock_guard lock(step_m);
+    return phase->get() == Phase::free;
 }
 
 GameSim::FreePhase::FreePhase(GameSim *sim) : Phase(sim), put_t(PUT_T) {
@@ -98,6 +163,7 @@ std::unique_ptr<GameSim::Phase> GameSim::FreePhase::step() {
         put_t--;
         current_pair.y = yb;
         if (put_t < 0) {
+            sim->soft_put_target = std::nullopt;
             sim->field.put(current_pair);
             sim->field.next.pop_front();
             sim->current_chain = std::nullopt;

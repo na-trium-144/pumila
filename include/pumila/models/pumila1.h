@@ -11,9 +11,9 @@ class Pumila1 : public Pumila {
 
     void load(std::istream &is) override;
     void save(std::ostream &os) override;
-    std::string name() const override { return "pumila1"; }
 
   public:
+    std::string name() const override { return "pumila1"; }
     struct NNModel {
         double alpha; // sigmoid coef
         double learning_rate;

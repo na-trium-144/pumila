@@ -26,6 +26,11 @@ struct Action {
         vertical_inverse = 2,
         horizontal_left = 3,
     } rot = Rotation::vertical;
+
+    bool operator==(const Action &rhs) const {
+        return x == rhs.x && rot == rhs.rot;
+    }
+    bool operator!=(const Action &rhs) const { return !(*this == rhs); }
 };
 
 constexpr int ACTIONS_NUM = 22;

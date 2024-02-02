@@ -58,6 +58,13 @@ FetchContent_Populate(bs_thread_pool)
 add_library(bs_thread_pool INTERFACE)
 target_include_directories(bs_thread_pool INTERFACE ${bs_thread_pool_SOURCE_DIR}/include)
 
+message(STATUS "Fetching cli11 source...")
+FetchContent_Declare(cli11
+    GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
+    GIT_TAG v2.3.2
+)
+FetchContent_MakeAvailable(cli11)
+
 message(STATUS "Fetching roboto font...")
 FetchContent_Declare(roboto-font
     URL https://github.com/googlefonts/roboto/releases/download/v2.138/roboto-android.zip
@@ -116,6 +123,9 @@ pybind11_add_module(pypumila
 target_link_libraries(pypumila PUBLIC pumila)
 
 if(PUMILA_SDL2)
-    add_executable(pumila-play src/play/main.cc)
-    target_link_libraries(pumila-play PRIVATE pumila)
+    add_executable(pumila-sim src/sim/main.cc)
+    target_link_libraries(pumila-sim PRIVATE
+        pumila
+        CLI11
+    )
 endif()

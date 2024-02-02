@@ -4,8 +4,12 @@
 #include <random>
 #include <memory>
 #include <optional>
+#include <atomic>
+#include <thread>
+#include <mutex>
 
 namespace pumila {
+class Pumila;
 /*!
  * \brief fieldに加えてネクスト、落下時間、スコアなども管理する(1プレイヤー分)
  *
@@ -24,6 +28,11 @@ class GameSim {
     }
     Puyo randomPuyo();
 
+    std::optional<std::thread> model_action_thread;
+    std::atomic<bool> running;
+    std::optional<Action> soft_put_target = std::nullopt;
+    std::recursive_mutex step_m;
+
   public:
     FieldState field;
     /*!
@@ -32,11 +41,21 @@ class GameSim {
      * ChainPhaseを抜けるとリセット
      *
      */
-    std::optional<Chain> current_chain = std::nullopt;
+    std::optional<Chain> current_chain;
 
-    GameSim();
+    std::shared_ptr<Pumila> model;
+
+    int soft_put_interval = 6;
+    int soft_put_cnt = 0;
+
+    GameSim() : GameSim(nullptr) {}
+    explicit GameSim(std::shared_ptr<Pumila> model);
     GameSim(const GameSim &sim) = delete;
     GameSim(GameSim &&sim) = delete;
+
+    ~GameSim();
+
+    bool hasModel() { return model != nullptr; }
 
     /*!
      * \brief freePhase時のみぷよを操作する
@@ -51,17 +70,22 @@ class GameSim {
 
     /*!
      * \brief 1フレーム時間を進める
+     * コンストラクタでmodelをセットしていればそれの返すアクションにしたがってsoftPut()する
      *
      */
     void step();
 
     /*!
-     * \brief ぷよを置く
+     * \brief ぷよを瞬間移動で置く
      *
      * 時間は進まないので適宜step()を呼ぶこと
      *
      */
     void put(const Action &action);
+    /*!
+     * \brief ぷよを目標位置まで動かして置くときはここにセットしてstep()を呼ぶ
+     */
+    void softPut(const Action &action);
 
     struct Phase {
         GameSim *sim;
@@ -84,7 +108,7 @@ class GameSim {
     };
     std::unique_ptr<Phase> phase;
 
-    bool isFreePhase() const { return phase->get() == Phase::free; }
+    bool isFreePhase();
 
     struct FreePhase final : Phase {
         explicit FreePhase(GameSim *sim);

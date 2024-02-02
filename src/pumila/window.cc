@@ -1,4 +1,5 @@
 #include <pumila/window.h>
+#include <pumila/model_base.h>
 #include "drawing.h"
 #include <iostream>
 #include <sstream>
@@ -8,7 +9,8 @@
 #endif
 
 namespace pumila {
-Window::Window(const std::shared_ptr<GameSim> &sim) : sim(sim), key_state(sim) {
+Window::Window(const std::vector<std::shared_ptr<GameSim>> &sim)
+    : sim(sim), key_state(sim) {
 #ifdef PUMILA_SDL2
     SDL_Window *sdl_window = nullptr;
     SDL_Renderer *sdl_renderer = nullptr;
@@ -56,16 +58,16 @@ void Window::quit() {
 }
 bool Window::isRunning() const { return sdl_window_p && sdl_renderer_p; }
 
-void Window::step(bool sim_step, bool player) {
+void Window::step(bool sim_step) {
 #ifdef PUMILA_SDL2
     if (isRunning()) {
         handleEvent();
     }
-    if (player) {
-        key_state.keyFrame();
-    }
+    key_state.keyFrame();
     if (sim_step) {
-        sim->step();
+        for (const auto &s : sim) {
+            s->step();
+        }
     }
     if (isRunning()) {
         draw();
@@ -86,66 +88,90 @@ void Window::draw() {
     SDL_SetRenderDrawColor(sdl_renderer, 255, 255, 255, 255);
     SDL_RenderClear(sdl_renderer);
 
-    // 枠
-    SDL_SetRenderDrawColor(sdl_renderer, 0, 0, 0, 255);
-    SDL_Rect field_rect = {FIELD_X, FIELD_Y - PUYO_SIZE * 12, PUYO_SIZE * 6,
-                           PUYO_SIZE * 12};
-    SDL_RenderDrawRect(sdl_renderer, &field_rect);
+    for (std::size_t i = 0; i < sim.size(); i++) {
+        // 枠
+        SDL_SetRenderDrawColor(sdl_renderer, 0, 0, 0, 255);
+        SDL_Rect field_rect = {FIELD_X[i], FIELD_Y - PUYO_SIZE * 12,
+                               PUYO_SIZE * 6, PUYO_SIZE * 12};
+        SDL_RenderDrawRect(sdl_renderer, &field_rect);
 
-    if (sim->phase->get() == GameSim::Phase::free) {
-        auto &current_pair = sim->field.next[0];
-        drawPuyo(current_pair.bottom, current_pair.bottomX(),
-                 sim->field.getHeight(current_pair, true).first, false);
-        drawPuyo(current_pair.top, current_pair.topX(),
-                 sim->field.getHeight(current_pair, true).second, false);
-        drawPuyo(current_pair.bottom, current_pair.bottomX(),
-                 current_pair.bottomY(), true);
-        drawPuyo(current_pair.top, current_pair.topX(), current_pair.topY(),
-                 true);
-    }
-    for (int y = 0; y < FieldState::HEIGHT; y++) {
-        for (int x = 0; x < FieldState::WIDTH; x++) {
-            drawPuyo(sim->field.get(x, y), x, y, true);
+        if (sim[i]->isFreePhase()) {
+            auto &current_pair = sim[i]->field.next[0];
+            drawPuyo(current_pair.bottom, current_pair.bottomX(),
+                     sim[i]->field.getHeight(current_pair, true).first, i,
+                     false);
+            drawPuyo(current_pair.top, current_pair.topX(),
+                     sim[i]->field.getHeight(current_pair, true).second, i,
+                     false);
+            drawPuyo(current_pair.bottom, current_pair.bottomX(),
+                     current_pair.bottomY(), i, true);
+            drawPuyo(current_pair.top, current_pair.topX(), current_pair.topY(),
+                     i, true);
         }
-    }
+        int next_p = sim[i]->isFreePhase() ? 1 : 0;
+        if (sim[i]->field.next.size() > next_p) {
+            drawPuyo(sim[i]->field.next[next_p].bottom, 6.5, 10.5, i, true);
+            drawPuyo(sim[i]->field.next[next_p].top, 6.5, 11.5, i, true);
+        }
+        if (sim[i]->field.next.size() > next_p + 1) {
+            drawPuyo(sim[i]->field.next[next_p + 1].bottom, 8, 9.5, i, true);
+            drawPuyo(sim[i]->field.next[next_p + 1].top, 8, 10.5, i, true);
+        }
+        for (int y = 0; y < FieldState::HEIGHT; y++) {
+            for (int x = 0; x < FieldState::WIDTH; x++) {
+                drawPuyo(sim[i]->field.get(x, y), x, y, i, true);
+            }
+        }
 
-    if (ttf_font) {
-        int text_w, text_h;
-        SDL_Texture *score_t =
-            drawText(sdl_renderer, std::to_string(sim->field.total_score),
-                     ttf_font, {0, 0, 0, 255}, &text_w, &text_h);
-        SDL_Rect rect = {FIELD_X + PUYO_SIZE * 6 - text_w - 10, FIELD_Y + 10,
-                         text_w, text_h};
-        SDL_RenderCopy(sdl_renderer, score_t, NULL, &rect);
-        SDL_DestroyTexture(score_t);
+        if (ttf_font) {
+            int text_w, text_h;
 
-        std::ostringstream ss;
-        if (sim->current_chain) {
-            ss << sim->current_chain->scoreA() << " x "
-               << sim->current_chain->scoreB();
-            score_t = drawText(sdl_renderer, ss.str(), ttf_font, {0, 0, 0, 255},
-                               &text_w, &text_h);
-            rect = {FIELD_X + PUYO_SIZE * 6 - text_w - 10, FIELD_Y + 40, text_w,
-                    text_h};
+            SDL_Texture *name_t =
+                drawText(sdl_renderer,
+                         sim[i]->hasModel() ? sim[i]->model->name() : "player",
+                         ttf_font, {0, 0, 0, 255}, &text_w, &text_h);
+            SDL_Rect rect = {FIELD_X[i] + PUYO_SIZE * 3 - text_w / 2,
+                             FIELD_Y + 5, text_w, text_h};
+            SDL_RenderCopy(sdl_renderer, name_t, NULL, &rect);
+            SDL_DestroyTexture(name_t);
+
+            SDL_Texture *score_t = drawText(
+                sdl_renderer, std::to_string(sim[i]->field.total_score),
+                ttf_font, {0, 0, 0, 255}, &text_w, &text_h);
+            rect = {FIELD_X[i] + PUYO_SIZE * 6 - text_w - 10, FIELD_Y + 35,
+                    text_w, text_h};
             SDL_RenderCopy(sdl_renderer, score_t, NULL, &rect);
             SDL_DestroyTexture(score_t);
-            ss.str("");
-        } else {
-            ss << "(" << sim->field.prev_chain_num << ", "
-               << sim->field.prev_chain_score << ")";
-            score_t = drawText(sdl_renderer, ss.str(), ttf_font, {0, 0, 0, 255},
-                               &text_w, &text_h);
-            rect = {FIELD_X + 10, FIELD_Y + 40, text_w, text_h};
-            SDL_RenderCopy(sdl_renderer, score_t, NULL, &rect);
-            SDL_DestroyTexture(score_t);
-            ss.str("");
+
+            std::ostringstream ss;
+            if (sim[i]->current_chain) {
+                ss << sim[i]->current_chain->scoreA() << " x "
+                   << sim[i]->current_chain->scoreB();
+                score_t = drawText(sdl_renderer, ss.str(), ttf_font,
+                                   {0, 0, 0, 255}, &text_w, &text_h);
+                rect = {FIELD_X[i] + PUYO_SIZE * 6 - text_w - 10, FIELD_Y + 60,
+                        text_w, text_h};
+                SDL_RenderCopy(sdl_renderer, score_t, NULL, &rect);
+                SDL_DestroyTexture(score_t);
+                ss.str("");
+            } else {
+                // ss << "(" << sim->field.prev_chain_num << ", "
+                //    << sim->field.prev_chain_score << ")";
+                // score_t = drawText(sdl_renderer, ss.str(), ttf_font, {0, 0,
+                // 0, 255},
+                //                    &text_w, &text_h);
+                // rect = {FIELD_X + 10, FIELD_Y + 40, text_w, text_h};
+                // SDL_RenderCopy(sdl_renderer, score_t, NULL, &rect);
+                // SDL_DestroyTexture(score_t);
+                // ss.str("");
+            }
         }
     }
 
     SDL_RenderPresent(sdl_renderer);
 #endif
 }
-void Window::drawPuyo(Puyo p, double x, double y, bool not_ghost) {
+void Window::drawPuyo(Puyo p, double x, double y, int i, bool not_ghost) {
 #ifdef PUMILA_SDL2
     if (isRunning() && p != Puyo::none) {
         using namespace pumila::drawing;
@@ -154,7 +180,7 @@ void Window::drawPuyo(Puyo p, double x, double y, bool not_ghost) {
         Points points;
         SDL_SetRenderDrawColor(sdl_renderer, col(p).r, col(p).g, col(p).b,
                                not_ghost ? 255 : 100);
-        points = drawCircle(puyoX(x), puyoY(y),
+        points = drawCircle(puyoX(x, i), puyoY(y),
                             PUYO_SIZE * (not_ghost ? 0.9 : 0.5) / 2);
         SDL_RenderDrawPoints(sdl_renderer, points.data(), points.size());
     }
@@ -215,28 +241,52 @@ void Window::handleEvent() {
 }
 void Window::KeyState::keyFrame() {
     if (quick_drop) {
-        sim->quickDrop();
+        for (const auto &s : sim) {
+            if (!s->hasModel()) {
+                s->quickDrop();
+            }
+        }
         quick_drop = false;
     }
     if (soft_drop) {
-        sim->softDrop();
+        for (const auto &s : sim) {
+            if (!s->hasModel()) {
+                s->softDrop();
+            }
+        }
     }
     if (left) {
         if (!key_repeat_wait) {
-            sim->movePair(-1);
+            for (const auto &s : sim) {
+                if (!s->hasModel()) {
+                    s->movePair(-1);
+                }
+            }
         }
     }
     if (right) {
         if (!key_repeat_wait) {
-            sim->movePair(1);
+            for (const auto &s : sim) {
+                if (!s->hasModel()) {
+                    s->movePair(1);
+                }
+            }
         }
     }
     if (rot_left) {
-        sim->rotPair(-1);
+        for (const auto &s : sim) {
+            if (!s->hasModel()) {
+                s->rotPair(-1);
+            }
+        }
         rot_left = false;
     }
     if (rot_right) {
-        sim->rotPair(1);
+        for (const auto &s : sim) {
+            if (!s->hasModel()) {
+                s->rotPair(1);
+            }
+        }
         rot_right = false;
     }
     if (key_repeat_wait == 0) {

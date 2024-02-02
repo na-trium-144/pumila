@@ -21,15 +21,25 @@
 * MacOSの場合cmake次に`-DPUMILA_ACCELERATE=ON`オプションを追加するとAccelerateを使用し計算が速くなります
 * ビルド
 ```sh
-cmake -Bbuild
-cmake --build build
+mkdir build
+cd build
+cmake ..
+make
 ```
 
 ## 使い方
 
+[Releases](https://github.com/na-trium-144/pumila/releases)に適当に学習後のモデルを置いているのでこれをダウンロードしてbuildディレクトリの中に置いてください
+
 ### シミュレータ
-buildディレクトリの`pumila-play`を実行するとシミュレータが起動します
-がAIを読み込んだり対戦する機能がまだないので意味なし
+buildディレクトリの中で`./pumila-sim`を実行するとシミュレータが起動します
+引数にAIのモデル(pumila3, pumila5)または player を最大2つまで指定してください
+
+```sh
+# 例 player vs AI
+./pumila-sim player pumila5
+```
+playerの操作は A / D キーで横移動、N / M キーで回転、S キーで高速落下、(Wキーで瞬間落下) です
 
 ### 学習させる
 notebook/ ディレクトリのnotebookで学習させています
@@ -40,7 +50,7 @@ AIの実装は複数ありますが、これは実装を変更するときに比
 それぞれのモデルの違いは[include/pumila/models](https://github.com/na-trium-144/pumila/tree/main/include/pumila/models)内の各ファイルにコメントを書いています
 
 学習後のモデルは`model.save_file()`によりbuildディレクトリに保存されます。
-`model.load_file()`で読み込めます。[Releases](https://github.com/na-trium-144/pumila/releases)に適当に学習後のモデルを置いています
+`model.load_file()`でbuildディレクトリから読み込みます。
 
 ### API
 C++、PythonからシミュレータとAIを使用できます

@@ -23,11 +23,6 @@ class Pumila : public std::enable_shared_from_this<Pumila> {
 
     virtual void load(std::istream &) {}
     virtual void save(std::ostream &) {}
-    /*!
-     * \brief ファイル名に使う
-     * 空文字列の場合loadもsaveもされない
-     */
-    virtual std::string name() const { return ""; };
 
   public:
     Pumila() = default;
@@ -36,6 +31,11 @@ class Pumila : public std::enable_shared_from_this<Pumila> {
     Pumila(const Pumila &) = delete;
     Pumila(Pumila &&) = delete;
 
+    /*!
+     * \brief ファイル名に使う
+     * 空文字列の場合loadもsaveもされない
+     */
+    virtual std::string name() const { return ""; };
     /*!
      * \brief ファイルを開き load() を呼ぶ
      */
