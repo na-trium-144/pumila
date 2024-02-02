@@ -5,7 +5,7 @@
 namespace pumila {
 class Window {
     void *sdl_window_p = nullptr, *sdl_renderer_p = nullptr,
-         *ttf_font_p = nullptr;
+         *ttf_font_p = nullptr, *ttf_font_sm_p = nullptr;
     static constexpr int WIDTH = 700, HEIGHT = 500;
     static constexpr int PUYO_SIZE = 30;
     static constexpr std::array<int, 2> FIELD_X = {50, 400};

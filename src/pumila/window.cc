@@ -38,6 +38,8 @@ Window::Window(const std::vector<std::shared_ptr<GameSim>> &sim)
     TTF_Init();
     TTF_Font *ttf_font = TTF_OpenFont("Roboto-Regular.ttf", 24);
     ttf_font_p = static_cast<void *>(ttf_font);
+    TTF_Font *ttf_font_sm = TTF_OpenFont("Roboto-Regular.ttf", 12);
+    ttf_font_sm_p = static_cast<void *>(ttf_font_sm);
     if (!ttf_font) {
         std::cerr << "Font not found" << std::endl;
     }
@@ -81,6 +83,7 @@ void Window::draw() {
     using namespace pumila::drawing;
     SDL_Renderer *sdl_renderer = static_cast<SDL_Renderer *>(sdl_renderer_p);
     TTF_Font *ttf_font = static_cast<TTF_Font *>(ttf_font_p);
+    TTF_Font *ttf_font_sm = static_cast<TTF_Font *>(ttf_font_sm_p);
 
     SDL_SetRenderDrawBlendMode(sdl_renderer, SDL_BLENDMODE_BLEND);
 
@@ -154,6 +157,28 @@ void Window::draw() {
                 SDL_RenderCopy(sdl_renderer, score_t, NULL, &rect);
                 SDL_DestroyTexture(score_t);
                 ss.str("");
+
+                ss << sim[i]->field.prev_chain_num;
+                score_t = drawText(sdl_renderer, ss.str(), ttf_font,
+                                   {0, 0, 0, 255}, &text_w, &text_h);
+                rect = {FIELD_X[i] + PUYO_SIZE * 7 - text_w / 2, FIELD_Y - 60,
+                        text_w, text_h};
+                SDL_RenderCopy(sdl_renderer, score_t, NULL, &rect);
+                SDL_DestroyTexture(score_t);
+                ss.str("");
+
+                ss << "chain";
+                if (sim[i]->field.prev_chain_num >= 2) {
+                    ss << "s";
+                }
+                ss << "!";
+                score_t = drawText(sdl_renderer, ss.str(), ttf_font_sm,
+                                   {0, 0, 0, 255}, &text_w, &text_h);
+                rect = {FIELD_X[i] + PUYO_SIZE * 7 - text_w / 2, FIELD_Y - 30,
+                        text_w, text_h};
+                SDL_RenderCopy(sdl_renderer, score_t, NULL, &rect);
+                SDL_DestroyTexture(score_t);
+
             } else {
                 // ss << "(" << sim->field.prev_chain_num << ", "
                 //    << sim->field.prev_chain_score << ")";
