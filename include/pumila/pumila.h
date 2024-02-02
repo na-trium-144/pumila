@@ -10,3 +10,4 @@
 #include "models/pumila2.h"
 #include "models/pumila3.h"
 #include "models/pumila4.h"
+#include "models/pumila5.h"

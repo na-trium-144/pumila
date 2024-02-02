@@ -27,6 +27,7 @@ void initPumila2Module(py::module_ &m) {
                      return pumila2.getInNodes(field).get();
                  })
             .def("calc_reward", &Pumila2::calcReward)
+            .def("calc_reward", &Pumila2::calcRewardS)
             .def("learn_step", &Pumila2::learnStep)
             .def("copy", &Pumila2::copy);
     py::class_<Pumila2::NNModel>(pumila2, "NNModel")

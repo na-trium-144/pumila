@@ -137,7 +137,10 @@ class Pumila2 : public Pumila {
      * \brief 報酬を計算
      *
      */
-    static double calcReward(const FieldState &field);
+    virtual double calcReward(const FieldState &field) const {
+        return calcRewardS(field);
+    }
+    static double calcRewardS(const FieldState &field);
 
     int getAction(const FieldState &field) override {
         return getActionRnd(field, 0);

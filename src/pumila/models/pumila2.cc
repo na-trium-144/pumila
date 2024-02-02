@@ -205,7 +205,7 @@ void Pumila2::NNModel::backward(const NNResult &result,
     }
 }
 
-double Pumila2::calcReward(const FieldState &field) {
+double Pumila2::calcRewardS(const FieldState &field) {
     double r = -1;
     std::size_t max_y = 0;
     for (std::size_t x = 0; x < FieldState::WIDTH; x++) {

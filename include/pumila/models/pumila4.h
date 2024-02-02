@@ -95,7 +95,7 @@ class Pumila4 : public Pumila {
     }
 
     inline static double calcReward(const FieldState &field) {
-        return Pumila2::calcReward(field);
+        return Pumila2::calcRewardS(field);
     }
 
     int getAction(const FieldState &field) override {

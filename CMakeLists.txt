@@ -83,6 +83,7 @@ add_library(pumila SHARED
     src/pumila/models/pumila2.cc
     src/pumila/models/pumila3.cc
     src/pumila/models/pumila4.cc
+    src/pumila/models/pumila5.cc
 )
 target_include_directories(pumila PUBLIC include)
 target_compile_features(pumila PUBLIC cxx_std_17)
@@ -110,6 +111,7 @@ pybind11_add_module(pypumila
     src/pypumila/pypumila2.cc
     src/pypumila/pypumila3.cc
     src/pypumila/pypumila4.cc
+    src/pypumila/pypumila5.cc
 )
 target_link_libraries(pypumila PUBLIC pumila)
 
