@@ -1,6 +1,6 @@
 #include <pumila/action.h>
 
-namespace pumila {
+namespace PUMILA_NS {
 const std::array<Action, 22> actions = {{
     {0, Action::Rotation::vertical},
     {1, Action::Rotation::vertical},
@@ -54,4 +54,4 @@ void PuyoPair::rotate(int right) {
     rot = static_cast<Rotation>(((static_cast<int>(rot) + right) % 4 + 4) % 4);
 }
 
-} // namespace pumila
+} // namespace PUMILA_NS

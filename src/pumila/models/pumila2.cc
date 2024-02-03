@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace pumila {
+namespace PUMILA_NS {
 Pumila2::NNModel::NNModel(double alpha, double learning_rate)
     : alpha(alpha), learning_rate(learning_rate),
       matrix_ih(std::make_shared<Eigen::MatrixXd>(
@@ -307,4 +307,4 @@ void Pumila2::learnStep(const FieldState &field) {
     });
 }
 
-} // namespace pumila
+} // namespace PUMILA_NS

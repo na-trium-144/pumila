@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace pumila {
+namespace PUMILA_NS {
 Pumila1::NNModel::NNModel(double alpha, double learning_rate)
     : alpha(alpha), learning_rate(learning_rate),
       matrix_ih(Eigen::MatrixXd::Random(IN_NODES, HIDDEN_NODES)),
@@ -112,4 +112,4 @@ double Pumila1::learnResult(int id, std::shared_ptr<GameSim> sim_after) {
     return diff;
 }
 
-} // namespace pumila
+} // namespace PUMILA_NS

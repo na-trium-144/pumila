@@ -9,7 +9,7 @@
 #include <thread>
 #include <mutex>
 
-namespace pumila {
+namespace PUMILA_NS {
 class Pumila;
 /*!
  * \brief fieldに加えてネクスト、落下時間、スコアなども管理する(1プレイヤー分)
@@ -135,4 +135,4 @@ class GameSim {
     };
 };
 
-} // namespace pumila
+} // namespace PUMILA_NS

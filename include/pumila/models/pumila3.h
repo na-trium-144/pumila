@@ -1,7 +1,7 @@
 #pragma once
 #include "./pumila2.h"
 
-namespace pumila {
+namespace PUMILA_NS {
 /*!
  * * learnStepでtaskの建て方を改良(できるだけfuture.get()で待機しないようにした)
  * * 14段目に置こうとしたときの報酬を最小値にした
@@ -21,4 +21,4 @@ class Pumila3 : public Pumila2 {
     PUMILA_DLL int getActionRnd(const FieldState &field, double rnd_p) override;
     PUMILA_DLL void learnStep(const FieldState &field) override;
 };
-} // namespace pumila
+} // namespace PUMILA_NS

@@ -8,7 +8,7 @@
 #include <string>
 #include <iostream>
 
-namespace pumila {
+namespace PUMILA_NS {
 class Pumila : public std::enable_shared_from_this<Pumila> {
   protected:
     inline static BS::thread_pool pool;
@@ -56,4 +56,4 @@ class Pumila : public std::enable_shared_from_this<Pumila> {
         return getAction(sim->field);
     }
 };
-} // namespace pumila
+} // namespace PUMILA_NS

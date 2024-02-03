@@ -4,7 +4,7 @@
 #include <vector>
 #include <utility>
 
-namespace pumila {
+namespace PUMILA_NS {
 /*!
  * \brief 1連鎖で消えるぷよの情報
  *
@@ -30,4 +30,4 @@ struct Chain {
     int score() const { return scoreA() * scoreB(); };
 };
 
-} // namespace pumila
+} // namespace PUMILA_NS

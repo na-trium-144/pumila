@@ -8,7 +8,7 @@
 #include <SDL.h>
 #endif
 
-namespace pumila {
+namespace PUMILA_NS {
 Window::Window(const std::vector<std::shared_ptr<GameSim>> &sim)
     : sim(sim), key_state(sim) {
 #ifdef PUMILA_SDL2
@@ -80,7 +80,7 @@ void Window::step(bool sim_step) {
 
 void Window::draw() {
 #ifdef PUMILA_SDL2
-    using namespace pumila::drawing;
+    using namespace PUMILA_NS::drawing;
     SDL_Renderer *sdl_renderer = static_cast<SDL_Renderer *>(sdl_renderer_p);
     TTF_Font *ttf_font = static_cast<TTF_Font *>(ttf_font_p);
     TTF_Font *ttf_font_sm = static_cast<TTF_Font *>(ttf_font_sm_p);
@@ -199,7 +199,7 @@ void Window::draw() {
 void Window::drawPuyo(Puyo p, double x, double y, int i, bool not_ghost) {
 #ifdef PUMILA_SDL2
     if (isRunning() && p != Puyo::none) {
-        using namespace pumila::drawing;
+        using namespace PUMILA_NS::drawing;
         SDL_Renderer *sdl_renderer =
             static_cast<SDL_Renderer *>(sdl_renderer_p);
         Points points;
@@ -321,4 +321,4 @@ void Window::KeyState::keyFrame() {
     }
 }
 
-} // namespace pumila
+} // namespace PUMILA_NS

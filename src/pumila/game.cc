@@ -2,7 +2,7 @@
 #include <pumila/model_base.h>
 #include <iostream>
 
-namespace pumila {
+namespace PUMILA_NS {
 GameSim::GameSim(std::shared_ptr<Pumila> model)
     : seed(), rnd(seed()), model_action_thread(std::nullopt), running(true),
       field(), current_chain(std::nullopt), model(model),
@@ -216,4 +216,4 @@ std::unique_ptr<GameSim::Phase> GameSim::ChainPhase::step() {
     return nullptr;
 }
 
-} // namespace pumila
+} // namespace PUMILA_NS

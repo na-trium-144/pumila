@@ -5,7 +5,13 @@
 #else
 #define PUMILA_DLL __declspec(dllimport)
 #endif
+#ifdef _DEBUG
+#define PUMILA_NS pumilad
+#else
+#define PUMILA_NS pumila
+#endif
 #else
 #define PUMILA_DLL
+#define PUMILA_NS pumila
 #endif
 

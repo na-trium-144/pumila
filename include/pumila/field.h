@@ -6,7 +6,7 @@
 #include <vector>
 #include <deque>
 
-namespace pumila {
+namespace PUMILA_NS {
 /*!
  * \brief 1プレイヤーの盤面の情報
  *
@@ -121,4 +121,4 @@ struct FieldState {
      */
     PUMILA_DLL bool fall();
 };
-} // namespace pumila
+} // namespace PUMILA_NS

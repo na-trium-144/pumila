@@ -3,7 +3,7 @@
 #include "game.h"
 #include <memory>
 
-namespace pumila {
+namespace PUMILA_NS {
 class Window {
     void *sdl_window_p = nullptr, *sdl_renderer_p = nullptr,
          *ttf_font_p = nullptr, *ttf_font_sm_p = nullptr;
@@ -52,4 +52,4 @@ class Window {
     PUMILA_DLL void quit();
     PUMILA_DLL bool isRunning() const;
 };
-} // namespace pumila
+} // namespace PUMILA_NS

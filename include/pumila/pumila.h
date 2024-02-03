@@ -11,3 +11,9 @@
 #include "models/pumila3.h"
 #include "models/pumila4.h"
 #include "models/pumila5.h"
+
+#ifdef _MSC_VER
+#ifdef  _DEBUG
+namespace pumila = pumilad;
+#endif
+#endif

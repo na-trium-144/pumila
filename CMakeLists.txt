@@ -155,7 +155,7 @@ else()
     add_compile_options(-Wall -Wpedantic -Wextra)
 endif()
 
-add_library(pumila SHARED
+set(PUMILA_SRC
     src/pumila/action.cc
     src/pumila/field.cc
     src/pumila/chain.cc
@@ -169,6 +169,10 @@ add_library(pumila SHARED
     src/pumila/models/pumila4.cc
     src/pumila/models/pumila5.cc
 )
+if(WIN32)
+    set(PUMILA_SRC ${PUMILA_SRC} src/pumila/version.rc)
+endif()
+add_library(pumila SHARED ${PUMILA_SRC})
 target_include_directories(pumila PUBLIC include)
 target_compile_features(pumila PUBLIC cxx_std_17)
 target_link_libraries(pumila PUBLIC ${eigen} bs_thread_pool)
@@ -183,6 +187,9 @@ endif()
 if(PUMILA_SDL2)
     target_link_libraries(pumila PRIVATE ${sdl2})
     target_compile_definitions(pumila PRIVATE PUMILA_SDL2)
+endif()
+if(MSVC)
+    set_target_properties(${PROJECT_NAME} PROPERTIES DEBUG_POSTFIX d)
 endif()
 
 pybind11_add_module(pypumila

@@ -1,7 +1,7 @@
 #pragma once
 #include "./pumila3.h"
 
-namespace pumila {
+namespace PUMILA_NS {
 /*!
  * pumila3ベース
  * * 報酬をスコアのみにした
@@ -24,4 +24,4 @@ class Pumila5 : public Pumila3 {
     }
     PUMILA_DLL static double calcRewardS(const FieldState &field);
 };
-} // namespace pumila
+} // namespace PUMILA_NS

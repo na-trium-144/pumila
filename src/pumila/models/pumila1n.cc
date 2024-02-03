@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace pumila {
+namespace PUMILA_NS {
 int Pumila1N::getAction(const FieldState &field) {
     std::array<std::future<double>, ACTIONS_NUM> actions_result;
     for (int a = 0; a < ACTIONS_NUM; a++) {
@@ -41,4 +41,4 @@ int Pumila1N::getAction(const FieldState &field) {
     return max_a;
 }
 
-} // namespace pumila
+} // namespace PUMILA_NS

@@ -3,7 +3,7 @@
 #include <array>
 #include <memory>
 
-namespace pumila {
+namespace PUMILA_NS {
 /*!
  * \brief Pumila1と同じ条件、ニューラルネットワーク無しで連鎖をねらう
  *
@@ -17,4 +17,4 @@ class Pumila1N : public Pumila {
 
     PUMILA_DLL int getAction(const FieldState &field) override;
 };
-} // namespace pumila
+} // namespace PUMILA_NS

@@ -4,7 +4,7 @@
 #include <SDL_ttf.h>
 #include <vector>
 
-namespace pumila::drawing {
+namespace PUMILA_NS::drawing {
 
 struct Color {
     int r, g, b;
@@ -49,5 +49,5 @@ inline SDL_Texture *drawText(SDL_Renderer *renderer, const std::string &text,
     SDL_FreeSurface(surface);
     return texture;
 }
-} // namespace pumila::drawing
+} // namespace PUMILA_NS::drawing
 #endif

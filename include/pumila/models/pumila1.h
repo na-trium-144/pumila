@@ -4,7 +4,7 @@
 #include <array>
 #include <memory>
 
-namespace pumila {
+namespace PUMILA_NS {
 class Pumila1 : public Pumila {
     double gamma;
     int back_count = 0;
@@ -88,4 +88,4 @@ class Pumila1 : public Pumila {
     PUMILA_DLL std::pair<int, int> getLearnAction(std::shared_ptr<GameSim> sim);
     PUMILA_DLL double learnResult(int id, std::shared_ptr<GameSim> sim_after);
 };
-} // namespace pumila
+} // namespace PUMILA_NS

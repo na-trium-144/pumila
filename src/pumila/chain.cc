@@ -2,7 +2,7 @@
 #include <numeric>
 #include <algorithm>
 
-namespace pumila {
+namespace PUMILA_NS {
 int Chain::connectionNum() const {
     return std::accumulate(
         connections.begin(), connections.end(), 0,
@@ -46,4 +46,4 @@ int Chain::scoreB() const {
     return b ? b : 1;
 }
 
-} // namespace pumila
+} // namespace PUMILA_NS

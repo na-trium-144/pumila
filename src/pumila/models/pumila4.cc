@@ -1,6 +1,6 @@
 #include <pumila/pumila.h>
 
-namespace pumila {
+namespace PUMILA_NS {
 Pumila4::NNModel::NNModel(double learning_rate)
     : learning_rate(learning_rate),
       matrix_ih(std::make_shared<Eigen::MatrixXd>(
@@ -222,4 +222,4 @@ void Pumila4::learnStep(const FieldState &field) {
     });
 }
 
-} // namespace pumila
+} // namespace PUMILA_NS

@@ -2,7 +2,7 @@
 #include "def.h"
 #include <array>
 
-namespace pumila {
+namespace PUMILA_NS {
 enum class Puyo {
     none = 0,
     red,
@@ -82,4 +82,4 @@ struct PuyoPair : Action {
     PUMILA_DLL void rotate(int right);
 };
 
-} // namespace pumila
+} // namespace PUMILA_NS

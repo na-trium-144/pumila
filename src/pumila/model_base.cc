@@ -1,7 +1,7 @@
 #include <pumila/model_base.h>
 #include <fstream>
 
-namespace pumila {
+namespace PUMILA_NS {
 void Pumila::loadFile() {
     if (!name().empty()) {
         std::ifstream ifs(name() + ".bin",
@@ -24,4 +24,4 @@ void Pumila::saveFile() {
         }
     }
 }
-} // namespace pumila
+} // namespace PUMILA_NS

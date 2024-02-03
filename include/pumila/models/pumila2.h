@@ -9,7 +9,7 @@
 #include <condition_variable>
 #include <future>
 
-namespace pumila {
+namespace PUMILA_NS {
 /*!
  * * learnStep時、getActionで選んだ手1通りだけでなく22通りすべてを学習対象にした
  * * 色の順番を24通り並べ替えたデータを同様に学習の入力にした
@@ -162,4 +162,4 @@ class Pumila2 : public Pumila {
      */
     PUMILA_DLL virtual void learnStep(const FieldState &field);
 };
-} // namespace pumila
+} // namespace PUMILA_NS

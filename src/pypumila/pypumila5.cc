@@ -1,7 +1,7 @@
 #include <pumila/models/pumila5.h>
 #include <pybind11/pybind11.h>
 
-using namespace pumila;
+using namespace PUMILA_NS;
 namespace py = pybind11;
 
 void initPumila5Module(py::module_ &m) {

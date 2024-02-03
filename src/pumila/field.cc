@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <sstream>
 
-namespace pumila {
+namespace PUMILA_NS {
 Puyo FieldState::get(std::size_t x, std::size_t y) const {
     if (!inRange(x, y)) {
         std::ostringstream ss;
@@ -154,4 +154,4 @@ std::vector<Chain> FieldState::deleteChainRecurse() {
     return chains;
 }
 
-} // namespace pumila
+} // namespace PUMILA_NS

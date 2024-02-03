@@ -1,7 +1,7 @@
 #pragma once
 #include "./pumila2.h"
 
-namespace pumila {
+namespace PUMILA_NS {
 /*!
  * * 中間層の活性化関数をsigmoidからreluに変更
  * → 中間層がすべて0になって学習しなくなった
@@ -107,4 +107,4 @@ class Pumila4 : public Pumila {
     }
     PUMILA_DLL virtual void learnStep(const FieldState &field);
 };
-} // namespace pumila
+} // namespace PUMILA_NS

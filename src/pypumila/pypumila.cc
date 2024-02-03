@@ -2,7 +2,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-using namespace pumila;
+using namespace PUMILA_NS;
 namespace py = pybind11;
 
 void initPumila1Module(py::module_ &m);

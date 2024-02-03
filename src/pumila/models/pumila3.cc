@@ -1,6 +1,6 @@
 #include <pumila/models/pumila3.h>
 
-namespace pumila {
+namespace PUMILA_NS {
 Pumila3::Pumila3(double learning_rate) : Pumila2(0.01, 0.9, learning_rate) {}
 
 
@@ -95,4 +95,4 @@ void Pumila3::learnStep(const FieldState &field) {
     });
 }
 
-} // namespace pumila
+} // namespace PUMILA_NS
