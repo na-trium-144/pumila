@@ -36,14 +36,14 @@ class Pumila1 : public Pumila {
             Eigen::VectorXd q;
         };
 
-        NNModel(double alpha, double learning_rate);
+        PUMILA_DLL NNModel(double alpha, double learning_rate);
 
         /*!
          * \brief 順伝播
          * \return NNResult型で, hidden, q の行数は in.rows()
          *
          */
-        NNResult forward(const Eigen::MatrixXd &in) const;
+        PUMILA_DLL NNResult forward(const Eigen::MatrixXd &in) const;
 
         /*!
          * \brief 逆伝播
@@ -51,7 +51,7 @@ class Pumila1 : public Pumila {
          * \param delta それぞれqの誤差 (行数はq.rows()と同じでなければならない)
          *
          */
-        void backward(const NNResult &result, const Eigen::VectorXd &diff);
+        PUMILA_DLL void backward(const NNResult &result, const Eigen::VectorXd &diff);
 
     } main, target;
     using NNResult = NNModel::NNResult;
@@ -60,7 +60,7 @@ class Pumila1 : public Pumila {
     std::unordered_map<int, int> learn_actions;
     int learn_results_index = 0;
 
-    explicit Pumila1(double alpha, double gamma, double learning_rate);
+    PUMILA_DLL explicit Pumila1(double alpha, double gamma, double learning_rate);
     std::shared_ptr<Pumila1> copy() {
         auto copied =
             std::make_shared<Pumila1>(main.alpha, gamma, main.learning_rate);
@@ -76,16 +76,16 @@ class Pumila1 : public Pumila {
     Eigen::MatrixXd getInNodes(std::shared_ptr<GameSim> sim) const {
         return getInNodes(sim->field);
     }
-    Eigen::MatrixXd getInNodes(const FieldState &field) const;
+    PUMILA_DLL Eigen::MatrixXd getInNodes(const FieldState &field) const;
 
     /*!
      * \brief 報酬を計算
      *
      */
-    double calcReward(std::shared_ptr<GameSim> sim_after) const;
+    PUMILA_DLL double calcReward(std::shared_ptr<GameSim> sim_after) const;
 
-    int getAction(const FieldState &field) override;
-    std::pair<int, int> getLearnAction(std::shared_ptr<GameSim> sim);
-    double learnResult(int id, std::shared_ptr<GameSim> sim_after);
+    PUMILA_DLL int getAction(const FieldState &field) override;
+    PUMILA_DLL std::pair<int, int> getLearnAction(std::shared_ptr<GameSim> sim);
+    PUMILA_DLL double learnResult(int id, std::shared_ptr<GameSim> sim_after);
 };
 } // namespace pumila

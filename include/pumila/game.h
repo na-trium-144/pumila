@@ -1,4 +1,5 @@
 #pragma once
+#include "def.h"
 #include "field.h"
 #include "chain.h"
 #include <random>
@@ -49,11 +50,11 @@ class GameSim {
     int soft_put_cnt = 0;
 
     GameSim() : GameSim(nullptr) {}
-    explicit GameSim(std::shared_ptr<Pumila> model);
+    PUMILA_DLL explicit GameSim(std::shared_ptr<Pumila> model);
     GameSim(const GameSim &sim) = delete;
     GameSim(GameSim &&sim) = delete;
 
-    ~GameSim();
+    PUMILA_DLL ~GameSim();
 
     bool hasModel() { return model != nullptr; }
 
@@ -63,17 +64,17 @@ class GameSim {
      * 時間は進まないので適宜step()を呼ぶこと
      *
      */
-    void movePair(int dx);
-    void rotPair(int r);
-    void quickDrop();
-    void softDrop();
+    PUMILA_DLL void movePair(int dx);
+    PUMILA_DLL void rotPair(int r);
+    PUMILA_DLL void quickDrop();
+    PUMILA_DLL void softDrop();
 
     /*!
      * \brief 1フレーム時間を進める
      * コンストラクタでmodelをセットしていればそれの返すアクションにしたがってsoftPut()する
      *
      */
-    void step();
+    PUMILA_DLL void step();
 
     /*!
      * \brief ぷよを瞬間移動で置く
@@ -81,11 +82,11 @@ class GameSim {
      * 時間は進まないので適宜step()を呼ぶこと
      *
      */
-    void put(const Action &action);
+    PUMILA_DLL void put(const Action &action);
     /*!
      * \brief ぷよを目標位置まで動かして置くときはここにセットしてstep()を呼ぶ
      */
-    void softPut(const Action &action);
+    PUMILA_DLL void softPut(const Action &action);
 
     struct Phase {
         GameSim *sim;
@@ -108,27 +109,27 @@ class GameSim {
     };
     std::unique_ptr<Phase> phase;
 
-    bool isFreePhase();
+    PUMILA_DLL bool isFreePhase();
 
     struct FreePhase final : Phase {
-        explicit FreePhase(GameSim *sim);
+        PUMILA_DLL explicit FreePhase(GameSim *sim);
         PhaseEnum get() const override { return PhaseEnum::free; }
-        std::unique_ptr<Phase> step() override;
+        PUMILA_DLL std::unique_ptr<Phase> step() override;
         static constexpr int PUT_T = 100;
         PuyoPair current_pair;
         int put_t;
     };
     struct FallPhase final : Phase {
-        explicit FallPhase(GameSim *sim);
+        PUMILA_DLL explicit FallPhase(GameSim *sim);
         PhaseEnum get() const override { return PhaseEnum::fall; }
-        std::unique_ptr<Phase> step() override;
+       PUMILA_DLL  std::unique_ptr<Phase> step() override;
         static constexpr int WAIT_T = 30;
         int wait_t;
     };
     struct ChainPhase final : Phase {
-        explicit ChainPhase(GameSim *sim);
+       PUMILA_DLL  explicit ChainPhase(GameSim *sim);
         PhaseEnum get() const override { return PhaseEnum::chain; }
-        std::unique_ptr<Phase> step() override;
+        PUMILA_DLL std::unique_ptr<Phase> step() override;
         static constexpr int WAIT_T = 30;
         int wait_t;
     };

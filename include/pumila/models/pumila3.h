@@ -10,7 +10,7 @@ class Pumila3 : public Pumila2 {
   public:
     std::string name() const override { return "pumila3"; }
 
-    explicit Pumila3(double learning_rate);
+    PUMILA_DLL explicit Pumila3(double learning_rate);
     std::shared_ptr<Pumila3> copy() {
         auto copied = std::make_shared<Pumila3>(main.learning_rate);
         copied->main = main;
@@ -18,7 +18,7 @@ class Pumila3 : public Pumila2 {
         return copied;
     }
 
-    int getActionRnd(const FieldState &field, double rnd_p) override;
-    void learnStep(const FieldState &field) override;
+    PUMILA_DLL int getActionRnd(const FieldState &field, double rnd_p) override;
+    PUMILA_DLL void learnStep(const FieldState &field) override;
 };
 } // namespace pumila

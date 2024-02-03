@@ -1,4 +1,5 @@
 #pragma once
+#include "def.h"
 #include "game.h"
 #include "field.h"
 #include <BS_thread_pool.hpp>
@@ -39,11 +40,11 @@ class Pumila : public std::enable_shared_from_this<Pumila> {
     /*!
      * \brief ファイルを開き load() を呼ぶ
      */
-    void loadFile();
+    PUMILA_DLL void loadFile();
     /*!
      * \brief ファイルを開き save() を呼ぶ
      */
-    void saveFile();
+    PUMILA_DLL void saveFile();
 
     /*!
      * \brief 次の手を取得する

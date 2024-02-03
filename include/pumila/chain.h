@@ -1,4 +1,5 @@
 #pragma once
+#include "def.h"
 #include "action.h"
 #include <vector>
 #include <utility>
@@ -20,12 +21,12 @@ struct Chain {
     int chain_num;
     Chain(int chain_num) : connections(), chain_num(chain_num) {}
     bool isEmpty() const { return connections.empty(); }
-    int connectionNum() const;
-    int chainBonus() const;
-    int connectionBonus() const;
-    int colorBonus() const;
-    int scoreA() const;
-    int scoreB() const;
+    PUMILA_DLL int connectionNum() const;
+    PUMILA_DLL int chainBonus() const;
+    PUMILA_DLL int connectionBonus() const;
+    PUMILA_DLL int colorBonus() const;
+    PUMILA_DLL int scoreA() const;
+    PUMILA_DLL int scoreB() const;
     int score() const { return scoreA() * scoreB(); };
 };
 

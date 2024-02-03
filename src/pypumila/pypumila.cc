@@ -23,7 +23,7 @@ PYBIND11_MODULE(pypumila, m) {
         .export_values();
     auto action = py::class_<Action>(m, "Action")
                       .def(py::init<>())
-                      .def(py::init<double, Action::Rotation>())
+                      .def(py::init<int, Action::Rotation>())
                       .def_readwrite("x", &Action::x)
                       .def_readwrite("rot", &Action::rot)
                       .def("__repr__", [](const Action &a) {

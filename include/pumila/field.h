@@ -1,4 +1,5 @@
 #pragma once
+#include "def.h"
 #include "action.h"
 #include "chain.h"
 #include <utility>
@@ -13,7 +14,8 @@ namespace pumila {
  *
  */
 struct FieldState {
-    static constexpr std::size_t WIDTH = 6, HEIGHT = 13;
+    static constexpr std::size_t WIDTH = 6;
+    static constexpr std::size_t HEIGHT = 13;
 
     static bool inRange(std::size_t x, std::size_t y = 0) {
         return x < WIDTH && y < HEIGHT;
@@ -40,29 +42,29 @@ struct FieldState {
      */
     bool is_over = false;
 
-    void put(std::size_t x, std::size_t y, Puyo p);
+    PUMILA_DLL void put(std::size_t x, std::size_t y, Puyo p);
 
     /*!
      * \brief x, y とつながっているぷよの数を数え、
      * すでに数えたものをフィールドから消す
      * \return 削除したぷよ
      */
-    std::vector<std::pair<std::size_t, std::size_t>>
+    PUMILA_DLL std::vector<std::pair<std::size_t, std::size_t>>
     deleteConnection(std::size_t x, std::size_t y);
 
-    void
+    PUMILA_DLL void
     deleteConnection(std::size_t x, std::size_t y,
                      std::vector<std::pair<std::size_t, std::size_t>> &deleted);
 
     FieldState copy() const { return *this; }
 
-    Puyo get(std::size_t x, std::size_t y) const;
+    PUMILA_DLL Puyo get(std::size_t x, std::size_t y) const;
 
     /*!
      * \brief puyopairを落とす
      *
      */
-    void put(const PuyoPair &pp);
+    PUMILA_DLL void put(const PuyoPair &pp);
     void put() {
         if (!next.empty()) {
             put(next[0]);
@@ -81,13 +83,13 @@ struct FieldState {
      * \return bottom, topのそれぞれのy座標
      *
      */
-    std::pair<std::size_t, std::size_t> getHeight(const PuyoPair &pp,
+   PUMILA_DLL  std::pair<std::size_t, std::size_t> getHeight(const PuyoPair &pp,
                                                   bool fall) const;
     /*!
      * \brief ぷよを1つ落とした場合のy座標を調べる
      *
      */
-    std::size_t getHeight(std::size_t x) const;
+    PUMILA_DLL std::size_t getHeight(std::size_t x) const;
 
     /*!
      * \brief 4連結を探し、消す
@@ -97,19 +99,19 @@ struct FieldState {
      * \return 消したぷよの情報
      *
      */
-    Chain deleteChain(int chain_num);
+    PUMILA_DLL Chain deleteChain(int chain_num);
 
     /*!
      * \brief 連鎖が止まるまでdeleteChainをする
      *
      */
-    std::vector<Chain> deleteChainRecurse();
+    PUMILA_DLL std::vector<Chain> deleteChainRecurse();
 
     /*!
      * \brief 盤面の各マスについて消したら何連鎖が起きるかを計算する
      *
      */
-    std::array<std::array<int, WIDTH>, HEIGHT> calcChainAll() const;
+    PUMILA_DLL std::array<std::array<int, WIDTH>, HEIGHT> calcChainAll() const;
 
     /*!
      * \brief 空中に浮いているぷよを落とす
@@ -117,6 +119,6 @@ struct FieldState {
      * \return 落ちたぷよがあったらtrue
      *
      */
-    bool fall();
+    PUMILA_DLL bool fall();
 };
 } // namespace pumila

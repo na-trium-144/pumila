@@ -3,38 +3,111 @@ project(pumila CXX)
 if(NOT DEFINED CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug)
 endif()
+if(MSVC)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_BINARY_DIR})
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_BINARY_DIR})
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_BINARY_DIR})
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_BINARY_DIR})
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_BINARY_DIR})
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_BINARY_DIR})
+endif()
 
-option(PUMILA_MKL off "Use MKL (fot Intel CPU on Linux)")
+option(PUMILA_MKL off "Use MKL (fot Intel CPU on Linux / Windows)")
+set(PUMILA_MKL_ROOT "C:/Program Files (x86)/Intel/oneAPI" CACHE STRING "oneMKL Root Path (for Windows)")
 option(PUMILA_ACCELERATE off "Use Accelerate (for MacOS)")
 
-include(FindPkgConfig)
+if(NOT MSVC)
+    include(FindPkgConfig)
+endif()
 include(FetchContent)
 
 find_package(Eigen3 QUIET)
 if(Eigen3_FOUND)
     message(STATUS "Eigen3 found")
+    set(eigen Eigen3::Eigen)
 else()
     message(STATUS "Eigen3 not found, fetching source...")
-    FetchContent_Declare(Eigen3
+    FetchContent_Declare(eigen
         GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
-        GIT_TAG 3.4
+        GIT_TAG 3.4.0
     )
-    FetchContent_MakeAvailable(Eigen3)
+    FetchContent_Populate(eigen)
+    add_library(eigen INTERFACE)
+    target_include_directories(eigen INTERFACE ${eigen_SOURCE_DIR})
+    set(eigen eigen)
 endif()
 
-pkg_search_module(SDL2 sdl2)
-pkg_search_module(SDL2TTF SDL2_ttf>=2.0)
-if(SDL2_FOUND AND SDL2TTF_FOUND)
+if(MSVC)
+    message(STATUS "Fetching SDL2 and SDL2_ttf ...")
+    FetchContent_Declare(sdl2
+        URL https://github.com/libsdl-org/SDL/releases/download/release-2.30.0/SDL2-devel-2.30.0-VC.zip
+    )
+    FetchContent_Declare(sdl2_ttf
+        URL https://github.com/libsdl-org/SDL_ttf/releases/download/release-2.22.0/SDL2_ttf-devel-2.22.0-VC.zip
+    )
+    FetchContent_Populate(sdl2)
+    FetchContent_Populate(sdl2_ttf)
+    set(sdl2_DIR ${sdl2_SOURCE_DIR}/cmake)
+    set(sdl2_ttf_DIR ${sdl2_ttf_SOURCE_DIR}/cmake)
+    find_package(sdl2 REQUIRED)
+    find_package(sdl2_ttf REQUIRED)
     set(PUMILA_SDL2 1)
-    message(STATUS "sdl2 and SDL2_ttf found")
+    set(sdl2 SDL2::SDL2 SDL2_ttf::SDL2_ttf)
+    configure_file(${sdl2_SOURCE_DIR}/lib/x64/SDL2.dll SDL2.dll COPYONLY)
+    configure_file(${sdl2_ttf_SOURCE_DIR}/lib/x64/SDL2_ttf.dll SDL2_ttf.dll COPYONLY)
 else()
-    set(PUMILA_SDL2 0)
-    message(STATUS "sdl2 and SDL2_ttf not found (SDL2_FOUND = '${SDL2_FOUND}', SDL2TTF_FOUND = '${SDL2TTF_FOUND}')")
+    pkg_search_module(sdl2 sdl2)
+    pkg_search_module(sdl2_ttf SDL2_ttf>=2.0)
+    if(sdl2_FOUND AND sdl2_ttf_FOUND)
+        set(PUMILA_SDL2 1)
+        message(STATUS "sdl2 and SDL2_ttf found")
+        add_library(sdl2 INTERFACE)
+        target_link_directories(sdl2 INTERFACE
+            ${sdl2_LIBDIR} ${sdl2_ttf_LIBDIR}
+        )
+        target_link_libraries(sdl2 INTERFACE
+            ${sdl2_LIBRARIES} ${sdl2_ttf_LIBRARIES}
+        )
+        target_include_directories(sdl2 INTERFACE
+            ${sdl2_INCLUDE_DIRS} ${sdl2_ttf_INCLUDE_DIRS}
+        )
+        set(sdl2 sdl2)
+    else()
+        set(PUMILA_SDL2 0)
+        message(STATUS "sdl2 and SDL2_ttf not found (SDL2_FOUND = '${SDL2_FOUND}', SDL2TTF_FOUND = '${SDL2TTF_FOUND}')")
+    endif()
 endif()
 
 if(PUMILA_MKL)
-    pkg_search_module(MKL REQUIRED mkl-dynamic-lp64-iomp)
-    message(STATUS "mkl-dynamic-lp64-iomp found")
+    if(MSVC)
+        add_library(mkl INTERFACE)
+        target_link_libraries(mkl INTERFACE mkl_rt.lib)
+        target_link_directories(mkl INTERFACE
+            ${PUMILA_MKL_ROOT}/mkl/latest/lib
+        )
+        target_include_directories(mkl INTERFACE
+            ${PUMILA_MKL_ROOT}/mkl/latest/include
+        )
+        set(MKL_DLLS mkl_rt.2.dll mkl_intel_thread.2.dll)
+        foreach(dll ${MKL_DLLS})
+            configure_file(
+                ${PUMILA_MKL_ROOT}/mkl/latest/bin/${dll}
+                ${dll}
+                COPYONLY
+            )
+        endforeach()
+        message(STATUS "mkl libraries found")
+        set(mkl mkl)
+    else()
+        pkg_search_module(MKL REQUIRED mkl-dynamic-lp64-iomp)
+        message(STATUS "mkl-dynamic-lp64-iomp found")
+        add_library(mkl INTERFACE)
+        target_link_directories(mkl INTERFACE ${MKL_LIBDIR})
+        target_include_directories(mkl INTERFACE ${MKL_INCLUDE_DIRS})
+        target_link_libraries(mkl INTERFACE ${MKL_LIBRARIES} ${MKL_LDFLAGS})
+        # target_link_options(mkl INTERFACE ${MKL_LDFLAGS})
+        set(mkl mkl)
+    endif()
 endif()
 
 if(PUMILA_ACCELERATE)
@@ -76,7 +149,11 @@ configure_file(
     COPYONLY
 )
 
-add_compile_options(-Wall -Wpedantic -Wextra)
+if(MSVC)
+    add_compile_options(/W4 /utf-8)
+else()
+    add_compile_options(-Wall -Wpedantic -Wextra)
+endif()
 
 add_library(pumila SHARED
     src/pumila/action.cc
@@ -94,12 +171,9 @@ add_library(pumila SHARED
 )
 target_include_directories(pumila PUBLIC include)
 target_compile_features(pumila PUBLIC cxx_std_17)
-target_link_libraries(pumila PUBLIC Eigen3::Eigen bs_thread_pool)
+target_link_libraries(pumila PUBLIC ${eigen} bs_thread_pool)
 if(PUMILA_MKL)
-    target_link_directories(pumila PUBLIC ${MKL_LIBDIR})
-    target_include_directories(pumila PUBLIC ${MKL_INCLUDE_DIRS})
-    target_link_libraries(pumila PUBLIC ${MKL_LIBRARIES} ${MKL_LDFLAGS})
-    # target_link_options(pumila PUBLIC ${MKL_LDFLAGS})
+    target_link_libraries(pumila PUBLIC ${mkl})
     target_compile_definitions(pumila PUBLIC EIGEN_USE_MKL_ALL)
 endif()
 if(PUMILA_ACCELERATE)
@@ -107,8 +181,7 @@ if(PUMILA_ACCELERATE)
     target_compile_definitions(pumila PUBLIC EIGEN_USE_BLAS)
 endif()
 if(PUMILA_SDL2)
-    target_link_directories(pumila PRIVATE ${SDL2_LIBDIR} ${SDL2TTF_LIBDIR})
-    target_link_libraries(pumila PRIVATE ${SDL2_LIBRARIES} ${SDL2TTF_LIBRARIES})
+    target_link_libraries(pumila PRIVATE ${sdl2})
     target_compile_definitions(pumila PRIVATE PUMILA_SDL2)
 endif()
 

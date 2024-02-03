@@ -11,12 +11,15 @@
 * Eigen3がインストールされていればそれを使い、なければFetchContentで自動的にダウンロードします
     * ubuntu: `sudo apt install libeigen3-dev`
     * mac: `brew install eigen3`
-* GUI(`pumila::Window`)を使うにはSDL2とSDL2_TTFをインストールする必要があります
+* GUI(`pumila::Window`)を使うにはSDL2とSDL2_TTFをインストールする必要があります(linux, macのみ)
     * インストールされてない場合GUI関係の機能が無効化されますがビルドは可能です
     * ubuntu: `sudo apt install libsdl2-dev libsdl2-ttf-dev`
     * mac: `brew install sdl2 sdl2_ttf`
+    * windowsの場合はFetchContentで自動的にダウンロードされます
 * [pybind11](https://github.com/pybind/pybind11), [BS::thread_pool](https://github.com/bshoshany/thread-pool), [cli11](https://github.com/CLIUtils/CLI11) とroboto-font(GUIの表示に必要)がFetchContentでダウンロードされます
 * IntelCPUの場合cmake時に`-DPUMILA_MKL=ON`オプションを追加するとIntel MKLを使用し計算が速くなります
+    * windows: [https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl-download.html](ここ)からoneMKLをダウンロードしインストール
+        * インストール場所がデフォルト (`C:\Program Files (x86)\Intel\oneAPI`)でない場合は`-DPUMILA_MKL_ROOT=Path\To\oneAPI`
     * ubuntu: `sudo apt install libmkl-dev`
 * MacOSの場合cmake時に`-DPUMILA_ACCELERATE=ON`オプションを追加するとAccelerateを使用し計算が速くなります
 * ビルド

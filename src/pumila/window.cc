@@ -5,7 +5,7 @@
 #include <sstream>
 
 #ifdef PUMILA_SDL2
-#include <SDL2/SDL.h>
+#include <SDL.h>
 #endif
 
 namespace pumila {

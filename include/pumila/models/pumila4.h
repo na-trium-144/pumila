@@ -15,8 +15,8 @@ class Pumila4 : public Pumila {
     std::condition_variable learning_cond;
     static constexpr int BATCH_SIZE = 10;
 
-    void load(std::istream &is) override;
-    void save(std::ostream &os) override;
+    PUMILA_DLL void load(std::istream &is) override;
+    PUMILA_DLL void save(std::ostream &os) override;
 
   public:
     std::string name() const override { return "pumila4"; }
@@ -38,7 +38,7 @@ class Pumila4 : public Pumila {
 
         using NNResult = Pumila2::NNModel::NNResult;
 
-        NNModel(double learning_rate);
+        PUMILA_DLL NNModel(double learning_rate);
         NNModel(const NNModel &rhs) { *this = rhs; }
         NNModel &operator=(const NNModel &rhs) {
             learning_rate = rhs.learning_rate;
@@ -54,7 +54,7 @@ class Pumila4 : public Pumila {
          * \return NNResult型で, hidden, q の行数は in.rows()
          *
          */
-        NNResult forward(const Eigen::MatrixXd &in) const;
+        PUMILA_DLL NNResult forward(const Eigen::MatrixXd &in) const;
 
         /*!
          * \brief 逆伝播
@@ -62,7 +62,7 @@ class Pumila4 : public Pumila {
          * \param delta それぞれqの誤差 (行数はq.rows()と同じでなければならない)
          *
          */
-        void backward(const NNResult &result, const Eigen::VectorXd &diff);
+        PUMILA_DLL void backward(const NNResult &result, const Eigen::VectorXd &diff);
 
         inline static Eigen::MatrixXd
         truncateInNodes(const Eigen::MatrixXd &in) {
@@ -86,7 +86,7 @@ class Pumila4 : public Pumila {
                                                   int a);
 
 
-    Pumila4(double learning_rate);
+    PUMILA_DLL Pumila4(double learning_rate);
     std::shared_ptr<Pumila4> copy() {
         auto copied = std::make_shared<Pumila4>(main.learning_rate);
         copied->main = main;
@@ -101,10 +101,10 @@ class Pumila4 : public Pumila {
     int getAction(const FieldState &field) override {
         return getActionRnd(field, 0);
     }
-    virtual int getActionRnd(const FieldState &field, double rnd_p);
+    PUMILA_DLL virtual int getActionRnd(const FieldState &field, double rnd_p);
     int getActionRnd(const std::shared_ptr<GameSim> &sim, double rnd_p) {
         return getActionRnd(sim->field, rnd_p);
     }
-    virtual void learnStep(const FieldState &field);
+    PUMILA_DLL virtual void learnStep(const FieldState &field);
 };
 } // namespace pumila

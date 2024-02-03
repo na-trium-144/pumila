@@ -1,4 +1,5 @@
 #pragma once
+#include "def.h"
 #include <array>
 
 namespace pumila {
@@ -38,7 +39,7 @@ constexpr int ACTIONS_NUM = 22;
  * \brief 可能な置き方の組み合わせ全て
  *
  */
-extern const std::array<Action, ACTIONS_NUM> actions;
+extern PUMILA_DLL const std::array<Action, ACTIONS_NUM> actions;
 
 /*!
  * \brief 降ってくる2個組のぷよ
@@ -64,8 +65,8 @@ struct PuyoPair : Action {
      * \brief x, y, rotからtopの座標を計算
      *
      */
-    int topX() const;
-    double topY() const;
+    PUMILA_DLL int topX() const;
+    PUMILA_DLL double topY() const;
 
     PuyoPair() = default;
     PuyoPair(Puyo bottom, Puyo top, const Action &action = Action{})
@@ -78,7 +79,7 @@ struct PuyoPair : Action {
      * \brief 右にn回回転する
      *
      */
-    void rotate(int right);
+    PUMILA_DLL void rotate(int right);
 };
 
 } // namespace pumila
