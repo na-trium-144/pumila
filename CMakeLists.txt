@@ -169,6 +169,7 @@ set(PUMILA_SRC
     src/pumila/models/pumila4.cc
     src/pumila/models/pumila5.cc
     src/pumila/models/pumila6.cc
+    src/pumila/models/pumila7.cc
 )
 if(WIN32)
     set(PUMILA_SRC ${PUMILA_SRC} src/pumila/version.rc)
@@ -201,6 +202,7 @@ pybind11_add_module(pypumila
     src/pypumila/pypumila4.cc
     src/pypumila/pypumila5.cc
     src/pypumila/pypumila6.cc
+    src/pypumila/pypumila7.cc
 )
 target_link_libraries(pypumila PUBLIC pumila)
 

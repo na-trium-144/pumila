@@ -11,6 +11,7 @@ void initPumila3Module(py::module_ &m);
 void initPumila4Module(py::module_ &m);
 void initPumila5Module(py::module_ &m);
 void initPumila6Module(py::module_ &m);
+void initPumila7Module(py::module_ &m);
 
 PYBIND11_MODULE(pypumila, m) {
     py::enum_<Puyo>(m, "Puyo")
@@ -70,6 +71,8 @@ PYBIND11_MODULE(pypumila, m) {
         .def_readwrite("prev_chain_num", &FieldState::prev_chain_num)
         .def_readwrite("prev_chain_score", &FieldState::prev_chain_score)
         .def_readwrite("is_valid", &FieldState::is_valid)
+        .def_readwrite("step_num", &FieldState::step_num)
+        .def_readwrite("last_chain_step_num", &FieldState::last_chain_step_num)
         .def("copy", &FieldState::copy)
         .def("get", &FieldState::get)
         .def("put", py::overload_cast<std::size_t, std::size_t, Puyo>(
@@ -130,4 +133,5 @@ PYBIND11_MODULE(pypumila, m) {
     initPumila4Module(m);
     initPumila5Module(m);
     initPumila6Module(m);
+    initPumila7Module(m);
 }

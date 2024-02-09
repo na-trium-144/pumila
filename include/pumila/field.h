@@ -30,8 +30,14 @@ struct FieldState {
      *
      */
     std::deque<PuyoPair> next = {};
+    /*!
+     * \brief 試合開始からの手数
+     */
+    int step_num = 0;
+
     int prev_chain_num = 0;
     int prev_chain_score = 0;
+    int last_chain_step_num = 0;
     int total_score = 0;
     /*!
      * \brief 直前に操作した手が無効な場合false

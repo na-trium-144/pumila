@@ -5,8 +5,7 @@
 namespace PUMILA_NS {
 GameSim::GameSim(std::shared_ptr<Pumila> model)
     : seed(), rnd(seed()), model_action_thread(std::nullopt), running(true),
-      field(), current_chain(std::nullopt), model(model),
-      phase(nullptr) {
+      field(), current_chain(std::nullopt), model(model), phase(nullptr) {
     // todo: 最初のツモは完全ランダムではなかった気がする
     field.next = {{randomPuyo(), randomPuyo()}, {randomPuyo(), randomPuyo()}};
     phase = std::make_unique<GameSim::FreePhase>(this); // nextが補充される
@@ -167,8 +166,12 @@ std::unique_ptr<GameSim::Phase> GameSim::FreePhase::step() {
             sim->field.put(current_pair);
             sim->field.next.pop_front();
             sim->current_chain = std::nullopt;
+            if (sim->field.prev_chain_num > 0) {
+                sim->field.last_chain_step_num = sim->field.step_num;
+            }
             sim->field.prev_chain_num = 0;
             sim->field.prev_chain_score = 0;
+            sim->field.step_num++;
             return std::make_unique<GameSim::FallPhase>(sim);
         }
     }

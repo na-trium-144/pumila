@@ -88,7 +88,7 @@ class Pumila6 : public Pumila {
     using InFeatures = Pumila2::InFeatures;
     using InFeatureSingle = Pumila2::InFeatureSingle;
 
-    double calcReward(const FieldState &field) const {
+    virtual double calcReward(const FieldState &field) const {
         return Pumila5::calcRewardS(field);
     }
     int getAction(const FieldState &field) override {
