@@ -41,10 +41,12 @@ class Pumila : public std::enable_shared_from_this<Pumila> {
      * \brief ファイルを開き load() を呼ぶ
      */
     PUMILA_DLL void loadFile();
+    PUMILA_DLL void loadFile(std::string file_name);
     /*!
      * \brief ファイルを開き save() を呼ぶ
      */
     PUMILA_DLL void saveFile();
+    PUMILA_DLL void saveFile(std::string file_name);
 
     /*!
      * \brief 次の手を取得する
