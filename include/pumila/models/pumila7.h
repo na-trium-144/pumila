@@ -5,7 +5,7 @@
 namespace PUMILA_NS {
 /*!
  * pumila6ベース
- * * 評価関数を
+ * * 評価関数を スコア - 前回連鎖からの手数*20 にした
  */
 class Pumila7 : public Pumila6 {
   public:
