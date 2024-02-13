@@ -6,6 +6,8 @@ namespace PUMILA_NS {
  * pumila3ベース
  * * 報酬をスコアのみにした
  * * 教師信号のgammaを0.99にした
+ * * pumila3より高く組むようになった。スコアはあまり変わらん
+ *
  */
 class Pumila5 : public Pumila3 {
 

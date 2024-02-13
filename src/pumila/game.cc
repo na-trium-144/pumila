@@ -3,14 +3,15 @@
 #include <iostream>
 
 namespace PUMILA_NS {
-GameSim::GameSim(std::shared_ptr<Pumila> model)
-    : seed(), rnd(seed()), model_action_thread(std::nullopt), running(true),
-      field(), current_chain(std::nullopt), model(model), phase(nullptr) {
+GameSim::GameSim(std::shared_ptr<Pumila> model, const std::string &name,
+                 typename std::mt19937::result_type seed)
+    : rnd(seed), model_action_thread(std::nullopt), running(true), field(),
+      current_chain(std::nullopt), model(model),
+      name(model && name.empty() ? model->name() : name), phase(nullptr) {
     // todo: 最初のツモは完全ランダムではなかった気がする
     field.next = {{randomPuyo(), randomPuyo()}, {randomPuyo(), randomPuyo()}};
     phase = std::make_unique<GameSim::FreePhase>(this); // nextが補充される
     if (model) {
-        model->loadFile();
         model_action_thread = std::make_optional<std::thread>([this] {
             while (running.load()) {
                 while (running.load() && !isFreePhase()) {

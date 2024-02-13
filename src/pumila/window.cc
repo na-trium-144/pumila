@@ -129,10 +129,9 @@ void Window::draw() {
         if (ttf_font) {
             int text_w, text_h;
 
-            SDL_Texture *name_t =
-                drawText(sdl_renderer,
-                         sim[i]->hasModel() ? sim[i]->model->name() : "player",
-                         ttf_font, {0, 0, 0, 255}, &text_w, &text_h);
+            SDL_Texture *name_t = drawText(
+                sdl_renderer, sim[i]->name.empty() ? "player" : sim[i]->name,
+                ttf_font, {0, 0, 0, 255}, &text_w, &text_h);
             SDL_Rect rect = {FIELD_X[i] + PUYO_SIZE * 3 - text_w / 2,
                              FIELD_Y + 5, text_w, text_h};
             SDL_RenderCopy(sdl_renderer, name_t, NULL, &rect);

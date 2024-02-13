@@ -6,6 +6,12 @@ namespace PUMILA_NS {
 /*!
  * pumila6ベース
  * * 評価関数を スコア - 前回連鎖からの手数*20 にした
+ *
+ * 結果
+ * * 中間ノードが少ないとあまり連鎖を組めず、単発消しが多くなる
+ * * pumila7_5がもっとも連鎖を組む
+ * * pumila6は連鎖を組んでも発火しないがその点pumila7は安定(大連鎖は組めなさそうだが)
+ *
  */
 class Pumila7 : public Pumila6 {
   public:

@@ -18,7 +18,6 @@ class Pumila;
  *
  */
 class GameSim {
-    std::random_device seed;
     std::mt19937 rnd;
     double getRndD() {
         return static_cast<double>(rnd() - rnd.min()) / (rnd.max() - rnd.min());
@@ -45,12 +44,17 @@ class GameSim {
     std::optional<Chain> current_chain;
 
     std::shared_ptr<Pumila> model;
+    std::string name;
 
     int soft_put_interval = 6;
     int soft_put_cnt = 0;
 
-    GameSim() : GameSim(nullptr) {}
-    PUMILA_DLL explicit GameSim(std::shared_ptr<Pumila> model);
+    PUMILA_DLL explicit GameSim(
+        std::shared_ptr<Pumila> model, const std::string &name = "",
+        typename std::mt19937::result_type seed = std::random_device()());
+    explicit GameSim(
+        typename std::mt19937::result_type seed = std::random_device()())
+        : GameSim(nullptr, "", seed) {}
     GameSim(const GameSim &sim) = delete;
     GameSim(GameSim &&sim) = delete;
 
@@ -122,12 +126,12 @@ class GameSim {
     struct FallPhase final : Phase {
         PUMILA_DLL explicit FallPhase(GameSim *sim);
         PhaseEnum get() const override { return PhaseEnum::fall; }
-       PUMILA_DLL  std::unique_ptr<Phase> step() override;
+        PUMILA_DLL std::unique_ptr<Phase> step() override;
         static constexpr int WAIT_T = 30;
         int wait_t;
     };
     struct ChainPhase final : Phase {
-       PUMILA_DLL  explicit ChainPhase(GameSim *sim);
+        PUMILA_DLL explicit ChainPhase(GameSim *sim);
         PhaseEnum get() const override { return PhaseEnum::chain; }
         PUMILA_DLL std::unique_ptr<Phase> step() override;
         static constexpr int WAIT_T = 30;

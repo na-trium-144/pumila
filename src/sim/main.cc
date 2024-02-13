@@ -1,16 +1,22 @@
 #include <pumila/pumila.h>
 #include <CLI/CLI.hpp>
-#include <array>
+#include <vector>
 #include <string>
 
 int main(int argc, char const *argv[]) {
     CLI::App app{"pumila-sim"};
 
-    std::array<std::string, 3> models = {
+    std::vector<std::string> models = {
         "player",
         "pumila3",
         "pumila5",
     };
+    for (int i = 0; i < 7; i++) {
+        models.push_back("pumila6_" + std::to_string(i));
+    }
+    for (int i = 0; i < 7; i++) {
+        models.push_back("pumila7_" + std::to_string(i));
+    }
     std::vector<std::string> selected_models;
     app.add_option("model", selected_models, "Select Player or AI Model")
         ->required()
@@ -19,16 +25,30 @@ int main(int argc, char const *argv[]) {
 
     CLI11_PARSE(app, argc, argv);
 
+    auto seed = std::random_device()();
+
     std::vector<std::shared_ptr<pumila::GameSim>> sim = {};
     for (std::size_t i = 0; i < selected_models.size(); i++) {
         if (selected_models[i] == "pumila3") {
-            sim.push_back(std::make_shared<pumila::GameSim>(
-                std::make_shared<pumila::Pumila3>(0.01)));
+            auto model = std::make_shared<pumila::Pumila3>(0.01);
+            model->loadFile();
+            sim.push_back(std::make_shared<pumila::GameSim>(model, "", seed));
         } else if (selected_models[i] == "pumila5") {
+            auto model = std::make_shared<pumila::Pumila5>(0.01);
+            model->loadFile();
+            sim.push_back(std::make_shared<pumila::GameSim>(model, "", seed));
+        } else if (selected_models[i].starts_with("pumila6")) {
+            auto model = std::make_shared<pumila::Pumila6>(1);
+            model->loadFile(selected_models[i]);
             sim.push_back(std::make_shared<pumila::GameSim>(
-                std::make_shared<pumila::Pumila5>(0.01)));
+                model, selected_models[i], seed));
+        } else if (selected_models[i].starts_with("pumila7")) {
+            auto model = std::make_shared<pumila::Pumila7>(1);
+            model->loadFile(selected_models[i]);
+            sim.push_back(std::make_shared<pumila::GameSim>(
+                model, selected_models[i], seed));
         } else {
-            sim.push_back(std::make_shared<pumila::GameSim>());
+            sim.push_back(std::make_shared<pumila::GameSim>(seed));
         }
     }
 
