@@ -32,6 +32,11 @@ class GameSim {
     std::atomic<bool> running;
     std::optional<Action> soft_put_target = std::nullopt;
     std::recursive_mutex step_m;
+    /*!
+     * \brief rotPairして失敗した場合その回転方向が入る
+     * 回転できた場合0
+     */
+    int rot_fail = 0;
 
   public:
     FieldState field;
@@ -120,6 +125,8 @@ class GameSim {
         PhaseEnum get() const override { return PhaseEnum::free; }
         PUMILA_DLL std::unique_ptr<Phase> step() override;
         static constexpr int PUT_T = 100;
+        static constexpr double FALL_SPEED = 1.0;
+        static constexpr double SOFT_SPEED = 25.0;
         PuyoPair current_pair;
         int put_t;
     };
@@ -127,7 +134,7 @@ class GameSim {
         PUMILA_DLL explicit FallPhase(GameSim *sim);
         PhaseEnum get() const override { return PhaseEnum::fall; }
         PUMILA_DLL std::unique_ptr<Phase> step() override;
-        static constexpr int WAIT_T = 30;
+        static constexpr int WAIT_T = 20;
         int wait_t;
     };
     struct ChainPhase final : Phase {

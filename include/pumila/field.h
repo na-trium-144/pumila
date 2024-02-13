@@ -68,7 +68,6 @@ struct FieldState {
 
     /*!
      * \brief puyopairを落とす
-     *
      */
     PUMILA_DLL void put(const PuyoPair &pp);
     void put() {
@@ -82,6 +81,12 @@ struct FieldState {
             put({next[0], action});
         }
     }
+
+    /*!
+     * \brief 落下中のぷよが既存のぷよに重なっているまたは画面外か調べる
+     * \return フィールド上のぷよと重なるor画面外ならtrue
+     */
+    PUMILA_DLL bool checkCollision(const PuyoPair &pp);
 
     /*!
      * \brief puyopairを落とした場合のy座標を調べる

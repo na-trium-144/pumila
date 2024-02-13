@@ -64,18 +64,34 @@ void GameSim::rotPair(int r) {
     if (isFreePhase() && !field.next.empty()) {
         PuyoPair &pp = field.next[0];
         PuyoPair new_pp = pp;
+        if (r == rot_fail) {
+            r *= 2;
+        }
+        rot_fail = 0;
         new_pp.rotate(r);
-        if (new_pp.bottomX() > static_cast<int>(FieldState::WIDTH) - 1 ||
-            new_pp.topX() > static_cast<int>(FieldState::WIDTH) - 1) {
-            new_pp.x--;
-        }
-        if (new_pp.bottomX() < 0 || new_pp.topX() < 0) {
-            new_pp.x++;
-        }
-        if (field.get(new_pp.bottomX(), new_pp.bottomY()) == Puyo::none &&
-            field.get(new_pp.topX(), new_pp.topY()) == Puyo::none) {
+        if (!field.checkCollision(new_pp)) {
             pp = new_pp;
+            return;
         }
+        PuyoPair new_pp2 = new_pp;
+        new_pp2.y = new_pp.y + 1;
+        if (!field.checkCollision(new_pp2)) {
+            pp = new_pp2;
+            return;
+        }
+        new_pp2.y = new_pp.y;
+        new_pp2.x = new_pp.x + 1;
+        if (!field.checkCollision(new_pp2)) {
+            pp = new_pp2;
+            return;
+        }
+        new_pp2.y = new_pp.y;
+        new_pp2.x = new_pp.x - 1;
+        if (!field.checkCollision(new_pp2)) {
+            pp = new_pp2;
+            return;
+        }
+        rot_fail = r;
     }
 }
 void GameSim::quickDrop() {
@@ -91,7 +107,7 @@ void GameSim::softDrop() {
     std::lock_guard lock(step_m);
     if (isFreePhase() && !field.next.empty()) {
         PuyoPair &pp = field.next[0];
-        pp.y -= 20.0 / 60;
+        pp.y -= FreePhase::SOFT_SPEED / 60;
         auto f_phase = dynamic_cast<FreePhase *>(phase.get());
         f_phase->put_t -= 10;
     }
@@ -114,7 +130,8 @@ void GameSim::step() {
                     rotPair(1);
                 } else if (soft_put_target->rot != pp.rot) {
                     rotPair(-1);
-                } else if (pp.x < soft_put_target->x) {
+                }
+                if (pp.x < soft_put_target->x) {
                     movePair(1);
                 } else if (pp.x > soft_put_target->x) {
                     movePair(-1);
@@ -154,7 +171,7 @@ GameSim::FreePhase::FreePhase(GameSim *sim) : Phase(sim), put_t(PUT_T) {
 
 std::unique_ptr<GameSim::Phase> GameSim::FreePhase::step() {
     auto &current_pair = sim->field.next[0];
-    current_pair.y -= 0.5 / 60;
+    current_pair.y -= FALL_SPEED / 60;
     auto [yb, yt] = sim->field.getHeight(current_pair, false);
     auto [yb_f, yt_f] = sim->field.getHeight(current_pair, true);
     if (yb < current_pair.y) {

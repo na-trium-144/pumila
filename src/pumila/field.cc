@@ -3,6 +3,7 @@
 #include <cassert>
 #include <stdexcept>
 #include <sstream>
+#include <cmath>
 
 namespace PUMILA_NS {
 Puyo FieldState::get(std::size_t x, std::size_t y) const {
@@ -82,6 +83,15 @@ void FieldState::put(const PuyoPair &pp) {
     auto [yb, yt] = getHeight(pp, true);
     put(pp.topX(), yt, pp.top);
     put(pp.bottomX(), yb, pp.bottom);
+}
+
+bool FieldState::checkCollision(const PuyoPair &pp) {
+    return (!inRange(pp.bottomX(), std::floor(pp.bottomY())) ||
+            !inRange(pp.topX(), std::floor(pp.topY())) ||
+            get(pp.bottomX(), std::floor(pp.bottomY())) != Puyo::none ||
+            get(pp.topX(), std::floor(pp.topY())) != Puyo::none ||
+            get(pp.bottomX(), std::ceil(pp.bottomY())) != Puyo::none ||
+            get(pp.topX(), std::ceil(pp.topY())) != Puyo::none);
 }
 
 Chain FieldState::deleteChain(int chain_num) {
