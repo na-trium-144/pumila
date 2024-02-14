@@ -28,6 +28,19 @@ struct FieldState {
     std::array<std::array<Puyo, WIDTH>, HEIGHT> field = {};
 
     /*!
+     * \brief 盤面が変化したかどうか
+     * * put時にtrue (←fall時にもtrue, deleteConnection時にもtrue)
+     * * deleteChainでchanged=trueのみチェック
+     * * 次のput時にclearUpdateFlagする
+     */
+    std::array<std::array<bool, WIDTH>, HEIGHT> updated = {};
+    void clearUpdateFlag() {
+        for (std::size_t y = 0; y < HEIGHT; y++) {
+            updated.at(y).fill(false);
+        }
+    }
+
+    /*!
      * \brief nextのぷよ
      *
      * freePhase中は操作中のぷよ+next2つで合計3組になり、それ以外の場合2組

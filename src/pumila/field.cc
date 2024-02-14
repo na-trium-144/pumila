@@ -19,6 +19,7 @@ Puyo FieldState::get(std::size_t x, std::size_t y) const {
 void FieldState::put(std::size_t x, std::size_t y, Puyo p) {
     if (inRange(x, y)) {
         field.at(y).at(x) = p;
+        updated.at(y).at(x) = true;
     } else {
         is_valid = false;
     }
@@ -80,6 +81,7 @@ std::size_t FieldState::getHeight(std::size_t x) const {
 }
 
 void FieldState::put(const PuyoPair &pp) {
+    clearUpdateFlag();
     auto [yb, yt] = getHeight(pp, true);
     put(pp.topX(), yt, pp.top);
     put(pp.bottomX(), yb, pp.bottom);
@@ -100,10 +102,13 @@ Chain FieldState::deleteChain(int chain_num) {
     FieldState state_tmp = *this;
     for (std::size_t y = 0; y < HEIGHT; y++) {
         for (std::size_t x = 0; x < WIDTH; x++) {
-            auto connection = state_tmp.deleteConnection(x, y);
-            if (connection.size() >= 4) {
-                chain.connections.emplace_back(get(x, y), connection.size());
-                deleteConnection(x, y); // thisの盤面にも反映
+            if (updated.at(y).at(x)) {
+                auto connection = state_tmp.deleteConnection(x, y);
+                if (connection.size() >= 4) {
+                    chain.connections.emplace_back(get(x, y),
+                                                   connection.size());
+                    deleteConnection(x, y); // thisの盤面にも反映
+                }
             }
         }
     }
