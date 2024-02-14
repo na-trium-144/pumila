@@ -40,7 +40,9 @@ void Pumila8::learnStep(std::shared_ptr<FieldState> field) {
                 for (std::size_t a2 = 0; a2 < ACTIONS_NUM; a2++) {
                     std::shared_lock lock(target_m);
                     fw_next3_q.middleCols<1>(a2) =
-                        target.forward(next3[a][a2].get().in).q;
+                        GAMMA * GAMMA * target.forward(next3[a][a2].get().in).q;
+                    fw_next3_q.middleCols<1>(a2).array() +=
+                        GAMMA * calcReward(next2[a].get().field_next[a2]);
                 }
                 for (std::size_t a2 = 0; a2 < ACTIONS_NUM; a2++) {
                     for (std::size_t a3 = 0; a3 < ACTIONS_NUM; a3++) {
@@ -52,7 +54,7 @@ void Pumila8::learnStep(std::shared_ptr<FieldState> field) {
                 }
                 for (int r = a; r < delta_2.rows(); r += ACTIONS_NUM) {
                     double diff = (calcReward(next.get().field_next[a]) +
-                                   GAMMA * fw_next3_q.maxCoeff()) -
+                                   fw_next3_q.maxCoeff()) -
                                   fw_result.q(r, 0);
                     delta_2(r, 0) = diff;
                 }
