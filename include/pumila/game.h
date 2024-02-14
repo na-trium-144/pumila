@@ -39,7 +39,7 @@ class GameSim {
     int rot_fail = 0;
 
   public:
-    FieldState field;
+    std::shared_ptr<FieldState> field;
     /*!
      * \brief 現在の連鎖情報
      *

@@ -37,23 +37,23 @@ void Pumila2::save(std::ostream &os) {
              main.matrix_hq->rows() * main.matrix_hq->cols() * sizeof(double));
 }
 
-Pumila2::InFeatureSingle Pumila2::getInNodeSingle(const FieldState &field,
+Pumila2::InFeatureSingle Pumila2::getInNodeSingle(std::shared_ptr<FieldState> field,
                                                   int a) {
     InFeatureSingle feat;
-    feat.field_next = field.copy();
-    feat.field_next.put(actions[a]);
-    feat.field_next.next.pop_front();
-    std::vector<Chain> chains = feat.field_next.deleteChainRecurse();
+    feat.field_next = field->copy();
+    feat.field_next->put(actions[a]);
+    feat.field_next->next.pop_front();
+    std::vector<Chain> chains = feat.field_next->deleteChainRecurse();
 
     feat.in = Eigen::VectorXd::Zero(NNModel::IN_NODES);
     NNModel::InNodes &in_nodes =
         *reinterpret_cast<NNModel::InNodes *>(feat.in.data());
     in_nodes.bias = 1;
-    auto chain_all = feat.field_next.calcChainAll();
+    auto chain_all = feat.field_next->calcChainAll();
     for (std::size_t y = 0; y < FieldState::HEIGHT; y++) {
         for (std::size_t x = 0; x < FieldState::WIDTH; x++) {
             int p;
-            switch (feat.field_next.get(x, y)) {
+            switch (feat.field_next->get(x, y)) {
             case Puyo::red:
                 p = 0;
                 break;
@@ -84,7 +84,7 @@ Pumila2::InFeatureSingle Pumila2::getInNodeSingle(const FieldState &field,
     return feat;
 }
 
-std::future<Pumila2::InFeatures> Pumila2::getInNodes(const FieldState &field) {
+std::future<Pumila2::InFeatures> Pumila2::getInNodes(std::shared_ptr<FieldState> field) {
     std::array<std::shared_future<InFeatureSingle>, ACTIONS_NUM> feat;
     for (int a = 0; a < ACTIONS_NUM; a++) {
         feat[a] =
@@ -205,11 +205,11 @@ void Pumila2::NNModel::backward(const NNResult &result,
     }
 }
 
-double Pumila2::calcRewardS(const FieldState &field) {
+double Pumila2::calcRewardS(std::shared_ptr<FieldState> field) {
     double r = -1;
     std::size_t max_y = 0;
     for (std::size_t x = 0; x < FieldState::WIDTH; x++) {
-        auto y = field.getHeight(x);
+        auto y = field->getHeight(x);
         max_y = y > max_y ? y : max_y;
     }
     if (max_y >= 4) {
@@ -222,11 +222,11 @@ double Pumila2::calcRewardS(const FieldState &field) {
         */
         r -= 10 * (2 * max_y * max_y - 10 * max_y + 9);
     }
-    r += field.prev_chain_score / 4;
+    r += field->prev_chain_score / 4;
     return r;
 }
 
-int Pumila2::getActionRnd(const FieldState &field, double rnd_p) {
+int Pumila2::getActionRnd(std::shared_ptr<FieldState> field, double rnd_p) {
     NNResult fw_result;
     fw_result = main.forward(getInNodes(field).get().in);
     if (getRndD() >= rnd_p) {
@@ -246,7 +246,7 @@ int Pumila2::getActionRnd(const FieldState &field, double rnd_p) {
         return ACTIONS_NUM - 1;
     }
 }
-void Pumila2::learnStep(const FieldState &field) {
+void Pumila2::learnStep(std::shared_ptr<FieldState> field) {
     {
         std::unique_lock lock(learning_m);
         if (batch_count >= BATCH_SIZE) {

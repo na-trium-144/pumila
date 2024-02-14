@@ -29,9 +29,9 @@ class Pumila7 : public Pumila6 {
     using InFeatures = Pumila2::InFeatures;
     using InFeatureSingle = Pumila2::InFeatureSingle;
 
-    double calcReward(const FieldState &field) const override {
+    double calcReward(std::shared_ptr<FieldState> field) const override {
         return Pumila7::calcRewardS(field);
     }
-    PUMILA_DLL static double calcRewardS(const FieldState &field);
+    PUMILA_DLL static double calcRewardS(std::shared_ptr<FieldState> field);
 };
 } // namespace PUMILA_NS

@@ -30,7 +30,7 @@ void Pumila1::save(std::ostream &os) {
              main.matrix_hq.rows() * main.matrix_hq.cols() * sizeof(double));
 }
 
-Eigen::MatrixXd Pumila1::getInNodes(const FieldState &field) const {
+Eigen::MatrixXd Pumila1::getInNodes(std::shared_ptr<FieldState> field) const {
     return Pumila2::getInNodes(field).get().in;
 }
 
@@ -72,7 +72,7 @@ double Pumila1::calcReward(std::shared_ptr<GameSim> sim_after) const {
     return Pumila2::calcRewardS(sim_after->field);
 }
 
-int Pumila1::getAction(const FieldState &field) {
+int Pumila1::getAction(std::shared_ptr<FieldState> field) {
     NNResult fw_result = main.forward(getInNodes(field));
     int action = 0;
     fw_result.q.maxCoeff(&action);

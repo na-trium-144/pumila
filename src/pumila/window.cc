@@ -99,30 +99,30 @@ void Window::draw() {
         SDL_RenderDrawRect(sdl_renderer, &field_rect);
 
         if (sim[i]->isFreePhase()) {
-            auto &current_pair = sim[i]->field.next[0];
+            auto &current_pair = sim[i]->field->next[0];
             drawPuyo(current_pair.bottom, current_pair.bottomX(),
-                     sim[i]->field.getHeight(current_pair, true).first, i,
+                     sim[i]->field->getHeight(current_pair, true).first, i,
                      false);
             drawPuyo(current_pair.top, current_pair.topX(),
-                     sim[i]->field.getHeight(current_pair, true).second, i,
+                     sim[i]->field->getHeight(current_pair, true).second, i,
                      false);
             drawPuyo(current_pair.bottom, current_pair.bottomX(),
                      current_pair.bottomY(), i, true);
             drawPuyo(current_pair.top, current_pair.topX(), current_pair.topY(),
                      i, true);
         }
-        int next_p = sim[i]->isFreePhase() ? 1 : 0;
-        if (sim[i]->field.next.size() > next_p) {
-            drawPuyo(sim[i]->field.next[next_p].bottom, 6.5, 10.5, i, true);
-            drawPuyo(sim[i]->field.next[next_p].top, 6.5, 11.5, i, true);
+        std::size_t next_p = sim[i]->isFreePhase() ? 1 : 0;
+        if (sim[i]->field->next.size() > next_p) {
+            drawPuyo(sim[i]->field->next[next_p].bottom, 6.5, 10.5, i, true);
+            drawPuyo(sim[i]->field->next[next_p].top, 6.5, 11.5, i, true);
         }
-        if (sim[i]->field.next.size() > next_p + 1) {
-            drawPuyo(sim[i]->field.next[next_p + 1].bottom, 8, 9.5, i, true);
-            drawPuyo(sim[i]->field.next[next_p + 1].top, 8, 10.5, i, true);
+        if (sim[i]->field->next.size() > next_p + 1) {
+            drawPuyo(sim[i]->field->next[next_p + 1].bottom, 8, 9.5, i, true);
+            drawPuyo(sim[i]->field->next[next_p + 1].top, 8, 10.5, i, true);
         }
-        for (int y = 0; y < FieldState::HEIGHT; y++) {
-            for (int x = 0; x < FieldState::WIDTH; x++) {
-                drawPuyo(sim[i]->field.get(x, y), x, y, i, true);
+        for (std::size_t y = 0; y < FieldState::HEIGHT; y++) {
+            for (std::size_t x = 0; x < FieldState::WIDTH; x++) {
+                drawPuyo(sim[i]->field->get(x, y), x, y, i, true);
             }
         }
 
@@ -138,7 +138,7 @@ void Window::draw() {
             SDL_DestroyTexture(name_t);
 
             SDL_Texture *score_t = drawText(
-                sdl_renderer, std::to_string(sim[i]->field.total_score),
+                sdl_renderer, std::to_string(sim[i]->field->total_score),
                 ttf_font, {0, 0, 0, 255}, &text_w, &text_h);
             rect = {FIELD_X[i] + PUYO_SIZE * 6 - text_w - 10, FIELD_Y + 35,
                     text_w, text_h};
@@ -157,7 +157,7 @@ void Window::draw() {
                 SDL_DestroyTexture(score_t);
                 ss.str("");
 
-                ss << sim[i]->field.prev_chain_num;
+                ss << sim[i]->field->prev_chain_num;
                 score_t = drawText(sdl_renderer, ss.str(), ttf_font,
                                    {0, 0, 0, 255}, &text_w, &text_h);
                 rect = {FIELD_X[i] + PUYO_SIZE * 7 - text_w / 2, FIELD_Y - 60,
@@ -167,7 +167,7 @@ void Window::draw() {
                 ss.str("");
 
                 ss << "chain";
-                if (sim[i]->field.prev_chain_num >= 2) {
+                if (sim[i]->field->prev_chain_num >= 2) {
                     ss << "s";
                 }
                 ss << "!";
@@ -179,8 +179,8 @@ void Window::draw() {
                 SDL_DestroyTexture(score_t);
 
             } else {
-                // ss << "(" << sim->field.prev_chain_num << ", "
-                //    << sim->field.prev_chain_score << ")";
+                // ss << "(" << sim->field->prev_chain_num << ", "
+                //    << sim->field->prev_chain_score << ")";
                 // score_t = drawText(sdl_renderer, ss.str(), ttf_font, {0, 0,
                 // 0, 255},
                 //                    &text_w, &text_h);

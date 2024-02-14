@@ -14,13 +14,13 @@ void initPumila4Module(py::module_ &m) {
             .def_readwrite("main", &Pumila4::main)
             .def_readwrite("target", &Pumila4::target)
             .def("get_action_rnd",
-                 py::overload_cast<const FieldState &, double>(
+                 py::overload_cast<std::shared_ptr<FieldState>, double>(
                      &Pumila4::getActionRnd))
             .def("get_action_rnd",
                  py::overload_cast<const std::shared_ptr<GameSim> &, double>(
                      &Pumila4::getActionRnd))
             .def("get_in_nodes",
-                 [](Pumila4 &pumila4, const FieldState &field) {
+                 [](Pumila4 &pumila4, std::shared_ptr<FieldState> field) {
                      return pumila4.getInNodes(field).get();
                  })
             .def("calc_reward", &Pumila4::calcReward)

@@ -21,9 +21,9 @@ class Pumila5 : public Pumila3 {
         return copied;
     }
 
-    double calcReward(const FieldState &field) const override {
+    double calcReward(std::shared_ptr<FieldState> field) const override {
         return Pumila5::calcRewardS(field);
     }
-    PUMILA_DLL static double calcRewardS(const FieldState &field);
+    PUMILA_DLL static double calcRewardS(std::shared_ptr<FieldState> field);
 };
 } // namespace PUMILA_NS

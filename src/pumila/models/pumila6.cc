@@ -93,13 +93,13 @@ void Pumila6::NNModel::backward(const NNResult &result,
     }
 }
 
-int Pumila6::getActionRnd(const FieldState &field, double rnd_p) {
+int Pumila6::getActionRnd(std::shared_ptr<FieldState> field, double rnd_p) {
     NNResult fw_result;
     auto in_feat = Pumila2::getInNodes(field).get();
     fw_result = main.forward(in_feat.in);
     for (int a2 = 0; a2 < ACTIONS_NUM; a2++) {
-        if (!in_feat.field_next[a2].is_valid ||
-            in_feat.field_next[a2].is_over) {
+        if (!in_feat.field_next[a2]->is_valid ||
+            in_feat.field_next[a2]->is_over) {
             fw_result.q(a2, 0) = fw_result.q.minCoeff();
         }
     }
@@ -121,7 +121,7 @@ int Pumila6::getActionRnd(const FieldState &field, double rnd_p) {
     }
 }
 
-void Pumila6::learnStep(const FieldState &field) {
+void Pumila6::learnStep(std::shared_ptr<FieldState> field) {
     {
         std::unique_lock lock(learning_m);
         if (batch_count >= BATCH_SIZE) {
@@ -151,8 +151,8 @@ void Pumila6::learnStep(const FieldState &field) {
                     fw_next = target.forward(next2[a].get().in);
                 }
                 for (int a2 = 0; a2 < ACTIONS_NUM; a2++) {
-                    if (!next2[a].get().field_next[a2].is_valid ||
-                        next2[a].get().field_next[a2].is_over) {
+                    if (!next2[a].get().field_next[a2]->is_valid ||
+                        next2[a].get().field_next[a2]->is_over) {
                         fw_next.q(a2, 0) = fw_next.q.minCoeff();
                     }
                 }

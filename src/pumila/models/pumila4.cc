@@ -34,23 +34,23 @@ void Pumila4::save(std::ostream &os) {
     os.write(reinterpret_cast<char *>(main.matrix_hq->data()),
              main.matrix_hq->rows() * main.matrix_hq->cols() * sizeof(double));
 }
-Pumila4::InFeatureSingle Pumila4::getInNodeSingle(const FieldState &field,
-                                                  int a) {
+Pumila4::InFeatureSingle
+Pumila4::getInNodeSingle(std::shared_ptr<FieldState> field, int a) {
     InFeatureSingle feat;
-    feat.field_next = field.copy();
-    feat.field_next.put(actions[a]);
-    feat.field_next.next.pop_front();
-    std::vector<Chain> chains = feat.field_next.deleteChainRecurse();
+    feat.field_next = field->copy();
+    feat.field_next->put(actions[a]);
+    feat.field_next->next.pop_front();
+    std::vector<Chain> chains = feat.field_next->deleteChainRecurse();
 
     feat.in = Eigen::VectorXd::Zero(NNModel::IN_NODES);
     NNModel::InNodes &in_nodes =
         *reinterpret_cast<NNModel::InNodes *>(feat.in.data());
     in_nodes.bias = 1;
-    auto chain_all = feat.field_next.calcChainAll();
+    auto chain_all = feat.field_next->calcChainAll();
     for (std::size_t y = 0; y < FieldState::HEIGHT; y++) {
         for (std::size_t x = 0; x < FieldState::WIDTH; x++) {
             int p;
-            switch (feat.field_next.get(x, y)) {
+            switch (feat.field_next->get(x, y)) {
             case Puyo::red:
                 p = 0;
                 break;
@@ -131,13 +131,13 @@ void Pumila4::NNModel::backward(const NNResult &result,
     }
 }
 
-int Pumila4::getActionRnd(const FieldState &field, double rnd_p) {
+int Pumila4::getActionRnd(std::shared_ptr<FieldState> field, double rnd_p) {
     NNResult fw_result;
     auto in_feat = getInNodes(field).get();
     fw_result = main.forward(in_feat.in);
     for (int a2 = 0; a2 < ACTIONS_NUM; a2++) {
-        if (!in_feat.field_next[a2].is_valid ||
-            in_feat.field_next[a2].is_over) {
+        if (!in_feat.field_next[a2]->is_valid ||
+            in_feat.field_next[a2]->is_over) {
             fw_result.q(a2, 0) = fw_result.q.minCoeff();
         }
     }
@@ -159,7 +159,7 @@ int Pumila4::getActionRnd(const FieldState &field, double rnd_p) {
     }
 }
 
-void Pumila4::learnStep(const FieldState &field) {
+void Pumila4::learnStep(std::shared_ptr<FieldState> field) {
     {
         std::unique_lock lock(learning_m);
         if (batch_count >= BATCH_SIZE) {
@@ -189,8 +189,8 @@ void Pumila4::learnStep(const FieldState &field) {
                     fw_next = target.forward(next2[a].get().in);
                 }
                 for (int a2 = 0; a2 < ACTIONS_NUM; a2++) {
-                    if (!next2[a].get().field_next[a2].is_valid ||
-                        next2[a].get().field_next[a2].is_over) {
+                    if (!next2[a].get().field_next[a2]->is_valid ||
+                        next2[a].get().field_next[a2]->is_over) {
                         fw_next.q(a2, 0) = fw_next.q.minCoeff();
                     }
                 }

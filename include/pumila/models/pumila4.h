@@ -75,14 +75,14 @@ class Pumila4 : public Pumila {
     using InFeatures = Pumila2::InFeatures;
     using InFeatureSingle = Pumila2::InFeatureSingle;
 
-    inline static std::future<InFeatures> getInNodes(const FieldState &field) {
+    inline static std::future<InFeatures> getInNodes(std::shared_ptr<FieldState> field) {
         return Pumila2::getInNodes(field);
     }
     inline static std::future<InFeatures>
     getInNodes(std::shared_future<InFeatures> feature, int feat_a) {
         return Pumila2::getInNodes(feature, feat_a);
     }
-    inline static InFeatureSingle getInNodeSingle(const FieldState &field,
+    inline static InFeatureSingle getInNodeSingle(std::shared_ptr<FieldState> field,
                                                   int a);
 
 
@@ -94,17 +94,17 @@ class Pumila4 : public Pumila {
         return copied;
     }
 
-    inline static double calcReward(const FieldState &field) {
+    inline static double calcReward(std::shared_ptr<FieldState> field) {
         return Pumila2::calcRewardS(field);
     }
 
-    int getAction(const FieldState &field) override {
+    int getAction(std::shared_ptr<FieldState> field) override {
         return getActionRnd(field, 0);
     }
-    PUMILA_DLL virtual int getActionRnd(const FieldState &field, double rnd_p);
+    PUMILA_DLL virtual int getActionRnd(std::shared_ptr<FieldState> field, double rnd_p);
     int getActionRnd(const std::shared_ptr<GameSim> &sim, double rnd_p) {
         return getActionRnd(sim->field, rnd_p);
     }
-    PUMILA_DLL virtual void learnStep(const FieldState &field);
+    PUMILA_DLL virtual void learnStep(std::shared_ptr<FieldState> field);
 };
 } // namespace PUMILA_NS

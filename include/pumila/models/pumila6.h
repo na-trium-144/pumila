@@ -88,17 +88,17 @@ class Pumila6 : public Pumila {
     using InFeatures = Pumila2::InFeatures;
     using InFeatureSingle = Pumila2::InFeatureSingle;
 
-    virtual double calcReward(const FieldState &field) const {
+    virtual double calcReward(std::shared_ptr<FieldState> field) const {
         return Pumila5::calcRewardS(field);
     }
-    int getAction(const FieldState &field) override {
+    int getAction(std::shared_ptr<FieldState> field) override {
         return getActionRnd(field, 0);
     }
-    PUMILA_DLL int getActionRnd(const FieldState &field, double rnd_p);
+    PUMILA_DLL int getActionRnd(std::shared_ptr<FieldState> field, double rnd_p);
     int getActionRnd(const std::shared_ptr<GameSim> &sim, double rnd_p) {
         return getActionRnd(sim->field, rnd_p);
     }
 
-    PUMILA_DLL virtual void learnStep(const FieldState &field);
+    PUMILA_DLL virtual void learnStep(std::shared_ptr<FieldState> field);
 };
 } // namespace PUMILA_NS

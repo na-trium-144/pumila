@@ -17,6 +17,10 @@ struct FieldState {
     static constexpr std::size_t WIDTH = 6;
     static constexpr std::size_t HEIGHT = 13;
 
+    /*!
+     * \brief x, yがフィールドの範囲内かどうか判定
+     *
+     */
     static bool inRange(std::size_t x, std::size_t y = 0) {
         return x < WIDTH && y < HEIGHT;
     }
@@ -34,10 +38,19 @@ struct FieldState {
      * \brief 試合開始からの手数
      */
     int step_num = 0;
-
-    int prev_chain_num = 0;
-    int prev_chain_score = 0;
+    /*!
+     * \brief 最後の連鎖の連鎖数と得点
+     */
+    int prev_chain_num = 0, prev_chain_score = 0;
+    /*!
+     * \brief 最後の連鎖とその前の連鎖の間のステップ数
+     * pumila7で使用
+     */
     int last_chain_step_num = 0;
+    /*!
+     * \brief 現在スコア
+     * 表示用
+     */
     int total_score = 0;
     /*!
      * \brief 直前に操作した手が無効な場合false
@@ -58,24 +71,43 @@ struct FieldState {
     PUMILA_DLL std::vector<std::pair<std::size_t, std::size_t>>
     deleteConnection(std::size_t x, std::size_t y);
 
+    /*!
+     * \brief x, y とつながっているぷよの数を数え、
+     * すでに数えたものをフィールドから消す
+     */
     PUMILA_DLL void
     deleteConnection(std::size_t x, std::size_t y,
                      std::vector<std::pair<std::size_t, std::size_t>> &deleted);
 
-    FieldState copy() const { return *this; }
+    std::shared_ptr<FieldState> copy() const {
+        return std::make_shared<FieldState>(*this);
+    }
 
+    /*!
+     * \brief ぷよを取得
+     * 範囲外の場合例外
+     */
     PUMILA_DLL Puyo get(std::size_t x, std::size_t y) const;
 
     /*!
      * \brief puyopairを落とす
      */
     PUMILA_DLL void put(const PuyoPair &pp);
+    /*!
+     * \brief next[0]を落とす
+     */
     void put() {
         if (!next.empty()) {
             put(next[0]);
         }
     }
+    /*!
+     * \brief puyopairを指定した位置に落とす
+     */
     void put(const PuyoPair &pp, const Action &action) { put({pp, action}); }
+    /*!
+     * \brief next[0]を指定した位置に落とす
+     */
     void put(const Action &action) {
         if (!next.empty()) {
             put({next[0], action});
@@ -94,8 +126,8 @@ struct FieldState {
      * \return bottom, topのそれぞれのy座標
      *
      */
-   PUMILA_DLL  std::pair<std::size_t, std::size_t> getHeight(const PuyoPair &pp,
-                                                  bool fall) const;
+    PUMILA_DLL std::pair<std::size_t, std::size_t> getHeight(const PuyoPair &pp,
+                                                             bool fall) const;
     /*!
      * \brief ぷよを1つ落とした場合のy座標を調べる
      *

@@ -140,7 +140,7 @@ FieldState::calcChainAll() const {
             if (get(x, y) == Puyo::none || chain_map[y][x] != 0) {
                 continue;
             }
-            FieldState state = this->copy();
+            FieldState state = *this;
             auto first_connection = state.deleteConnection(x, y);
             auto chains = state.deleteChainRecurse();
             for (const auto &pos : first_connection) {

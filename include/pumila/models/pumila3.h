@@ -18,7 +18,7 @@ class Pumila3 : public Pumila2 {
         return copied;
     }
 
-    PUMILA_DLL int getActionRnd(const FieldState &field, double rnd_p) override;
-    PUMILA_DLL void learnStep(const FieldState &field) override;
+    PUMILA_DLL int getActionRnd(std::shared_ptr<FieldState> field, double rnd_p) override;
+    PUMILA_DLL void learnStep(std::shared_ptr<FieldState> field) override;
 };
 } // namespace PUMILA_NS

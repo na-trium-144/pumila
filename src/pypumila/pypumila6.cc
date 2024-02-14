@@ -14,7 +14,7 @@ void initPumila6Module(py::module_ &m) {
             .def_readwrite("main", &Pumila6::main)
             .def_readwrite("target", &Pumila6::target)
             .def("get_action_rnd",
-                 py::overload_cast<const FieldState &, double>(
+                 py::overload_cast<std::shared_ptr<FieldState>, double>(
                      &Pumila6::getActionRnd))
             .def("get_action_rnd",
                  py::overload_cast<const std::shared_ptr<GameSim> &, double>(

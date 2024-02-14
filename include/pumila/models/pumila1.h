@@ -76,7 +76,7 @@ class Pumila1 : public Pumila {
     Eigen::MatrixXd getInNodes(std::shared_ptr<GameSim> sim) const {
         return getInNodes(sim->field);
     }
-    PUMILA_DLL Eigen::MatrixXd getInNodes(const FieldState &field) const;
+    PUMILA_DLL Eigen::MatrixXd getInNodes(std::shared_ptr<FieldState> field) const;
 
     /*!
      * \brief 報酬を計算
@@ -84,7 +84,7 @@ class Pumila1 : public Pumila {
      */
     PUMILA_DLL double calcReward(std::shared_ptr<GameSim> sim_after) const;
 
-    PUMILA_DLL int getAction(const FieldState &field) override;
+    PUMILA_DLL int getAction(std::shared_ptr<FieldState> field) override;
     PUMILA_DLL std::pair<int, int> getLearnAction(std::shared_ptr<GameSim> sim);
     PUMILA_DLL double learnResult(int id, std::shared_ptr<GameSim> sim_after);
 };

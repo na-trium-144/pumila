@@ -4,17 +4,17 @@
 #include <string>
 
 namespace PUMILA_NS {
-int Pumila1N::getAction(const FieldState &field) {
+int Pumila1N::getAction(std::shared_ptr<FieldState> field) {
     std::array<std::future<double>, ACTIONS_NUM> actions_result;
     for (int a = 0; a < ACTIONS_NUM; a++) {
-        actions_result[a] = pool.submit_task([&field, a, this]() -> double {
-            FieldState field_next = field.copy();
-            field_next.put(actions[a]);
-            std::vector<Chain> chains = field_next.deleteChainRecurse();
+        auto field_next = field->copy();
+        actions_result[a] = pool.submit_task([field_next, a, this]() -> double {
+            field_next->put(actions[a]);
+            std::vector<Chain> chains = field_next->deleteChainRecurse();
             if (chains.size() >= target_chain) {
                 return 100;
             }
-            auto chain_all = field_next.calcChainAll();
+            auto chain_all = field_next->calcChainAll();
             int max_chain = 0;
             for (int y = 0; y < FieldState::HEIGHT; y++) {
                 for (int x = 0; x < FieldState::WIDTH; x++) {
@@ -24,7 +24,7 @@ int Pumila1N::getAction(const FieldState &field) {
             }
             std::size_t max_y = 0;
             for (std::size_t x = 0; x < FieldState::WIDTH; x++) {
-                auto y = field_next.getHeight(x);
+                auto y = field_next->getHeight(x);
                 max_y = y > max_y ? y : max_y;
             }
             return max_chain * 10 - static_cast<int>(max_y);

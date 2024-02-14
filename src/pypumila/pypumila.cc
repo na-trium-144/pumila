@@ -63,7 +63,7 @@ PYBIND11_MODULE(pypumila, m) {
                    ", y = " + std::to_string(a.y) +
                    ", rot = " + std::to_string(static_cast<int>(a.rot)) + ">";
         });
-    py::class_<FieldState>(m, "FieldState")
+    py::class_<FieldState, std::shared_ptr<FieldState>>(m, "FieldState")
         .def(py::init<>())
         .def_readwrite("field", &FieldState::field)
         .def_readwrite("total_score", &FieldState::total_score)
@@ -121,7 +121,7 @@ PYBIND11_MODULE(pypumila, m) {
         .def("is_running", &Window::isRunning);
     py::class_<Pumila, std::shared_ptr<Pumila>>(m, "Pumila")
         .def("get_action",
-             py::overload_cast<const FieldState &>(&Pumila::getAction))
+             py::overload_cast<std::shared_ptr<FieldState>>(&Pumila::getAction))
         .def("get_action", py::overload_cast<const std::shared_ptr<GameSim> &>(
                                &Pumila::getAction))
         .def("load_file", py::overload_cast<>(&Pumila::loadFile))

@@ -113,11 +113,11 @@ class Pumila2 : public Pumila {
     double mean_diff = 0;
 
     struct InFeatures {
-        std::array<FieldState, ACTIONS_NUM> field_next;
+        std::array<std::shared_ptr<FieldState>, ACTIONS_NUM> field_next;
         Eigen::MatrixXd in;
     };
     struct InFeatureSingle {
-        FieldState field_next;
+        std::shared_ptr<FieldState> field_next;
         Eigen::VectorXd in;
     };
     /*!
@@ -125,24 +125,24 @@ class Pumila2 : public Pumila {
      * (Pumila::poolで実行され完了するまで待機)
      * \return 22 * IN_NODES の行列
      */
-    PUMILA_DLL static std::future<InFeatures> getInNodes(const FieldState &field);
+    PUMILA_DLL static std::future<InFeatures> getInNodes(std::shared_ptr<FieldState> field);
     PUMILA_DLL static std::future<InFeatures>
     getInNodes(std::shared_future<InFeatures> feature, int feat_a);
     /*!
      * \brief フィールドにaのアクションをしたあとの特徴量を計算
      */
-    PUMILA_DLL static InFeatureSingle getInNodeSingle(const FieldState &field, int a);
+    PUMILA_DLL static InFeatureSingle getInNodeSingle(std::shared_ptr<FieldState> field, int a);
 
     /*!
      * \brief 報酬を計算
      *
      */
-    virtual double calcReward(const FieldState &field) const {
+    virtual double calcReward(std::shared_ptr<FieldState> field) const {
         return calcRewardS(field);
     }
-    PUMILA_DLL static double calcRewardS(const FieldState &field);
+    PUMILA_DLL static double calcRewardS(std::shared_ptr<FieldState> field);
 
-    int getAction(const FieldState &field) override {
+    int getAction(std::shared_ptr<FieldState> field) override {
         return getActionRnd(field, 0);
     }
     /*!
@@ -151,7 +151,7 @@ class Pumila2 : public Pumila {
      * \param rnd_p ランダムな手を返す割合 0〜1
      *
      */
-    PUMILA_DLL virtual int getActionRnd(const FieldState &field, double rnd_p);
+    PUMILA_DLL virtual int getActionRnd(std::shared_ptr<FieldState> field, double rnd_p);
     int getActionRnd(const std::shared_ptr<GameSim> &sim, double rnd_p) {
         return getActionRnd(sim->field, rnd_p);
     }
@@ -160,6 +160,6 @@ class Pumila2 : public Pumila {
      * \brief フィールドから次の手22通りを計算し学習
      * (Pumila::poolで実行される)
      */
-    PUMILA_DLL virtual void learnStep(const FieldState &field);
+    PUMILA_DLL virtual void learnStep(std::shared_ptr<FieldState> field);
 };
 } // namespace PUMILA_NS
