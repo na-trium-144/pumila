@@ -6,6 +6,7 @@
 #include <vector>
 #include <deque>
 #include <shared_mutex>
+#include <memory>
 
 namespace PUMILA_NS {
 /*!
@@ -62,6 +63,20 @@ struct FieldState {
      * 表示用
      */
     int total_score = 0;
+
+    /*!
+     * \brief 確定したおじゃま (自分の盤面に降る量)
+     */
+    int garbage_ready = 0;
+    /*!
+     * \brief 現在の連鎖のおじゃま (相殺する量 + 相手に送る量)
+     */
+    int garbage_current = 0;
+    /*!
+     * \brief おじゃまの計算に使うスコア
+     */
+    int garbage_score = 0;
+
     /*!
      * \brief 直前に操作した手が無効な場合false
      */
@@ -80,6 +95,9 @@ struct FieldState {
         prev_chain_score = other.prev_chain_score;
         last_chain_step_num = other.last_chain_step_num;
         total_score = other.total_score;
+        garbage_ready = other.garbage_ready;
+        garbage_current = other.garbage_current;
+        garbage_score = other.garbage_score;
         is_valid = other.is_valid;
         is_over = other.is_over;
     }
@@ -93,24 +111,29 @@ struct FieldState {
         }
     }
 
+    PUMILA_DLL void addCurrentGarbage(int score_add, int rate = 70);
+    PUMILA_DLL int calcGarbageSend();
 
     PUMILA_DLL void put(std::size_t x, std::size_t y, Puyo p);
+
+    struct PuyoConnection {
+        std::vector<std::pair<std::size_t, std::size_t>> colored, garbage;
+        PuyoConnection() : colored(), garbage() {}
+    };
 
     /*!
      * \brief x, y とつながっているぷよの数を数え、
      * すでに数えたものをフィールドから消す
      * \return 削除したぷよ
      */
-    PUMILA_DLL std::vector<std::pair<std::size_t, std::size_t>>
-    deleteConnection(std::size_t x, std::size_t y);
+    PUMILA_DLL PuyoConnection deleteConnection(std::size_t x, std::size_t y);
 
     /*!
      * \brief x, y とつながっているぷよの数を数え、
      * すでに数えたものをフィールドから消す
      */
-    PUMILA_DLL void
-    deleteConnection(std::size_t x, std::size_t y,
-                     std::vector<std::pair<std::size_t, std::size_t>> &deleted);
+    PUMILA_DLL void deleteConnection(std::size_t x, std::size_t y,
+                                     PuyoConnection &deleted);
 
     /*!
      * \brief ぷよを取得
@@ -189,5 +212,10 @@ struct FieldState {
      *
      */
     PUMILA_DLL bool fall();
+
+    /*!
+     * \brief 12,2を調べis_overにセットするとともに返す
+     */
+    PUMILA_DLL bool checkGameOver();
 };
 } // namespace PUMILA_NS

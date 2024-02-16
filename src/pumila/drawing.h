@@ -18,9 +18,11 @@ inline Color col(Puyo p) {
     case Puyo::green:
         return Color{120, 255, 120};
     case Puyo::yellow:
-        return Color{255, 255, 0};
+        return Color{220, 220, 0};
     case Puyo::purple:
         return Color{255, 0, 255};
+    case Puyo::garbage:
+        return Color{190, 190, 190};
     default:
         return Color{0, 0, 0};
     }

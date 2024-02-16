@@ -6,16 +6,8 @@ namespace PUMILA_NS {
 GameSim::GameSim(std::shared_ptr<Pumila> model, const std::string &name,
                  typename std::mt19937::result_type seed)
     : rnd(seed), model_action_thread(std::nullopt), running(true),
-      field(std::make_shared<FieldState>()), current_chain(std::nullopt),
-      model(model), name(model && name.empty() ? model->name() : name),
-      phase(nullptr) {
-    // todo: 最初のツモは完全ランダムではなかった気がする
-    {
-        std::lock_guard lock(field_m);
-        field->pushNext({randomPuyo(), randomPuyo()});
-        field->pushNext({randomPuyo(), randomPuyo()});
-    }
-    phase = std::make_unique<GameSim::FreePhase>(this); // nextが補充される
+      field(nullptr), current_chain(std::nullopt), model(model),
+      name(model && name.empty() ? model->name() : name), phase(nullptr) {
     if (model) {
         model_action_thread = std::make_optional<std::thread>([this] {
             while (running.load()) {
@@ -34,7 +26,23 @@ GameSim::GameSim(std::shared_ptr<Pumila> model, const std::string &name,
             }
         });
     }
+    reset();
 }
+
+void GameSim::reset() {
+    std::lock_guard lock(step_m);
+    {
+        std::lock_guard lock2(field_m);
+        field = std::make_shared<FieldState>();
+        current_chain = std::nullopt;
+
+        // todo: 最初のツモは完全ランダムではなかった気がする
+        field->pushNext({randomPuyo(), randomPuyo()});
+        field->pushNext({randomPuyo(), randomPuyo()});
+    }
+    phase = std::make_unique<GameSim::GarbagePhase>(this); // nextが補充される
+}
+
 GameSim::~GameSim() {
     running.store(false);
     if (model_action_thread) {
@@ -54,6 +62,7 @@ Puyo GameSim::randomPuyo() {
         return Puyo::yellow;
     }
 }
+
 
 void GameSim::movePair(int dx) {
     std::lock_guard lock(step_m);
@@ -183,7 +192,60 @@ void GameSim::softPut(const Action &action) {
 
 bool GameSim::isFreePhase() {
     std::lock_guard lock(step_m);
-    return phase->get() == Phase::free;
+    return phase && phase->get() == Phase::free;
+}
+
+GameSim::GarbagePhase::GarbagePhase(GameSim *sim) : Phase(sim), wait_t(WAIT_T) {
+    int garbage_send;
+    {
+        std::lock_guard lock(sim->field_m);
+        garbage_send = sim->field->calcGarbageSend();
+    }
+    auto opponent_sim = sim->opponent.lock();
+    if (opponent_sim) {
+        std::lock_guard lock(opponent_sim->field_m);
+        opponent_sim->field->garbage_ready += garbage_send;
+    }
+    {
+        std::lock_guard lock(sim->field_m);
+        if (sim->field->garbage_ready == 0) {
+            wait_t = 0;
+        } else {
+            std::size_t r = 0;
+            for (; (r + 1) * FieldState::WIDTH <=
+                       static_cast<std::size_t>(sim->field->garbage_ready) &&
+                   r < 5;
+                 r++) {
+                for (std::size_t x = 0; x < FieldState::WIDTH; x++) {
+                    sim->field->put(x, sim->field->getHeight(x), Puyo::garbage);
+                }
+            }
+            if (r < 5) {
+                std::array<int, FieldState::WIDTH> target_x = {0, 1, 2,
+                                                               3, 4, 5};
+                std::shuffle(target_x.begin(), target_x.end(), rnd);
+                for (std::size_t i = 0;
+                     r * FieldState::WIDTH + i <
+                     static_cast<std::size_t>(sim->field->garbage_ready);
+                     i++) {
+                    sim->field->put(target_x[i],
+                                    sim->field->getHeight(target_x[i]),
+                                    Puyo::garbage);
+                }
+                sim->field->garbage_ready = 0;
+            } else {
+                sim->field->garbage_ready -= FieldState::WIDTH * 5;
+            }
+            sim->field->checkGameOver();
+        }
+    }
+}
+std::unique_ptr<GameSim::Phase> GameSim::GarbagePhase::step() {
+    wait_t--;
+    if (wait_t < 0) {
+        return std::make_unique<GameSim::FreePhase>(sim);
+    }
+    return nullptr;
 }
 
 GameSim::FreePhase::FreePhase(GameSim *sim) : Phase(sim), put_t(PUT_T) {
@@ -254,8 +316,10 @@ GameSim::ChainPhase::ChainPhase(GameSim *sim) : Phase(sim), wait_t(WAIT_T) {
         wait_t = 0;
         sim->current_chain = std::nullopt;
     } else {
-        sim->field->total_score += chain.score();
-        sim->field->prev_chain_score += chain.score();
+        int chain_score = chain.score();
+        sim->field->total_score += chain_score;
+        sim->field->addCurrentGarbage(chain_score);
+        sim->field->prev_chain_score += chain_score;
         sim->field->prev_chain_num++;
         sim->current_chain = std::move(chain);
     }
@@ -267,7 +331,7 @@ std::unique_ptr<GameSim::Phase> GameSim::ChainPhase::step() {
         if (sim->current_chain) {
             return std::make_unique<GameSim::FallPhase>(sim);
         } else {
-            return std::make_unique<GameSim::FreePhase>(sim);
+            return std::make_unique<GameSim::GarbagePhase>(sim);
         }
     }
     return nullptr;

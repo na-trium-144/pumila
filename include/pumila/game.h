@@ -40,6 +40,11 @@ class GameSim {
     int rot_fail = 0;
 
   public:
+    /*!
+     * \brief おじゃまぷよを送る相手をセットしてね
+     */
+    std::weak_ptr<GameSim> opponent;
+
     std::shared_ptr<FieldState> field;
     /*!
      * \brief fieldにアクセスするときはmutexつかってね
@@ -74,6 +79,8 @@ class GameSim {
 
     bool hasModel() { return model != nullptr; }
 
+    PUMILA_DLL void reset();
+    
     /*!
      * \brief freePhase時のみぷよを操作する
      *
@@ -120,6 +127,7 @@ class GameSim {
             free,
             fall,
             chain,
+            garbage,
         };
         virtual PhaseEnum get() const = 0;
     };
@@ -127,6 +135,14 @@ class GameSim {
 
     PUMILA_DLL bool isFreePhase();
 
+    struct GarbagePhase final : Phase {
+        PUMILA_DLL explicit GarbagePhase(GameSim *sim);
+        PhaseEnum get() const override { return PhaseEnum::garbage; }
+        PUMILA_DLL std::unique_ptr<Phase> step() override;
+        static constexpr int WAIT_T = 20;
+        int wait_t;
+        inline static std::mt19937 rnd{std::random_device()()};
+    };
     struct FreePhase final : Phase {
         PUMILA_DLL explicit FreePhase(GameSim *sim);
         PhaseEnum get() const override { return PhaseEnum::free; }

@@ -51,9 +51,13 @@ int main(int argc, char const *argv[]) {
             sim.push_back(std::make_shared<pumila::GameSim>(seed));
         }
     }
+    if (sim.size() == 2) {
+        sim[0]->opponent = sim[1];
+        sim[1]->opponent = sim[0];
+    }
 
     pumila::Window window(sim);
-    while (true) {
+    while (window.isRunning()) {
         window.step(true);
     }
     return 0;
