@@ -92,6 +92,7 @@ void Window::draw() {
     SDL_RenderClear(sdl_renderer);
 
     for (std::size_t i = 0; i < sim.size(); i++) {
+        std::shared_lock lock(sim[i]->field_m);
         // 枠
         SDL_SetRenderDrawColor(sdl_renderer, 0, 0, 0, 255);
         SDL_Rect field_rect = {FIELD_X[i], FIELD_Y - PUYO_SIZE * 12,
@@ -112,18 +113,13 @@ void Window::draw() {
                      i, true);
         }
         std::size_t next_p = sim[i]->isFreePhase() ? 1 : 0;
-        {
-            std::shared_lock lock(sim[i]->field->m);
-            if (sim[i]->field->next.size() > next_p) {
-                drawPuyo(sim[i]->field->next[next_p].bottom, 6.5, 10.5, i,
-                         true);
-                drawPuyo(sim[i]->field->next[next_p].top, 6.5, 11.5, i, true);
-            }
-            if (sim[i]->field->next.size() > next_p + 1) {
-                drawPuyo(sim[i]->field->next[next_p + 1].bottom, 8, 9.5, i,
-                         true);
-                drawPuyo(sim[i]->field->next[next_p + 1].top, 8, 10.5, i, true);
-            }
+        if (sim[i]->field->next.size() > next_p) {
+            drawPuyo(sim[i]->field->next[next_p].bottom, 6.5, 10.5, i, true);
+            drawPuyo(sim[i]->field->next[next_p].top, 6.5, 11.5, i, true);
+        }
+        if (sim[i]->field->next.size() > next_p + 1) {
+            drawPuyo(sim[i]->field->next[next_p + 1].bottom, 8, 9.5, i, true);
+            drawPuyo(sim[i]->field->next[next_p + 1].top, 8, 10.5, i, true);
         }
         for (std::size_t y = 0; y < FieldState::HEIGHT; y++) {
             for (std::size_t x = 0; x < FieldState::WIDTH; x++) {
@@ -143,10 +139,7 @@ void Window::draw() {
             SDL_DestroyTexture(name_t);
 
             std::ostringstream ss;
-            {
-                std::shared_lock lock(sim[i]->field->m);
-                ss << sim[i]->field->total_score;
-            }
+            ss << sim[i]->field->total_score;
             SDL_Texture *score_t = drawText(sdl_renderer, ss.str(), ttf_font,
                                             {0, 0, 0, 255}, &text_w, &text_h);
             rect = {FIELD_X[i] + PUYO_SIZE * 6 - text_w - 10, FIELD_Y + 35,
@@ -166,10 +159,7 @@ void Window::draw() {
                 SDL_DestroyTexture(score_t);
                 ss.str("");
 
-                {
-                    std::shared_lock lock(sim[i]->field->m);
-                    ss << sim[i]->field->prev_chain_num;
-                }
+                ss << sim[i]->field->prev_chain_num;
                 score_t = drawText(sdl_renderer, ss.str(), ttf_font,
                                    {0, 0, 0, 255}, &text_w, &text_h);
                 rect = {FIELD_X[i] + PUYO_SIZE * 7 - text_w / 2, FIELD_Y - 60,
@@ -179,11 +169,8 @@ void Window::draw() {
                 ss.str("");
 
                 ss << "chain";
-                {
-                    std::shared_lock lock(sim[i]->field->m);
-                    if (sim[i]->field->prev_chain_num >= 2) {
-                        ss << "s";
-                    }
+                if (sim[i]->field->prev_chain_num >= 2) {
+                    ss << "s";
                 }
                 ss << "!";
                 score_t = drawText(sdl_renderer, ss.str(), ttf_font_sm,

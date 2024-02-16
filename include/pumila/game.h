@@ -8,6 +8,7 @@
 #include <atomic>
 #include <thread>
 #include <mutex>
+#include <shared_mutex>
 
 namespace PUMILA_NS {
 class Pumila;
@@ -40,6 +41,12 @@ class GameSim {
 
   public:
     std::shared_ptr<FieldState> field;
+    /*!
+     * \brief fieldにアクセスするときはmutexつかってね
+     *
+     */
+    std::shared_mutex field_m;
+
     /*!
      * \brief 現在の連鎖情報
      *

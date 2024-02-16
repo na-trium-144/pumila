@@ -71,11 +71,8 @@ struct FieldState {
      */
     bool is_over = false;
 
-    mutable std::optional<std::shared_mutex> m;
-
     FieldState() : field(), updated(), next() {}
     FieldState(const FieldState &other) : updated() {
-        std::shared_lock lock2(other.m);
         field = other.field;
         next = other.next;
         step_num = other.step_num;
@@ -91,7 +88,6 @@ struct FieldState {
     }
 
     void clearUpdateFlag() {
-        std::lock_guard lock(m);
         for (std::size_t y = 0; y < HEIGHT; y++) {
             updated.at(y).fill(false);
         }

@@ -102,7 +102,11 @@ PYBIND11_MODULE(pypumila, m) {
     py::class_<GameSim, std::shared_ptr<GameSim>>(m, "GameSim")
         .def(py::init<>())
         .def(py::init<std::shared_ptr<Pumila>>())
-        .def_readwrite("field", &GameSim::field)
+        .def("field_copy",
+             [](std::shared_ptr<GameSim> sim) {
+                 std::shared_lock lock(sim->field_m);
+                 return sim->field->copy();
+             })
         .def_readwrite("current_chain", &GameSim::current_chain)
         .def_readwrite("model", &GameSim::model)
         .def("has_model", &GameSim::hasModel)
