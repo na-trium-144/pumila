@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 #include <deque>
+#include <shared_mutex>
 
 namespace PUMILA_NS {
 /*!
@@ -25,20 +26,16 @@ struct FieldState {
         return x < WIDTH && y < HEIGHT;
     }
 
-    std::array<std::array<Puyo, WIDTH>, HEIGHT> field = {};
+    std::array<std::array<Puyo, WIDTH>, HEIGHT> field;
 
     /*!
      * \brief 盤面が変化したかどうか
      * * put時にtrue (←fall時にもtrue, deleteConnection時にもtrue)
      * * deleteChainでchanged=trueのみチェック
      * * 次のput時にclearUpdateFlagする
+     * * FieldStateのコピーでコピーされない
      */
-    std::array<std::array<bool, WIDTH>, HEIGHT> updated = {};
-    void clearUpdateFlag() {
-        for (std::size_t y = 0; y < HEIGHT; y++) {
-            updated.at(y).fill(false);
-        }
-    }
+    std::array<std::array<bool, WIDTH>, HEIGHT> updated;
 
     /*!
      * \brief nextのぷよ
@@ -46,7 +43,7 @@ struct FieldState {
      * freePhase中は操作中のぷよ+next2つで合計3組になり、それ以外の場合2組
      *
      */
-    std::deque<PuyoPair> next = {};
+    std::deque<PuyoPair> next;
     /*!
      * \brief 試合開始からの手数
      */
@@ -74,6 +71,33 @@ struct FieldState {
      */
     bool is_over = false;
 
+    mutable std::optional<std::shared_mutex> m;
+
+    FieldState() : field(), updated(), next() {}
+    FieldState(const FieldState &other) : updated() {
+        std::shared_lock lock2(other.m);
+        field = other.field;
+        next = other.next;
+        step_num = other.step_num;
+        prev_chain_num = other.prev_chain_num;
+        prev_chain_score = other.prev_chain_score;
+        last_chain_step_num = other.last_chain_step_num;
+        total_score = other.total_score;
+        is_valid = other.is_valid;
+        is_over = other.is_over;
+    }
+    std::shared_ptr<FieldState> copy() const {
+        return std::make_shared<FieldState>(*this);
+    }
+
+    void clearUpdateFlag() {
+        std::lock_guard lock(m);
+        for (std::size_t y = 0; y < HEIGHT; y++) {
+            updated.at(y).fill(false);
+        }
+    }
+
+
     PUMILA_DLL void put(std::size_t x, std::size_t y, Puyo p);
 
     /*!
@@ -92,15 +116,16 @@ struct FieldState {
     deleteConnection(std::size_t x, std::size_t y,
                      std::vector<std::pair<std::size_t, std::size_t>> &deleted);
 
-    std::shared_ptr<FieldState> copy() const {
-        return std::make_shared<FieldState>(*this);
-    }
-
     /*!
      * \brief ぷよを取得
      * 範囲外の場合例外
      */
     PUMILA_DLL Puyo get(std::size_t x, std::size_t y) const;
+
+    PUMILA_DLL PuyoPair getNext() const;
+    PUMILA_DLL void updateNext(const PuyoPair &pp);
+    PUMILA_DLL void popNext();
+    PUMILA_DLL void pushNext(const PuyoPair &pp);
 
     /*!
      * \brief puyopairを落とす
@@ -109,11 +134,7 @@ struct FieldState {
     /*!
      * \brief next[0]を落とす
      */
-    void put() {
-        if (!next.empty()) {
-            put(next[0]);
-        }
-    }
+    void put() { put(getNext()); }
     /*!
      * \brief puyopairを指定した位置に落とす
      */
@@ -121,11 +142,7 @@ struct FieldState {
     /*!
      * \brief next[0]を指定した位置に落とす
      */
-    void put(const Action &action) {
-        if (!next.empty()) {
-            put({next[0], action});
-        }
-    }
+    void put(const Action &action) { put(getNext(), action); }
 
     /*!
      * \brief 落下中のぷよが既存のぷよに重なっているまたは画面外か調べる

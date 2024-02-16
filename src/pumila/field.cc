@@ -9,14 +9,44 @@
 namespace PUMILA_NS {
 Puyo FieldState::get(std::size_t x, std::size_t y) const {
     if (!inRange(x, y)) {
-        std::cerr << "out of range in FieldState::get(x = " << x << ", y = " << y
-           << ")";
+        std::cerr << "out of range in FieldState::get(x = " << x
+                  << ", y = " << y << ")";
         return Puyo::none;
     }
-    return field.at(y).at(x);
+    {
+        std::shared_lock lock(m);
+        return field.at(y).at(x);
+    }
+}
+PuyoPair FieldState::getNext() const {
+    std::shared_lock lock(m);
+    if (next.empty()) {
+        throw std::out_of_range("field.next is not available");
+    }
+    return next[0];
+}
+void FieldState::updateNext(const PuyoPair &pp) {
+    std::lock_guard lock(m);
+    if (next.empty()) {
+        throw std::out_of_range("field.next is not available");
+    }
+    next[0] = pp;
+}
+void FieldState::popNext() {
+    std::lock_guard lock(m);
+    if (next.empty()) {
+        throw std::out_of_range("field.next is not available");
+    }
+    next.pop_front();
+}
+void FieldState::pushNext(const PuyoPair &pp) {
+    std::lock_guard lock(m);
+    next.push_back(pp);
 }
 
+
 void FieldState::put(std::size_t x, std::size_t y, Puyo p) {
+    std::lock_guard lock(m);
     if (inRange(x, y)) {
         field.at(y).at(x) = p;
         updated.at(y).at(x) = true;
@@ -105,7 +135,12 @@ Chain FieldState::deleteChain(int chain_num) {
     FieldState state_tmp = *this;
     for (std::size_t y = 0; y < HEIGHT; y++) {
         for (std::size_t x = 0; x < WIDTH; x++) {
-            if (updated.at(y).at(x)) {
+            bool updated_1;
+            {
+                std::shared_lock lock(m);
+                updated_1 = updated.at(y).at(x);
+            }
+            if (updated_1) {
                 auto connection = state_tmp.deleteConnection(x, y);
                 if (connection.size() >= 4) {
                     chain.connections.emplace_back(get(x, y),
@@ -134,6 +169,7 @@ bool FieldState::fall() {
         }
     }
     if (get(Action::START_X, Action::START_Y) != Puyo::none) {
+        std::lock_guard lock(m);
         is_over = true;
     }
     return has_fall;
