@@ -17,6 +17,9 @@ int main(int argc, char const *argv[]) {
     for (int i = 0; i < 7; i++) {
         models.push_back("pumila7_" + std::to_string(i));
     }
+    for (int i = 200; i <= 800; i += 200) {
+        models.push_back("pumila8_" + std::to_string(i));
+    }
     std::vector<std::string> selected_models;
     app.add_option("model", selected_models, "Select Player or AI Model")
         ->required()
@@ -44,6 +47,11 @@ int main(int argc, char const *argv[]) {
                 model, selected_models[i], seed));
         } else if (selected_models[i].starts_with("pumila7")) {
             auto model = std::make_shared<pumila::Pumila7>(1);
+            model->loadFile(selected_models[i]);
+            sim.push_back(std::make_shared<pumila::GameSim>(
+                model, selected_models[i], seed));
+        } else if (selected_models[i].starts_with("pumila8")) {
+            auto model = std::make_shared<pumila::Pumila8>(1);
             model->loadFile(selected_models[i]);
             sim.push_back(std::make_shared<pumila::GameSim>(
                 model, selected_models[i], seed));
