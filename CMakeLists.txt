@@ -3,6 +3,7 @@ project(pumila CXX)
 if(NOT DEFINED CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE RelWithDebInfo)
 endif()
+
 if(MSVC)
     foreach(CONF DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
         set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${CONF} ${CMAKE_CURRENT_BINARY_DIR})
@@ -153,6 +154,7 @@ if(MSVC)
     add_compile_options(/W4 /utf-8)
 else()
     add_compile_options(-Wall -Wpedantic -Wextra)
+    add_compile_options(-UNDEBUG)
 endif()
 
 set(PUMILA_SRC

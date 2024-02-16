@@ -4,14 +4,14 @@
 #include <stdexcept>
 #include <sstream>
 #include <cmath>
+#include <iostream>
 
 namespace PUMILA_NS {
 Puyo FieldState::get(std::size_t x, std::size_t y) const {
     if (!inRange(x, y)) {
-        std::ostringstream ss;
-        ss << "out of range in FieldState::get(x = " << x << ", y = " << y
+        std::cerr << "out of range in FieldState::get(x = " << x << ", y = " << y
            << ")";
-        throw std::out_of_range(ss.str());
+        return Puyo::none;
     }
     return field.at(y).at(x);
 }
@@ -34,25 +34,28 @@ FieldState::deleteConnection(std::size_t x, std::size_t y) {
 void FieldState::deleteConnection(
     std::size_t x, std::size_t y,
     std::vector<std::pair<std::size_t, std::size_t>> &deleted) {
+    if (!inRange(x, y)) {
+        std::cerr << "out of range in FieldState::deleteConnection(x = " << x
+                  << ", y = " << y << ")";
+        return;
+    }
     Puyo here = get(x, y);
     if (here == Puyo::none) {
         return;
-    } else {
-        deleted.emplace_back(x, y);
-        put(x, y, Puyo::none);
-        if (inRange(x + 1, y) && get(x + 1, y) == here) {
-            deleteConnection(x + 1, y, deleted);
-        }
-        if (inRange(x - 1, y) && get(x - 1, y) == here) {
-            deleteConnection(x - 1, y, deleted);
-        }
-        if (inRange(x, y + 1) && get(x, y + 1) == here) {
-            deleteConnection(x, y + 1, deleted);
-        }
-        if (inRange(x, y - 1) && get(x, y - 1) == here) {
-            deleteConnection(x, y - 1, deleted);
-        }
-        return;
+    }
+    deleted.emplace_back(x, y);
+    put(x, y, Puyo::none);
+    if (inRange(x + 1, y) && get(x + 1, y) == here) {
+        deleteConnection(x + 1, y, deleted);
+    }
+    if (inRange(x - 1, y) && get(x - 1, y) == here) {
+        deleteConnection(x - 1, y, deleted);
+    }
+    if (inRange(x, y + 1) && get(x, y + 1) == here) {
+        deleteConnection(x, y + 1, deleted);
+    }
+    if (inRange(x, y - 1) && get(x, y - 1) == here) {
+        deleteConnection(x, y - 1, deleted);
     }
 }
 
@@ -140,8 +143,8 @@ std::array<std::array<int, FieldState::WIDTH>, FieldState::HEIGHT>
 FieldState::calcChainAll() const {
     std::array<std::array<int, FieldState::WIDTH>, FieldState::HEIGHT>
         chain_map = {};
-    for (std::size_t y = 0; y < HEIGHT - 1; y++) {
-        for (std::size_t x = 0; x < WIDTH - 1; x++) {
+    for (std::size_t y = 0; y < HEIGHT; y++) {
+        for (std::size_t x = 0; x < WIDTH; x++) {
             if (get(x, y) == Puyo::none || chain_map[y][x] != 0) {
                 continue;
             }
