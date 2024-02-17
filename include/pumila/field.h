@@ -6,6 +6,7 @@
 #include <vector>
 #include <deque>
 #include <shared_mutex>
+#include <memory>
 
 namespace PUMILA_NS {
 /*!
