@@ -20,7 +20,7 @@ class Pumila6r : public Pumila {
 
     static constexpr int BATCH_SIZE = 10;
     std::vector<std::pair<NNResult, Eigen::VectorXd>> step_data;
-    int step_count = 0;
+    int step_started = 0, step_finished = 0;
     /*!
      * \brief step_count, step_dataを編集するときのロック
      */
