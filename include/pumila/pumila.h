@@ -14,6 +14,7 @@
 #include "models/pumila6.h"
 #include "models/pumila7.h"
 #include "models/pumila8.h"
+#include "models/pumila6r.h"
 
 #ifdef _MSC_VER
 #ifdef  _DEBUG
