@@ -4,9 +4,10 @@
 
 namespace PUMILA_NS {
 GameSim::GameSim(std::shared_ptr<Pumila> model, const std::string &name,
-                 typename std::mt19937::result_type seed)
+                 typename std::mt19937::result_type seed, bool enable_garbage)
     : rnd(seed), model_action_thread(std::nullopt), running(true),
-      field(nullptr), current_chain(std::nullopt), model(model),
+      enable_garbage(enable_garbage), opponent(), field(nullptr),
+      current_chain(std::nullopt), model(model),
       name(model && name.empty() ? model->name() : name), phase(nullptr) {
     if (model) {
         model_action_thread = std::make_optional<std::thread>([this] {
@@ -82,7 +83,7 @@ void GameSim::movePair(int dx) {
 }
 void GameSim::rotPair(int r) {
     std::lock_guard lock(step_m);
-    if (isFreePhase()) {
+    if (isFreePhase() && rot_fail_count < ROT_FAIL_COUNT) {
         std::lock_guard lock(field_m);
         PuyoPair new_pp = field->getNext();
         if (r == rot_fail) {
@@ -95,6 +96,7 @@ void GameSim::rotPair(int r) {
             return;
         }
         PuyoPair new_pp2 = new_pp;
+        rot_fail_count++;
         new_pp2.y = new_pp.y + 1;
         if (!field->checkCollision(new_pp2)) {
             field->updateNext(new_pp2);
@@ -202,7 +204,7 @@ GameSim::GarbagePhase::GarbagePhase(GameSim *sim) : Phase(sim), wait_t(WAIT_T) {
         garbage_send = sim->field->calcGarbageSend();
     }
     auto opponent_sim = sim->opponent.lock();
-    if (opponent_sim) {
+    if (opponent_sim && sim->enable_garbage) {
         std::lock_guard lock(opponent_sim->field_m);
         opponent_sim->field->garbage_ready += garbage_send;
     }
@@ -253,6 +255,7 @@ GameSim::FreePhase::FreePhase(GameSim *sim) : Phase(sim), put_t(PUT_T) {
     while (sim->field->next.size() < 3) {
         sim->field->pushNext({sim->randomPuyo(), sim->randomPuyo()});
     }
+    sim->rot_fail_count = 0;
 }
 
 std::unique_ptr<GameSim::Phase> GameSim::FreePhase::step() {

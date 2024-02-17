@@ -134,14 +134,16 @@ void FieldState::put(const PuyoPair &pp) {
 }
 
 bool FieldState::checkCollision(const PuyoPair &pp) {
-    return ((!inRange(pp.bottomX(), std::floor(pp.bottomY())) ||
-             !inRange(pp.topX(), std::floor(pp.topY())) ||
-             get(pp.bottomX(), std::floor(pp.bottomY())) != Puyo::none ||
-             get(pp.topX(), std::floor(pp.topY())) != Puyo::none) ||
-            (!inRange(pp.bottomX(), std::ceil(pp.bottomY())) ||
-             !inRange(pp.topX(), std::ceil(pp.topY())) ||
-             get(pp.bottomX(), std::ceil(pp.bottomY())) != Puyo::none ||
-             get(pp.topX(), std::ceil(pp.topY())) != Puyo::none));
+    return ((pp.bottomY() < HEIGHT &&
+             (!inRange(pp.bottomX(), std::floor(pp.bottomY())) ||
+              !inRange(pp.topX(), std::floor(pp.topY())) ||
+              get(pp.bottomX(), std::floor(pp.bottomY())) != Puyo::none ||
+              get(pp.topX(), std::floor(pp.topY())) != Puyo::none)) ||
+            (pp.topY() < HEIGHT &&
+             (!inRange(pp.bottomX(), std::ceil(pp.bottomY())) ||
+              !inRange(pp.topX(), std::ceil(pp.topY())) ||
+              get(pp.bottomX(), std::ceil(pp.bottomY())) != Puyo::none ||
+              get(pp.topX(), std::ceil(pp.topY())) != Puyo::none)));
 }
 
 Chain FieldState::deleteChain(int chain_num) {
@@ -182,7 +184,8 @@ bool FieldState::fall() {
     return has_fall;
 }
 bool FieldState::checkGameOver() {
-    if (get(Action::START_X, Action::START_Y) != Puyo::none) {
+    // ハードコードしている
+    if (get(2, 11) != Puyo::none) {
         is_over = true;
     }
     return is_over;

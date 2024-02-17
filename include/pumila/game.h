@@ -38,8 +38,12 @@ class GameSim {
      * 回転できた場合0
      */
     int rot_fail = 0;
+    int rot_fail_count = 0;
+    static constexpr int ROT_FAIL_COUNT = 10;
 
   public:
+    bool enable_garbage;
+
     /*!
      * \brief おじゃまぷよを送る相手をセットしてね
      */
@@ -68,10 +72,12 @@ class GameSim {
 
     PUMILA_DLL explicit GameSim(
         std::shared_ptr<Pumila> model, const std::string &name = "",
-        typename std::mt19937::result_type seed = std::random_device()());
+        typename std::mt19937::result_type seed = std::random_device()(),
+        bool enable_garbage = false);
     explicit GameSim(
-        typename std::mt19937::result_type seed = std::random_device()())
-        : GameSim(nullptr, "", seed) {}
+        typename std::mt19937::result_type seed = std::random_device()(),
+        bool enable_garbage = false)
+        : GameSim(nullptr, "", seed, enable_garbage) {}
     GameSim(const GameSim &sim) = delete;
     GameSim(GameSim &&sim) = delete;
 
@@ -80,7 +86,7 @@ class GameSim {
     bool hasModel() { return model != nullptr; }
 
     PUMILA_DLL void reset();
-    
+
     /*!
      * \brief freePhase時のみぷよを操作する
      *

@@ -19,7 +19,7 @@ enum class Puyo {
  */
 struct Action {
     static constexpr int START_X = 2;
-    static constexpr int START_Y = 12;
+    static constexpr int START_Y = 13;
     int x = START_X;
     enum class Rotation {
         vertical = 0,
