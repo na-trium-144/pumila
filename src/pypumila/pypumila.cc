@@ -14,6 +14,8 @@ void initPumila6Module(py::module_ &m);
 void initPumila7Module(py::module_ &m);
 void initPumila8Module(py::module_ &m);
 void initPumila6rModule(py::module_ &m);
+void initPumila7rModule(py::module_ &m);
+void initPumila8rModule(py::module_ &m);
 
 PYBIND11_MODULE(pypumila, m) {
     py::enum_<Puyo>(m, "Puyo")
@@ -144,4 +146,6 @@ PYBIND11_MODULE(pypumila, m) {
     initPumila7Module(m);
     initPumila8Module(m);
     initPumila6rModule(m);
+    initPumila7rModule(m);
+    initPumila8rModule(m);
 }

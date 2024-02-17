@@ -7,7 +7,9 @@
 namespace PUMILA_NS {
 /*!
  * pumila6ベース
- * * learnStepの並列処理を改良 (forwardからdelta2計算まで同じモデルを使うようにした & バッチ処理数を一定にした)
+ * * learnStepの並列処理を改良
+ * (forwardからdelta2計算まで同じモデルを使うようにした &
+ * バッチ処理数を一定にした)
  */
 class Pumila6r : public Pumila {
   public:
@@ -36,7 +38,9 @@ class Pumila6r : public Pumila {
         main = other.main;
         target = main->copy();
     }
-    std::shared_ptr<Pumila6r> copy() { return std::make_shared<Pumila6r>(*this); }
+    std::shared_ptr<Pumila6r> copy() {
+        return std::make_shared<Pumila6r>(*this);
+    }
 
     struct NNModel : std::enable_shared_from_this<NNModel> {
         static constexpr double ALPHA = 0.01; // sigmoid coef

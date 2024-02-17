@@ -1,4 +1,4 @@
-#include <pumila/pumila.h>
+#include <pumila/models/pumila4.h>
 
 namespace PUMILA_NS {
 Pumila4::NNModel::NNModel(double learning_rate)
