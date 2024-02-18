@@ -130,8 +130,8 @@ int Pumila6r::getActionRnd(std::shared_ptr<FieldState> field, double rnd_p) {
 void Pumila6r::learnStep(std::shared_ptr<FieldState> field) {
     {
         std::unique_lock lock(learning_m);
-        learning_cond.wait(lock, [&] { return step_count < BATCH_SIZE; });
-        step_count++;
+        learning_cond.wait(lock, [&] { return step_started < BATCH_SIZE; });
+        step_started++;
     }
     auto pumila = shared_from_this();
     auto next = Pumila2::getInNodes(field).share();
@@ -167,33 +167,23 @@ void Pumila6r::learnStep(std::shared_ptr<FieldState> field) {
             }
         }
         delta_2.array() /= BATCH_SIZE;
+        target->backward(fw_result, delta_2);
         {
             std::unique_lock lock(learning_m);
-            step_data.emplace_back(std::move(fw_result), std::move(delta_2));
-            if (step_data.size() >= BATCH_SIZE) {
-                std::array<std::shared_future<void>, BATCH_SIZE> bw_task;
-                for (std::size_t i = 0; i < BATCH_SIZE; i++) {
-                    bw_task[i] =
-                        pool.submit_task(
-                                [this, pumila,
-                                 step_data_1 = std::move(step_data[i])] {
-                                    target->backward(step_data_1.first,
-                                                     step_data_1.second);
-                                })
-                            .share();
-                }
-                pool.detach_task([this, pumila, bw_task = std::move(bw_task)] {
-                    for (auto &t : bw_task) {
-                        t.get();
-                    }
+            step_finished++;
+            if (step_finished >= BATCH_SIZE) {
+                pool.detach_task([this, pumila] {
                     {
                         std::lock_guard lock(main_m);
                         main = target->copy();
                     }
+                    {
+                        std::unique_lock lock(learning_m);
+                        step_started = 0;
+                        step_finished = 0;
+                        learning_cond.notify_all();
+                    }
                 });
-                step_data.clear();
-                step_count = 0;
-                learning_cond.notify_all();
             }
         }
     });
