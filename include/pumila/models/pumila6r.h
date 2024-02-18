@@ -33,7 +33,7 @@ class Pumila6r : public Pumila {
   public:
     std::string name() const override { return "pumila6"; }
     PUMILA_DLL explicit Pumila6r(int hidden_nodes);
-    Pumila6r(const Pumila6r &other) {
+    Pumila6r(const Pumila6r &other) : Pumila() {
         std::lock_guard lock_main(other.main_m);
         main = other.main;
         target = main->copy();
@@ -54,8 +54,9 @@ class Pumila6r : public Pumila {
         Eigen::VectorXd matrix_hq;
         mutable std::shared_mutex matrix_m;
 
-        PUMILA_DLL NNModel(int hidden_nodes);
-        NNModel(const NNModel &other) {
+        PUMILA_DLL explicit NNModel(int hidden_nodes);
+        NNModel(const NNModel &other)
+            : std::enable_shared_from_this<NNModel>() {
             std::shared_lock lock(other.matrix_m);
             hidden_nodes = other.hidden_nodes;
             matrix_ih = other.matrix_ih;
