@@ -60,6 +60,7 @@ void FieldState::put(std::size_t x, std::size_t y, Puyo p) {
     if (inRange(x, y)) {
         field.at(y).at(x) = p;
         updated.at(y).at(x) = true;
+        is_valid = true;
     } else {
         is_valid = false;
     }
@@ -180,7 +181,6 @@ bool FieldState::fall() {
             }
         }
     }
-    checkGameOver();
     return has_fall;
 }
 bool FieldState::checkGameOver() {
@@ -222,6 +222,7 @@ std::vector<Chain> FieldState::deleteChainRecurse() {
         }
         chains.push_back(chain);
     }
+    checkGameOver();
     return chains;
 }
 

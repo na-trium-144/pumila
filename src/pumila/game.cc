@@ -238,8 +238,8 @@ GameSim::GarbagePhase::GarbagePhase(GameSim *sim) : Phase(sim), wait_t(WAIT_T) {
             } else {
                 sim->field->garbage_ready -= FieldState::WIDTH * 5;
             }
-            sim->field->checkGameOver();
         }
+        sim->field->checkGameOver();
     }
 }
 std::unique_ptr<GameSim::Phase> GameSim::GarbagePhase::step() {
