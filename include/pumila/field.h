@@ -73,17 +73,6 @@ struct FieldState {
     bool is_over = false;
 
     FieldState() : field(), updated(), next() {}
-    FieldState(const FieldState &other) : updated() {
-        field = other.field;
-        next = other.next;
-        step_num = other.step_num;
-        prev_chain_num = other.prev_chain_num;
-        prev_chain_score = other.prev_chain_score;
-        last_chain_step_num = other.last_chain_step_num;
-        total_score = other.total_score;
-        is_valid = other.is_valid;
-        is_over = other.is_over;
-    }
     std::shared_ptr<FieldState> copy() const {
         return std::make_shared<FieldState>(*this);
     }

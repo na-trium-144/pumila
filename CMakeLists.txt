@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.18)
 project(pumila CXX)
-if(NOT DEFINED CMAKE_BUILD_TYPE)
+if("${CMAKE_BUILD_TYPE}" STREQUAL "")
     set(CMAKE_BUILD_TYPE RelWithDebInfo)
 endif()
 message(STATUS "Build Type = ${CMAKE_BUILD_TYPE}")
