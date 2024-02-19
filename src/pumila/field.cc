@@ -187,7 +187,7 @@ std::vector<Chain> FieldState::deleteChainRecurse() {
         if (chain.isEmpty()) {
             break;
         }
-        chains.push_back(chain);
+        chains.push_back(std::move(chain));
     }
     return chains;
 }

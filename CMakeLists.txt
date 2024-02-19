@@ -3,6 +3,7 @@ project(pumila CXX)
 if(NOT DEFINED CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE RelWithDebInfo)
 endif()
+message(STATUS "Build Type = ${CMAKE_BUILD_TYPE}")
 
 if(MSVC)
     foreach(CONF DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
