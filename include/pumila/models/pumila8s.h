@@ -81,13 +81,13 @@ class Pumila8s : public Pumila {
         Eigen::MatrixXd hidden;
         Eigen::VectorXd q;
     };
-    struct InFeatures {
-        std::array<FieldState, ACTIONS_NUM> field_next;
-        Eigen::MatrixXd in;
-    };
     struct InFeatureSingle {
         FieldState field_next;
         Eigen::VectorXd in;
+    };
+    struct InFeatures {
+        std::array<std::shared_future<InFeatureSingle>, ACTIONS_NUM> each;
+        Eigen::MatrixXd in;
     };
     /*!
      * \brief 現在のフィールドから次の22通りのフィールドと特徴量を計算
@@ -111,7 +111,7 @@ class Pumila8s : public Pumila {
         return Pumila8s::calcRewardS(field);
     }
     PUMILA_DLL static double calcRewardS(const FieldState &field);
-    
+
     int getAction(std::shared_ptr<FieldState> field) override {
         return getActionRnd(field, 0);
     }

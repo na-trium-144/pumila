@@ -94,13 +94,10 @@ Pumila8s::getInNodes(const FieldState &field) {
     }
     return pool.submit_task([feat]() {
         InFeatures feats;
+        feats.each = feat;
         feats.in = Eigen::MatrixXd(ACTIONS_NUM, NNModel::IN_NODES);
-        int a = 0;
-        for (auto &res : feat) {
-            auto r = res.get();
-            feats.field_next[a] = r.field_next;
-            feats.in.middleRows<1>(a) = r.in.transpose();
-            a++;
+        for (int a = 0; a < ACTIONS_NUM; a++) {
+            feats.in.middleRows<1>(a) = feat[a].get().in.transpose();
         }
         return feats;
     });
@@ -108,30 +105,19 @@ Pumila8s::getInNodes(const FieldState &field) {
 std::future<Pumila8s::InFeatures>
 Pumila8s::getInNodes(std::shared_future<InFeatures> feature, int feat_a) {
     std::array<std::shared_future<InFeatureSingle>, ACTIONS_NUM> feat;
-    auto field_copies =
-        pool.submit_task([feature, feat_a]() {
-                std::array<FieldState, ACTIONS_NUM> field_copies;
-                for (std::size_t i = 0; i < ACTIONS_NUM; i++) {
-                    field_copies[i] = feature.get().field_next[feat_a];
-                }
-                return field_copies;
-            })
-            .share();
     for (int a = 0; a < ACTIONS_NUM; a++) {
-        feat[a] = pool.submit_task([field_copies, a] {
-                          return getInNodeSingle(field_copies.get()[a], a);
+        feat[a] = pool.submit_task([feature, feat_a, a] {
+                          return getInNodeSingle(
+                              feature.get().each[feat_a].get().field_next, a);
                       })
                       .share();
     }
     return pool.submit_task([feat]() {
         InFeatures feats;
+        feats.each = feat;
         feats.in = Eigen::MatrixXd(ACTIONS_NUM, NNModel::IN_NODES);
-        int a = 0;
-        for (auto &res : feat) {
-            auto r = res.get();
-            feats.field_next[a] = r.field_next;
-            feats.in.middleRows<1>(a) = r.in.transpose();
-            a++;
+        for (int a = 0; a < ACTIONS_NUM; a++) {
+            feats.in.middleRows<1>(a) = feat[a].get().in.transpose();
         }
         return feats;
     });
@@ -191,8 +177,8 @@ int Pumila8s::getActionRnd(std::shared_ptr<FieldState> field, double rnd_p) {
     auto in_feat = getInNodes(*field).get();
     fw_result = forward(in_feat.in);
     for (int a2 = 0; a2 < ACTIONS_NUM; a2++) {
-        if (!in_feat.field_next[a2].is_valid ||
-            in_feat.field_next[a2].is_over) {
+        if (!in_feat.each[a2].get().field_next.is_valid ||
+            in_feat.each[a2].get().field_next.is_over) {
             fw_result.q(a2, 0) = fw_result.q.minCoeff();
         }
     }
@@ -252,18 +238,23 @@ void Pumila8s::learnStep(std::shared_ptr<FieldState> field) {
                 fw_next3_q.middleCols<1>(a2) =
                     GAMMA * GAMMA * forward(next3[a][a2].get().in).q;
                 fw_next3_q.middleCols<1>(a2).array() +=
-                    GAMMA * calcReward(next2[a].get().field_next[a2]);
+                    GAMMA *
+                    calcReward(next2[a].get().each[a2].get().field_next);
             }
             for (std::size_t a2 = 0; a2 < ACTIONS_NUM; a2++) {
                 for (std::size_t a3 = 0; a3 < ACTIONS_NUM; a3++) {
-                    if (!next3[a][a2].get().field_next[a3].is_valid ||
-                        next3[a][a2].get().field_next[a3].is_over) {
+                    if (!next3[a][a2]
+                             .get()
+                             .each[a3]
+                             .get()
+                             .field_next.is_valid ||
+                        next3[a][a2].get().each[a3].get().field_next.is_over) {
                         fw_next3_q(a3, a2) = fw_next3_q.minCoeff();
                     }
                 }
             }
             for (int r = a; r < delta_2.rows(); r += ACTIONS_NUM) {
-                double diff = (calcReward(next.get().field_next[a]) +
+                double diff = (calcReward(next.get().each[a].get().field_next) +
                                fw_next3_q.maxCoeff()) -
                               fw_result.q(r, 0);
                 delta_2(r, 0) = diff;
