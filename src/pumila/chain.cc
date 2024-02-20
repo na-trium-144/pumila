@@ -3,6 +3,13 @@
 #include <algorithm>
 
 namespace PUMILA_NS {
+void Chain::push_connection(Puyo p, int n) {
+    if (connection_num >= connections.size()) {
+        throw std::out_of_range("number of connections overflow");
+    }
+    connections[connection_num++] = std::make_pair(p, n);
+}
+
 int Chain::connectionNum() const {
     return std::accumulate(
         connections.begin(), connections.end(), 0,

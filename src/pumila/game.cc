@@ -188,7 +188,7 @@ bool GameSim::isFreePhase() {
 
 GameSim::FreePhase::FreePhase(GameSim *sim) : Phase(sim), put_t(PUT_T) {
     std::lock_guard lock(sim->field_m);
-    while (sim->field->next.size() < 3) {
+    while (sim->field->next_num < 3) {
         sim->field->pushNext({sim->randomPuyo(), sim->randomPuyo()});
     }
 }

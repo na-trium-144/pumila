@@ -44,7 +44,8 @@ struct FieldState {
      * freePhase中は操作中のぷよ+next2つで合計3組になり、それ以外の場合2組
      *
      */
-    std::deque<PuyoPair> next;
+    std::array<PuyoPair, 3> next;
+    std::size_t next_num = 0;
     /*!
      * \brief 試合開始からの手数
      */

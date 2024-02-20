@@ -113,11 +113,11 @@ void Window::draw() {
                      i, true);
         }
         std::size_t next_p = sim[i]->isFreePhase() ? 1 : 0;
-        if (sim[i]->field->next.size() > next_p) {
+        if (sim[i]->field->next_num > next_p) {
             drawPuyo(sim[i]->field->next[next_p].bottom, 6.5, 10.5, i, true);
             drawPuyo(sim[i]->field->next[next_p].top, 6.5, 11.5, i, true);
         }
-        if (sim[i]->field->next.size() > next_p + 1) {
+        if (sim[i]->field->next_num > next_p + 1) {
             drawPuyo(sim[i]->field->next[next_p + 1].bottom, 8, 9.5, i, true);
             drawPuyo(sim[i]->field->next[next_p + 1].top, 8, 10.5, i, true);
         }

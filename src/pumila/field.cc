@@ -16,24 +16,32 @@ Puyo FieldState::get(std::size_t x, std::size_t y) const {
     return field.at(y).at(x);
 }
 PuyoPair FieldState::getNext() const {
-    if (next.empty()) {
+    if (next_num == 0) {
         throw std::out_of_range("field.next is not available");
     }
     return next[0];
 }
 void FieldState::updateNext(const PuyoPair &pp) {
-    if (next.empty()) {
+    if (next_num == 0) {
         throw std::out_of_range("field.next is not available");
     }
     next[0] = pp;
 }
 void FieldState::popNext() {
-    if (next.empty()) {
+    if (next_num == 0) {
         throw std::out_of_range("field.next is not available");
     }
-    next.pop_front();
+    for (std::size_t i = 1; i < next_num && i < next.size(); i++) {
+        next[i - 1] = next[i];
+    }
+    next_num--;
 }
-void FieldState::pushNext(const PuyoPair &pp) { next.push_back(pp); }
+void FieldState::pushNext(const PuyoPair &pp) {
+    if (next_num >= next.size()) {
+        throw std::out_of_range("field.next is full");
+    }
+    next[next_num++] = pp;
+}
 
 
 void FieldState::put(std::size_t x, std::size_t y, Puyo p) {
@@ -128,8 +136,7 @@ Chain FieldState::deleteChain(int chain_num) {
             if (updated.at(y).at(x)) {
                 auto connection = state_tmp.deleteConnection(x, y);
                 if (connection.size() >= 4) {
-                    chain.connections.emplace_back(get(x, y),
-                                                   connection.size());
+                    chain.push_connection(get(x, y), connection.size());
                     deleteConnection(x, y); // thisの盤面にも反映
                 }
             }
