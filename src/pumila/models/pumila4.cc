@@ -39,7 +39,7 @@ Pumila4::getInNodeSingle(std::shared_ptr<FieldState> field, int a) {
     InFeatureSingle feat;
     feat.field_next = field->copy();
     feat.field_next->put(actions[a]);
-    feat.field_next->next.pop_front();
+    feat.field_next->popNext();
     std::vector<Chain> chains = feat.field_next->deleteChainRecurse();
 
     feat.in = Eigen::VectorXd::Zero(NNModel::IN_NODES);
