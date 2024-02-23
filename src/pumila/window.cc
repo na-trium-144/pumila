@@ -10,7 +10,7 @@
 
 namespace PUMILA_NS {
 Window::Window(const std::vector<std::shared_ptr<GameSim>> &sim)
-    : sim(sim), key_state(sim) {
+    : sim(sim), key_state(this) {
 #ifdef PUMILA_SDL2
     SDL_Window *sdl_window = nullptr;
     SDL_Renderer *sdl_renderer = nullptr;
@@ -66,7 +66,7 @@ void Window::step(bool sim_step) {
         handleEvent();
     }
     key_state.keyFrame();
-    if (sim_step) {
+    if (sim_step && state == WindowState::game) {
         for (const auto &s : sim) {
             s->step();
         }
@@ -74,6 +74,26 @@ void Window::step(bool sim_step) {
     if (isRunning()) {
         draw();
         SDL_Delay(16);
+    }
+    phase_t++;
+    switch (state) {
+    case WindowState::ready:
+        if (phase_t >= READY_T) {
+            state = WindowState::game;
+            phase_t = 0;
+        }
+        break;
+    case WindowState::game:
+        for (std::size_t i = 0; i < sim.size(); i++) {
+            std::shared_lock lock(sim[i]->field_m);
+            if (sim[i]->field->is_over) {
+                state = WindowState::finish;
+                phase_t = 0;
+            }
+        }
+        break;
+    default:
+        break;
     }
 #endif
 }
@@ -128,44 +148,72 @@ void Window::draw() {
         }
 
         if (ttf_font) {
-            int text_w, text_h;
-
-            SDL_Texture *name_t = drawText(
-                sdl_renderer, sim[i]->name.empty() ? "player" : sim[i]->name,
-                ttf_font, {0, 0, 0, 255}, &text_w, &text_h);
-            SDL_Rect rect = {FIELD_X[i] + PUYO_SIZE * 3 - text_w / 2,
-                             FIELD_Y + 5, text_w, text_h};
-            SDL_RenderCopy(sdl_renderer, name_t, NULL, &rect);
-            SDL_DestroyTexture(name_t);
-
             std::ostringstream ss;
+            int text_w, text_h;
+            SDL_Texture *text;
+            SDL_Rect rect;
+
+            text = drawText(sdl_renderer,
+                            sim[i]->name.empty() ? "player" : sim[i]->name,
+                            ttf_font, {0, 0, 0, 255}, &text_w, &text_h);
+            rect = {FIELD_X[i] + PUYO_SIZE * 3 - text_w / 2, FIELD_Y + 5,
+                    text_w, text_h};
+            SDL_RenderCopy(sdl_renderer, text, NULL, &rect);
+            SDL_DestroyTexture(text);
+
             ss << sim[i]->field->total_score;
-            SDL_Texture *score_t = drawText(sdl_renderer, ss.str(), ttf_font,
-                                            {0, 0, 0, 255}, &text_w, &text_h);
+            text = drawText(sdl_renderer, ss.str(), ttf_font, {0, 0, 0, 255},
+                            &text_w, &text_h);
             rect = {FIELD_X[i] + PUYO_SIZE * 6 - text_w - 10, FIELD_Y + 35,
                     text_w, text_h};
-            SDL_RenderCopy(sdl_renderer, score_t, NULL, &rect);
-            SDL_DestroyTexture(score_t);
+            SDL_RenderCopy(sdl_renderer, text, NULL, &rect);
+            SDL_DestroyTexture(text);
             ss.str("");
+
+            if (sim[i]->field->garbage_ready > 0) {
+                drawPuyo(Puyo::garbage, 0.5, 13.5, i, true);
+                ss << "x " << sim[i]->field->garbage_ready;
+                text = drawText(sdl_renderer, ss.str(), ttf_font,
+                                sim[i]->field->garbage_ready >= 30
+                                    ? SDL_Color{255, 0, 0, 255}
+                                    : SDL_Color{0, 0, 0, 255},
+                                &text_w, &text_h);
+                rect = {FIELD_X[i] + static_cast<int>(PUYO_SIZE * 1.5) + 5,
+                        FIELD_Y - PUYO_SIZE * 14 - 15, text_w, text_h};
+                SDL_RenderCopy(sdl_renderer, text, NULL, &rect);
+                SDL_DestroyTexture(text);
+                ss.str("");
+            }
+
+            if (sim[i]->field->garbage_current > 0) {
+                ss << "- " << sim[i]->field->garbage_current;
+                text = drawText(sdl_renderer, ss.str(), ttf_font,
+                                SDL_Color{0, 190, 0, 255}, &text_w, &text_h);
+                rect = {FIELD_X[i] + PUYO_SIZE * 6 - text_w - 10,
+                        FIELD_Y - PUYO_SIZE * 14 - 15, text_w, text_h};
+                SDL_RenderCopy(sdl_renderer, text, NULL, &rect);
+                SDL_DestroyTexture(text);
+                ss.str("");
+            }
 
             if (sim[i]->current_chain) {
                 ss << sim[i]->current_chain->scoreA() << " x "
                    << sim[i]->current_chain->scoreB();
-                score_t = drawText(sdl_renderer, ss.str(), ttf_font,
-                                   {0, 0, 0, 255}, &text_w, &text_h);
+                text = drawText(sdl_renderer, ss.str(), ttf_font,
+                                {0, 0, 0, 255}, &text_w, &text_h);
                 rect = {FIELD_X[i] + PUYO_SIZE * 6 - text_w - 10, FIELD_Y + 60,
                         text_w, text_h};
-                SDL_RenderCopy(sdl_renderer, score_t, NULL, &rect);
-                SDL_DestroyTexture(score_t);
+                SDL_RenderCopy(sdl_renderer, text, NULL, &rect);
+                SDL_DestroyTexture(text);
                 ss.str("");
 
                 ss << sim[i]->field->prev_chain_num;
-                score_t = drawText(sdl_renderer, ss.str(), ttf_font,
-                                   {0, 0, 0, 255}, &text_w, &text_h);
+                text = drawText(sdl_renderer, ss.str(), ttf_font,
+                                {0, 0, 0, 255}, &text_w, &text_h);
                 rect = {FIELD_X[i] + PUYO_SIZE * 7 - text_w / 2, FIELD_Y - 60,
                         text_w, text_h};
-                SDL_RenderCopy(sdl_renderer, score_t, NULL, &rect);
-                SDL_DestroyTexture(score_t);
+                SDL_RenderCopy(sdl_renderer, text, NULL, &rect);
+                SDL_DestroyTexture(text);
                 ss.str("");
 
                 ss << "chain";
@@ -173,12 +221,12 @@ void Window::draw() {
                     ss << "s";
                 }
                 ss << "!";
-                score_t = drawText(sdl_renderer, ss.str(), ttf_font_sm,
-                                   {0, 0, 0, 255}, &text_w, &text_h);
+                text = drawText(sdl_renderer, ss.str(), ttf_font_sm,
+                                {0, 0, 0, 255}, &text_w, &text_h);
                 rect = {FIELD_X[i] + PUYO_SIZE * 7 - text_w / 2, FIELD_Y - 30,
                         text_w, text_h};
-                SDL_RenderCopy(sdl_renderer, score_t, NULL, &rect);
-                SDL_DestroyTexture(score_t);
+                SDL_RenderCopy(sdl_renderer, text, NULL, &rect);
+                SDL_DestroyTexture(text);
 
             } else {
                 // ss << "(" << sim->field->prev_chain_num << ", "
@@ -190,6 +238,36 @@ void Window::draw() {
                 // SDL_RenderCopy(sdl_renderer, score_t, NULL, &rect);
                 // SDL_DestroyTexture(score_t);
                 // ss.str("");
+            }
+
+            switch (state) {
+            case WindowState::ready:
+                text = drawText(sdl_renderer, "Ready?", ttf_font,
+                                {0, 0, 0, 255}, &text_w, &text_h);
+                rect = {WIDTH / 2 - text_w / 2, HEIGHT / 2 - text_h / 2, text_w,
+                        text_h};
+                SDL_RenderCopy(sdl_renderer, text, NULL, &rect);
+                SDL_DestroyTexture(text);
+                break;
+            case WindowState::game:
+                if (phase_t < GO_T) {
+                    text = drawText(sdl_renderer, "Go!", ttf_font,
+                                    {0, 0, 0, 255}, &text_w, &text_h);
+                    rect = {WIDTH / 2 - text_w / 2, HEIGHT / 2 - text_h / 2,
+                            text_w, text_h};
+                    SDL_RenderCopy(sdl_renderer, text, NULL, &rect);
+                    SDL_DestroyTexture(text);
+                }
+                break;
+            case WindowState::finish:
+                text = drawText(sdl_renderer, "Finish", ttf_font,
+                                {0, 0, 0, 255}, &text_w, &text_h);
+                rect = {WIDTH / 2 - text_w / 2, HEIGHT / 2 - text_h / 2, text_w,
+                        text_h};
+                SDL_RenderCopy(sdl_renderer, text, NULL, &rect);
+                SDL_DestroyTexture(text);
+            default:
+                break;
             }
         }
     }
@@ -253,6 +331,9 @@ void Window::handleEvent() {
                 case SDL_SCANCODE_M:
                     key_state.rot_right = is_down;
                     break;
+                case SDL_SCANCODE_P:
+                    key_state.reset = is_down;
+                    break;
                 default:
                     break;
                 }
@@ -266,49 +347,57 @@ void Window::handleEvent() {
 #endif
 }
 void Window::KeyState::keyFrame() {
-    if (quick_drop) {
-        for (const auto &s : sim) {
+    if (reset) {
+        for (const auto &s : win->sim) {
+            s->reset();
+        }
+        win->state = WindowState::ready;
+        win->phase_t = 0;
+    }
+    reset = false;
+    if (quick_drop && win->state == WindowState::game) {
+        for (const auto &s : win->sim) {
             if (!s->hasModel()) {
                 s->quickDrop();
             }
         }
-        quick_drop = false;
     }
-    if (soft_drop) {
-        for (const auto &s : sim) {
+    quick_drop = false;
+    if (soft_drop && win->state == WindowState::game) {
+        for (const auto &s : win->sim) {
             if (!s->hasModel()) {
                 s->softDrop();
             }
         }
     }
-    if (left) {
+    if (left && win->state == WindowState::game) {
         if (!key_repeat_wait) {
-            for (const auto &s : sim) {
+            for (const auto &s : win->sim) {
                 if (!s->hasModel()) {
                     s->movePair(-1);
                 }
             }
         }
     }
-    if (right) {
+    if (right && win->state == WindowState::game) {
         if (!key_repeat_wait) {
-            for (const auto &s : sim) {
+            for (const auto &s : win->sim) {
                 if (!s->hasModel()) {
                     s->movePair(1);
                 }
             }
         }
     }
-    if (rot_left) {
-        for (const auto &s : sim) {
+    if (rot_left && win->state == WindowState::game) {
+        for (const auto &s : win->sim) {
             if (!s->hasModel()) {
                 s->rotPair(-1);
             }
         }
         rot_left = false;
     }
-    if (rot_right) {
-        for (const auto &s : sim) {
+    if (rot_right && win->state == WindowState::game) {
+        for (const auto &s : win->sim) {
             if (!s->hasModel()) {
                 s->rotPair(1);
             }

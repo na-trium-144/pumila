@@ -38,8 +38,17 @@ class GameSim {
      * 回転できた場合0
      */
     int rot_fail = 0;
+    int rot_fail_count = 0;
+    static constexpr int ROT_FAIL_COUNT = 10;
 
   public:
+    bool enable_garbage;
+
+    /*!
+     * \brief おじゃまぷよを送る相手をセットしてね
+     */
+    std::weak_ptr<GameSim> opponent;
+
     std::shared_ptr<FieldState> field;
     /*!
      * \brief fieldにアクセスするときはmutexつかってね
@@ -63,16 +72,20 @@ class GameSim {
 
     PUMILA_DLL explicit GameSim(
         std::shared_ptr<Pumila> model, const std::string &name = "",
-        typename std::mt19937::result_type seed = std::random_device()());
+        typename std::mt19937::result_type seed = std::random_device()(),
+        bool enable_garbage = false);
     explicit GameSim(
-        typename std::mt19937::result_type seed = std::random_device()())
-        : GameSim(nullptr, "", seed) {}
+        typename std::mt19937::result_type seed = std::random_device()(),
+        bool enable_garbage = false)
+        : GameSim(nullptr, "", seed, enable_garbage) {}
     GameSim(const GameSim &sim) = delete;
     GameSim(GameSim &&sim) = delete;
 
     PUMILA_DLL ~GameSim();
 
     bool hasModel() { return model != nullptr; }
+
+    PUMILA_DLL void reset();
 
     /*!
      * \brief freePhase時のみぷよを操作する
@@ -120,6 +133,7 @@ class GameSim {
             free,
             fall,
             chain,
+            garbage,
         };
         virtual PhaseEnum get() const = 0;
     };
@@ -127,6 +141,14 @@ class GameSim {
 
     PUMILA_DLL bool isFreePhase();
 
+    struct GarbagePhase final : Phase {
+        PUMILA_DLL explicit GarbagePhase(GameSim *sim);
+        PhaseEnum get() const override { return PhaseEnum::garbage; }
+        PUMILA_DLL std::unique_ptr<Phase> step() override;
+        static constexpr int WAIT_T = 20;
+        int wait_t;
+        inline static std::mt19937 rnd{std::random_device()()};
+    };
     struct FreePhase final : Phase {
         PUMILA_DLL explicit FreePhase(GameSim *sim);
         PhaseEnum get() const override { return PhaseEnum::free; }

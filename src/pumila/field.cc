@@ -8,6 +8,7 @@
 
 namespace PUMILA_NS {
 Puyo FieldState::get(std::size_t x, std::size_t y) const {
+    assert(inRange(x, y)); // debug時のみ
     if (!inRange(x, y)) {
         std::cerr << "out of range in FieldState::get(x = " << x
                   << ", y = " << y << ")";
@@ -44,24 +45,43 @@ void FieldState::pushNext(const PuyoPair &pp) {
 }
 
 
+void FieldState::addCurrentGarbage(int score_add, int rate) {
+    garbage_score += score_add;
+    int garbage_add = garbage_score / rate;
+    garbage_current += garbage_add;
+    garbage_score -= garbage_add * rate;
+}
+int FieldState::calcGarbageSend() {
+    int garbage_diff = garbage_current - garbage_ready;
+    garbage_current = 0;
+    if (garbage_diff > 0) {
+        garbage_ready = 0;
+        return garbage_diff;
+    } else {
+        garbage_ready = -garbage_diff;
+        return 0;
+    }
+}
+
+
 void FieldState::put(std::size_t x, std::size_t y, Puyo p) {
     if (inRange(x, y)) {
         field.at(y).at(x) = p;
         updated.at(y).at(x) = true;
+        is_valid = true;
     } else {
         is_valid = false;
     }
 }
 
-std::vector<std::pair<std::size_t, std::size_t>>
-FieldState::deleteConnection(std::size_t x, std::size_t y) {
-    std::vector<std::pair<std::size_t, std::size_t>> deleted;
+FieldState::PuyoConnection FieldState::deleteConnection(std::size_t x,
+                                                        std::size_t y) {
+    FieldState::PuyoConnection deleted;
     deleteConnection(x, y, deleted);
     return deleted;
 }
-void FieldState::deleteConnection(
-    std::size_t x, std::size_t y,
-    std::vector<std::pair<std::size_t, std::size_t>> &deleted) {
+void FieldState::deleteConnection(std::size_t x, std::size_t y,
+                                  FieldState::PuyoConnection &deleted) {
     if (!inRange(x, y)) {
         std::cerr << "out of range in FieldState::deleteConnection(x = " << x
                   << ", y = " << y << ")";
@@ -71,19 +91,23 @@ void FieldState::deleteConnection(
     if (here == Puyo::none) {
         return;
     }
-    deleted.emplace_back(x, y);
     put(x, y, Puyo::none);
-    if (inRange(x + 1, y) && get(x + 1, y) == here) {
-        deleteConnection(x + 1, y, deleted);
-    }
-    if (inRange(x - 1, y) && get(x - 1, y) == here) {
-        deleteConnection(x - 1, y, deleted);
-    }
-    if (inRange(x, y + 1) && get(x, y + 1) == here) {
-        deleteConnection(x, y + 1, deleted);
-    }
-    if (inRange(x, y - 1) && get(x, y - 1) == here) {
-        deleteConnection(x, y - 1, deleted);
+    if (here == Puyo::garbage) {
+        deleted.garbage.emplace_back(x, y);
+    } else {
+        deleted.colored.emplace_back(x, y);
+        std::array<std::pair<std::size_t, std::size_t>, 4> near{{
+            {x + 1, y},
+            {x - 1, y},
+            {x, y + 1},
+            {x, y - 1},
+        }};
+        for (const auto &[nx, ny] : near) {
+            if (inRange(nx, ny) &&
+                (get(nx, ny) == here || get(nx, ny) == Puyo::garbage)) {
+                deleteConnection(nx, ny, deleted);
+            }
+        }
     }
 }
 
@@ -119,12 +143,16 @@ void FieldState::put(const PuyoPair &pp) {
 }
 
 bool FieldState::checkCollision(const PuyoPair &pp) {
-    return (!inRange(pp.bottomX(), std::floor(pp.bottomY())) ||
-            !inRange(pp.topX(), std::floor(pp.topY())) ||
-            get(pp.bottomX(), std::floor(pp.bottomY())) != Puyo::none ||
-            get(pp.topX(), std::floor(pp.topY())) != Puyo::none ||
-            get(pp.bottomX(), std::ceil(pp.bottomY())) != Puyo::none ||
-            get(pp.topX(), std::ceil(pp.topY())) != Puyo::none);
+    return ((pp.bottomY() < HEIGHT &&
+             (!inRange(pp.bottomX(), std::floor(pp.bottomY())) ||
+              !inRange(pp.topX(), std::floor(pp.topY())) ||
+              get(pp.bottomX(), std::floor(pp.bottomY())) != Puyo::none ||
+              get(pp.topX(), std::floor(pp.topY())) != Puyo::none)) ||
+            (pp.topY() < HEIGHT &&
+             (!inRange(pp.bottomX(), std::ceil(pp.bottomY())) ||
+              !inRange(pp.topX(), std::ceil(pp.topY())) ||
+              get(pp.bottomX(), std::ceil(pp.bottomY())) != Puyo::none ||
+              get(pp.topX(), std::ceil(pp.topY())) != Puyo::none)));
 }
 
 Chain FieldState::deleteChain(int chain_num) {
@@ -135,8 +163,8 @@ Chain FieldState::deleteChain(int chain_num) {
         for (std::size_t x = 0; x < WIDTH; x++) {
             if (updated.at(y).at(x)) {
                 auto connection = state_tmp.deleteConnection(x, y);
-                if (connection.size() >= 4) {
-                    chain.push_connection(get(x, y), connection.size());
+                if (connection.colored.size() >= 4) {
+                    chain.push_connection(get(x, y), connection.colored.size());
                     deleteConnection(x, y); // thisの盤面にも反映
                 }
             }
@@ -160,10 +188,14 @@ bool FieldState::fall() {
             }
         }
     }
-    if (get(Action::START_X, Action::START_Y) != Puyo::none) {
+    return has_fall;
+}
+bool FieldState::checkGameOver() {
+    // ハードコードしている
+    if (get(2, 11) != Puyo::none) {
         is_over = true;
     }
-    return has_fall;
+    return is_over;
 }
 
 std::array<std::array<int, FieldState::WIDTH>, FieldState::HEIGHT>
@@ -172,13 +204,14 @@ FieldState::calcChainAll() const {
         chain_map = {};
     for (std::size_t y = 0; y < HEIGHT; y++) {
         for (std::size_t x = 0; x < WIDTH; x++) {
-            if (get(x, y) == Puyo::none || chain_map[y][x] != 0) {
+            if (get(x, y) == Puyo::none || get(x, y) == Puyo::garbage ||
+                chain_map[y][x] != 0) {
                 continue;
             }
             FieldState state = *this;
             auto first_connection = state.deleteConnection(x, y);
             auto chains = state.deleteChainRecurse();
-            for (const auto &pos : first_connection) {
+            for (const auto &pos : first_connection.colored) {
                 chain_map[pos.second][pos.first] = chains.size();
             }
         }
@@ -196,6 +229,7 @@ std::vector<Chain> FieldState::deleteChainRecurse() {
         }
         chains.push_back(std::move(chain));
     }
+    checkGameOver();
     return chains;
 }
 

@@ -35,57 +35,52 @@ int main(int argc, char const *argv[]) {
         ->expected(1, 2)
         ->check(CLI::IsMember(models, CLI::ignore_case));
 
+    bool single = false;
+    app.add_flag("-s,--single", single,
+                 "Single Player Mode (Disable Garbage Puyo)");
+
     CLI11_PARSE(app, argc, argv);
 
     auto seed = std::random_device()();
 
     std::vector<std::shared_ptr<pumila::GameSim>> sim = {};
     for (std::size_t i = 0; i < selected_models.size(); i++) {
+        std::shared_ptr<pumila::Pumila> model = nullptr;
         if (selected_models[i] == "pumila3") {
-            auto model = std::make_shared<pumila::Pumila3>(0.01);
+            model = std::make_shared<pumila::Pumila3>(0.01);
             model->loadFile();
-            sim.push_back(std::make_shared<pumila::GameSim>(model, "", seed));
         } else if (selected_models[i] == "pumila5") {
-            auto model = std::make_shared<pumila::Pumila5>(0.01);
+            model = std::make_shared<pumila::Pumila5>(0.01);
             model->loadFile();
-            sim.push_back(std::make_shared<pumila::GameSim>(model, "", seed));
         } else if (selected_models[i].starts_with("pumila6r")) {
-            auto model = std::make_shared<pumila::Pumila6r>(1);
+            model = std::make_shared<pumila::Pumila6r>(1);
             model->loadFile(selected_models[i]);
-            sim.push_back(std::make_shared<pumila::GameSim>(
-                model, selected_models[i], seed));
         } else if (selected_models[i].starts_with("pumila6")) {
-            auto model = std::make_shared<pumila::Pumila6>(1);
+            model = std::make_shared<pumila::Pumila6>(1);
             model->loadFile(selected_models[i]);
-            sim.push_back(std::make_shared<pumila::GameSim>(
-                model, selected_models[i], seed));
-        } else if (selected_models[i].starts_with("pumila7")) {
-            auto model = std::make_shared<pumila::Pumila7>(1);
-            model->loadFile(selected_models[i]);
-            sim.push_back(std::make_shared<pumila::GameSim>(
-                model, selected_models[i], seed));
         } else if (selected_models[i].starts_with("pumila7r")) {
-            auto model = std::make_shared<pumila::Pumila7r>(1);
+            model = std::make_shared<pumila::Pumila7r>(1);
             model->loadFile(selected_models[i]);
-            sim.push_back(std::make_shared<pumila::GameSim>(
-                model, selected_models[i], seed));
+        } else if (selected_models[i].starts_with("pumila7")) {
+            model = std::make_shared<pumila::Pumila7>(1);
+            model->loadFile(selected_models[i]);
         } else if (selected_models[i].starts_with("pumila8s")) {
-            auto model = std::make_shared<pumila::Pumila8s>(1);
+            model = std::make_shared<pumila::Pumila8s>(1);
             model->loadFile(selected_models[i]);
-            sim.push_back(std::make_shared<pumila::GameSim>(
-                model, selected_models[i], seed));
         } else if (selected_models[i].starts_with("pumila8")) {
-            auto model = std::make_shared<pumila::Pumila8>(1);
+            model = std::make_shared<pumila::Pumila8>(1);
             model->loadFile(selected_models[i]);
-            sim.push_back(std::make_shared<pumila::GameSim>(
-                model, selected_models[i], seed));
-        } else {
-            sim.push_back(std::make_shared<pumila::GameSim>(seed));
         }
+        sim.push_back(std::make_shared<pumila::GameSim>(
+            model, selected_models[i], seed, !single));
+    }
+    if (sim.size() == 2) {
+        sim[0]->opponent = sim[1];
+        sim[1]->opponent = sim[0];
     }
 
     pumila::Window window(sim);
-    while (true) {
+    while (window.isRunning()) {
         window.step(true);
     }
     return 0;
