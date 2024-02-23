@@ -2,6 +2,7 @@
 #include "action.h"
 #include "chain.h"
 #include "field.h"
+#include "field2.h"
 #include "game.h"
 #include "window.h"
 #include "model_base.h"
@@ -19,6 +20,7 @@
 #include "models/pumila8r.h"
 #include "models/pumila8s.h"
 #include "models/pumila9.h"
+#include "models/pumila10.h"
 
 #ifdef _MSC_VER
 #ifdef  _DEBUG

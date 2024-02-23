@@ -27,7 +27,14 @@ struct Action {
         vertical_inverse = 2,
         horizontal_left = 3,
     } rot = Rotation::vertical;
-
+    int bottomX() const { return x; }
+    PUMILA_DLL int topX() const;
+    /*!
+     * \brief 右にn回回転する
+     *
+     */
+    PUMILA_DLL void rotate(int right);
+    
     bool operator==(const Action &rhs) const {
         return x == rhs.x && rot == rhs.rot;
     }
@@ -59,13 +66,11 @@ struct PuyoPair : Action {
      *
      */
     Puyo bottom = Puyo::none, top = Puyo::none;
-    int bottomX() const { return x; }
     double bottomY() const { return y; }
     /*!
      * \brief x, y, rotからtopの座標を計算
      *
      */
-    PUMILA_DLL int topX() const;
     PUMILA_DLL double topY() const;
 
     PuyoPair() = default;
@@ -75,11 +80,6 @@ struct PuyoPair : Action {
     PuyoPair(const PuyoPair &pp, const Action &action)
         : Action(action), y(pp.y), bottom(pp.bottom), top(pp.top) {}
 
-    /*!
-     * \brief 右にn回回転する
-     *
-     */
-    PUMILA_DLL void rotate(int right);
 };
 
 } // namespace PUMILA_NS

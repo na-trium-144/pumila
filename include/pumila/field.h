@@ -109,11 +109,6 @@ struct FieldState {
 
     PUMILA_DLL void put(std::size_t x, std::size_t y, Puyo p);
 
-    struct PuyoConnection {
-        std::vector<std::pair<std::size_t, std::size_t>> colored, garbage;
-        PuyoConnection() : colored(), garbage() {}
-    };
-
     /*!
      * \brief x, y とつながっているぷよの数を数え、
      * すでに数えたものをフィールドから消す

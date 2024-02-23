@@ -79,14 +79,13 @@ void FieldState::put(std::size_t x, std::size_t y, Puyo p) {
     }
 }
 
-FieldState::PuyoConnection FieldState::deleteConnection(std::size_t x,
-                                                        std::size_t y) {
-    FieldState::PuyoConnection deleted;
+PuyoConnection FieldState::deleteConnection(std::size_t x, std::size_t y) {
+    PuyoConnection deleted;
     deleteConnection(x, y, deleted);
     return deleted;
 }
 void FieldState::deleteConnection(std::size_t x, std::size_t y,
-                                  FieldState::PuyoConnection &deleted) {
+                                  PuyoConnection &deleted) {
     if (!inRange(x, y)) {
         std::cerr << "out of range in FieldState::deleteConnection(x = " << x
                   << ", y = " << y << ")";
