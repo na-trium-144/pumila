@@ -20,7 +20,7 @@ class Pumila6r : public Pumila {
 
     static constexpr int BATCH_SIZE = 10;
     std::vector<std::pair<NNResult, Eigen::VectorXd>> step_data;
-    int step_count = 0;
+    int step_started = 0, step_finished = 0;
     /*!
      * \brief step_count, step_dataを編集するときのロック
      */
@@ -38,6 +38,7 @@ class Pumila6r : public Pumila {
         main = other.main;
         target = main->copy();
     }
+    auto &operator=(const Pumila6r &) = delete;
     std::shared_ptr<Pumila6r> copy() {
         return std::make_shared<Pumila6r>(*this);
     }
@@ -62,6 +63,7 @@ class Pumila6r : public Pumila {
             matrix_ih = other.matrix_ih;
             matrix_hq = other.matrix_hq;
         }
+        auto &operator=(const NNModel &) = delete;
         std::shared_ptr<NNModel> copy() const {
             return std::make_shared<NNModel>(*this);
         }

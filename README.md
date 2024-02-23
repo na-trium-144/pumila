@@ -17,7 +17,7 @@
     * mac: `brew install sdl2 sdl2_ttf`
     * windowsの場合はFetchContentで自動的にダウンロードされます
 * [pybind11](https://github.com/pybind/pybind11), [BS::thread_pool](https://github.com/bshoshany/thread-pool), [cli11](https://github.com/CLIUtils/CLI11) とroboto-font(GUIの表示に必要)がFetchContentでダウンロードされます
-* IntelCPUの場合cmake時に`-DPUMILA_MKL=ON`オプションを追加するとIntel MKLを使用し計算が速くなります
+* IntelCPUの場合cmake時に`-DPUMILA_MKL_DYNAMIC=ON`または`-DPUMILA_MKL_STATIC=ON`オプションを追加するとIntel MKLを使用し計算が速くなります
     * windows: [ここ](https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl-download.html)からoneMKLをダウンロードしインストール (古いCPUはサポートされてないっぽい)
         * インストール場所がデフォルト (`C:\Program Files (x86)\Intel\oneAPI`) でない場合は `-DPUMILA_MKL_ROOT=Path\To\oneAPI`
     * ubuntu: `sudo apt install libmkl-dev` (古めのCPUでも動く)

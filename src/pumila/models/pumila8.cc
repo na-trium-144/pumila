@@ -32,7 +32,8 @@ void Pumila8::learnStep(std::shared_ptr<FieldState> field) {
             std::shared_lock lock(target_m);
             fw_result = target.forward(in_t);
         }
-        pool.detach_task([this, pumila, next, next2, next3, fw_result]() {
+        pool.detach_task([this, pumila, next, next2 = std::move(next2),
+                          next3 = std::move(next3), fw_result]() {
             Eigen::VectorXd delta_2(fw_result.q.rows());
             for (std::size_t a = 0; a < ACTIONS_NUM; a++) {
                 // q(a3, a2)

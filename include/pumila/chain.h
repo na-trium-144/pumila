@@ -16,11 +16,15 @@ struct Chain {
      * 例えば赤4連結+青5連結の9個なら{{red, 4}, {blue, 5}}で、
      * connectionNum() = 9
      *
+     * 6*13/4=19
      */
-    std::vector<std::pair<Puyo, int>> connections;
+    std::array<std::pair<Puyo, int>, 20> connections;
+    std::size_t connection_num;
     int chain_num;
-    Chain(int chain_num) : connections(), chain_num(chain_num) {}
-    bool isEmpty() const { return connections.empty(); }
+    Chain(int chain_num)
+        : connections(), connection_num(0), chain_num(chain_num) {}
+    void push_connection(Puyo p, int n) ;
+    bool isEmpty() const { return connection_num == 0; }
     PUMILA_DLL int connectionNum() const;
     PUMILA_DLL int chainBonus() const;
     PUMILA_DLL int connectionBonus() const;
