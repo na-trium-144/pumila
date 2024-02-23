@@ -17,12 +17,12 @@ void initPumila10Module(py::module_ &m) {
             .def_readwrite("target", &Pumila10::target)
             .def("get_action_coeff", &Pumila10::getActionCoeff)
             .def("get_action_rnd",
-                 py::overload_cast<std::shared_ptr<FieldState>, double>(
+                 py::overload_cast<std::shared_ptr<FieldState2>, double>(
                      &Pumila10::getActionRnd))
             .def("get_action_rnd",
                  py::overload_cast<const std::shared_ptr<GameSim> &, double>(
                      &Pumila10::getActionRnd))
-            .def("calc_reward", py::overload_cast<const FieldState &>(
+            .def("calc_reward", py::overload_cast<const FieldState2 &>(
                                     &Pumila10::calcReward, py::const_))
             .def("learn_step", &Pumila10::learnStep)
             .def("copy", &Pumila10::copy)

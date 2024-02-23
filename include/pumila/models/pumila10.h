@@ -8,6 +8,7 @@ namespace PUMILA_NS {
 /*!
  * pumila8rベース
  * * gammaを変更可能にした
+ * * FieldStateを改良→FieldState2
  */
 class Pumila10 : public Pumila {
   public:
@@ -65,30 +66,48 @@ class Pumila10 : public Pumila {
     PUMILA_DLL void backward(const NNResult &result,
                              const Eigen::VectorXd &diff);
 
-    using InFeatureSingle = Pumila8s::InFeatureSingle;
-    using InFeatures = Pumila8s::InFeatures;
+    struct InFeatureSingle {
+        FieldState2 field_next;
+        Eigen::VectorXd in;
+    };
+    struct InFeatures {
+        std::array<std::shared_future<InFeatureSingle>, ACTIONS_NUM> each;
+        Eigen::MatrixXd in;
+    };
+    /*!
+     * \brief 現在のフィールドから次の22通りのフィールドと特徴量を計算
+     * (Pumila::poolで実行され完了するまで待機)
+     * \return 22 * IN_NODES の行列
+     */
+    PUMILA_DLL static std::future<InFeatures>
+    getInNodes(const FieldState2 &field);
+    PUMILA_DLL static std::future<InFeatures>
+    getInNodes(std::shared_future<InFeatures> feature, int feat_a);
+    /*!
+     * \brief フィールドにaのアクションをしたあとの特徴量を計算
+     */
+    PUMILA_DLL static InFeatureSingle getInNodeSingle(const FieldState2 &field,
+                                                      int a);
 
-    double calcReward(std::shared_ptr<FieldState> field) const {
+    double calcReward(std::shared_ptr<FieldState2> field) const {
         return calcReward(*field);
     }
-    virtual double calcReward(const FieldState &field) const {
-        return Pumila8s::calcRewardS(field);
+    virtual double calcReward(const FieldState2 &field) const {
+        return Pumila10::calcRewardS(field);
     }
+    PUMILA_DLL static double calcRewardS(const FieldState2 &field);
 
     int getAction(std::shared_ptr<FieldState2> field) override {
-        return getAction(std::make_shared<FieldState>(*field));
-    }
-    int getAction(std::shared_ptr<FieldState> field) {
         return getActionRnd(field, 0);
     }
-    PUMILA_DLL int getActionRnd(std::shared_ptr<FieldState> field,
+    PUMILA_DLL int getActionRnd(std::shared_ptr<FieldState2> field,
                                 double rnd_p);
-    PUMILA_DLL double getActionCoeff(std::shared_ptr<FieldState> field);
+    PUMILA_DLL double getActionCoeff(std::shared_ptr<FieldState2> field);
 
     int getActionRnd(const std::shared_ptr<GameSim> &sim, double rnd_p) {
-        return getActionRnd(sim->field1(), rnd_p);
+        return getActionRnd(sim->field, rnd_p);
     }
 
-    PUMILA_DLL virtual void learnStep(std::shared_ptr<FieldState> field);
+    PUMILA_DLL virtual void learnStep(std::shared_ptr<FieldState2> field);
 };
 } // namespace PUMILA_NS
