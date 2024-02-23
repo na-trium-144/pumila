@@ -7,7 +7,8 @@
 namespace PUMILA_NS {
 /*!
  * pumila8rベース
- * shared_ptrを極力使わないようにする
+ * * shared_ptrを極力使わないようにする
+ * * 報酬がpumila5,6のものになってる
  */
 class Pumila8s : public Pumila {
   public:
@@ -117,6 +118,8 @@ class Pumila8s : public Pumila {
     }
     PUMILA_DLL int getActionRnd(std::shared_ptr<FieldState> field,
                                 double rnd_p);
+    PUMILA_DLL double getActionCoeff(std::shared_ptr<FieldState> field);
+    
     int getActionRnd(const std::shared_ptr<GameSim> &sim, double rnd_p) {
         return getActionRnd(sim->field, rnd_p);
     }

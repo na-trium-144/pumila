@@ -122,7 +122,7 @@ void GameSim::quickDrop() {
     if (isFreePhase()) {
         std::lock_guard lock(field_m);
         PuyoPair pp = field->getNext();
-        pp.y -= 12;
+        pp.y = -1;
         field->updateNext(pp);
         auto f_phase = dynamic_cast<FreePhase *>(phase.get());
         f_phase->put_t = 0;

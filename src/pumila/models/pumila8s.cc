@@ -172,6 +172,18 @@ void Pumila8s::backward(const NNResult &result, const Eigen::VectorXd &diff) {
     }
 }
 
+double Pumila8s::getActionCoeff(std::shared_ptr<FieldState> field) {
+    NNResult fw_result;
+    auto in_feat = getInNodes(*field).get();
+    fw_result = forward(in_feat.in);
+    for (int a2 = 0; a2 < ACTIONS_NUM; a2++) {
+        if (!in_feat.each[a2].get().field_next.is_valid ||
+            in_feat.each[a2].get().field_next.is_over) {
+            fw_result.q(a2, 0) = fw_result.q.minCoeff();
+        }
+    }
+    return fw_result.q.maxCoeff();
+}
 int Pumila8s::getActionRnd(std::shared_ptr<FieldState> field, double rnd_p) {
     NNResult fw_result;
     auto in_feat = getInNodes(*field).get();

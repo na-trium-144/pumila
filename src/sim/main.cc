@@ -29,6 +29,8 @@ int main(int argc, char const *argv[]) {
     for (int i : std::array<int, 5>{100, 316, 1000, 3162, 10000}) {
         models.push_back("pumila8s_" + std::to_string(i));
     }
+    models.push_back("pumila9_" + std::to_string(300));
+    
     std::vector<std::string> selected_models;
     app.add_option("model", selected_models, "Select Player or AI Model")
         ->required()
@@ -69,6 +71,9 @@ int main(int argc, char const *argv[]) {
             model->loadFile(selected_models[i]);
         } else if (selected_models[i].starts_with("pumila8")) {
             model = std::make_shared<pumila::Pumila8>(1);
+            model->loadFile(selected_models[i]);
+        } else if (selected_models[i].starts_with("pumila9")) {
+            model = std::make_shared<pumila::Pumila9>(1);
             model->loadFile(selected_models[i]);
         }
         sim.push_back(std::make_shared<pumila::GameSim>(

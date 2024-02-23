@@ -11,7 +11,7 @@ Puyo FieldState::get(std::size_t x, std::size_t y) const {
     assert(inRange(x, y)); // debug時のみ
     if (!inRange(x, y)) {
         std::cerr << "out of range in FieldState::get(x = " << x
-                  << ", y = " << y << ")";
+                  << ", y = " << y << ")" << std::endl;
         return Puyo::none;
     }
     return field.at(y).at(x);
@@ -66,6 +66,11 @@ int FieldState::calcGarbageSend() {
 
 void FieldState::put(std::size_t x, std::size_t y, Puyo p) {
     if (inRange(x, y)) {
+        if (p == Puyo::none && field.at(y).at(x) != Puyo::none) {
+            puyo_num--;
+        } else if (p != Puyo::none && field.at(y).at(x) == Puyo::none) {
+            puyo_num++;
+        }
         field.at(y).at(x) = p;
         updated.at(y).at(x) = true;
         is_valid = true;
@@ -140,6 +145,7 @@ void FieldState::put(const PuyoPair &pp) {
     auto [yb, yt] = getHeight(pp, true);
     put(pp.topX(), yt, pp.top);
     put(pp.bottomX(), yb, pp.bottom);
+    prev_puyo_num = puyo_num;
 }
 
 bool FieldState::checkCollision(const PuyoPair &pp) {

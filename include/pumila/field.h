@@ -55,6 +55,12 @@ struct FieldState {
      */
     int prev_chain_num = 0, prev_chain_score = 0;
     /*!
+     * \brief 今と1手前のぷよ総数
+     * pumila9で使用
+     * put(PuyoPair) 時にprevにコピーする
+     */
+    int puyo_num = 0, prev_puyo_num = 0;
+    /*!
      * \brief 最後の連鎖とその前の連鎖の間のステップ数
      * pumila7で使用
      */

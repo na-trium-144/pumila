@@ -7,12 +7,13 @@ using namespace PUMILA_NS;
 namespace py = pybind11;
 
 void initPumila8sModule(py::module_ &m) {
-    auto pumila6r =
+    auto pumila8s =
         py::class_<Pumila8s, Pumila, std::shared_ptr<Pumila8s>>(m, "Pumila8s")
             .def("make_shared",
                  [](int n) { return std::make_shared<Pumila8s>(n); })
             .def_readwrite("main", &Pumila8s::main)
             .def_readwrite("target", &Pumila8s::target)
+            .def("get_action_coeff", &Pumila8s::getActionCoeff)
             .def("get_action_rnd",
                  py::overload_cast<std::shared_ptr<FieldState>, double>(
                      &Pumila8s::getActionRnd))
@@ -24,7 +25,7 @@ void initPumila8sModule(py::module_ &m) {
             .def("copy", &Pumila8s::copy)
             .def("forward", &Pumila8s::forward)
             .def("backward", &Pumila8s::backward);
-    py::class_<Pumila8s::NNModel, std::shared_ptr<Pumila8s::NNModel>>(pumila6r,
+    py::class_<Pumila8s::NNModel, std::shared_ptr<Pumila8s::NNModel>>(pumila8s,
                                                                       "NNModel")
         .def("get_matrix_ih",
              [](const Pumila8s::NNModel &model) { return model.matrix_ih; })
