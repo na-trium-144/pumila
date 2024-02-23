@@ -1,5 +1,6 @@
 #include <pumila/game.h>
 #include <pumila/model_base.h>
+#include <pumila/field.h>
 #include <iostream>
 #include <cassert>
 
@@ -54,6 +55,11 @@ GameSim::~GameSim() {
     if (model_action_thread) {
         model_action_thread->join();
     }
+}
+
+std::shared_ptr<FieldState> GameSim::field1() {
+    std::shared_lock lock(field_m);
+    return std::make_shared<FieldState>(*field);
 }
 
 Puyo GameSim::randomPuyo() {

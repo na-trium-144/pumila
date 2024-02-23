@@ -1,5 +1,6 @@
 #pragma once
 #include "../model_base.h"
+#include "../field.h"
 #include <array>
 #include <memory>
 
@@ -15,6 +16,9 @@ class Pumila1N : public Pumila {
     explicit Pumila1N(int target_chain)
         : Pumila(), target_chain(target_chain) {}
 
-    PUMILA_DLL int getAction(std::shared_ptr<FieldState> field) override;
+    PUMILA_DLL int getAction(std::shared_ptr<FieldState> field);
+    int getAction(std::shared_ptr<FieldState2> field) override {
+        return getAction(std::make_shared<FieldState>(*field));
+    }
 };
 } // namespace PUMILA_NS

@@ -3,6 +3,7 @@
 #include "action.h"
 #include "chain.h"
 #include <array>
+#include <utility>
 #include <random>
 
 namespace PUMILA_NS {
@@ -38,6 +39,8 @@ class FieldState2 {
         int puyo_num = 0;
 
       public:
+        friend struct FieldState;
+
         PUMILA_DLL void set(std::size_t x, std::size_t y, Puyo p);
         PUMILA_DLL Puyo get(std::size_t x, std::size_t y) const;
         PUMILA_DLL bool getUpdated(std::size_t x, std::size_t y) const;
@@ -53,6 +56,8 @@ class FieldState2 {
         std::size_t next_num = 0;
 
       public:
+        friend struct FieldState;
+
         PUMILA_DLL PuyoPair get() const;
         PUMILA_DLL void update(const PuyoPair &pp);
         PUMILA_DLL void pop();
@@ -80,14 +85,16 @@ class FieldState2 {
         int garbage_score = 0;
 
       public:
+        friend struct FieldState;
+
         PUMILA_DLL void pushScore(int score_add);
         void addGarbage(int garbage_add) { garbage_ready += garbage_add; }
         /*!
          * \brief 盤面に降る量をreadyにセットし相手に送る量を返す
          */
         PUMILA_DLL int send();
-        int getReady() { return garbage_ready; }
-        int getCurrent() { return garbage_current; }
+        int getReady() const { return garbage_ready; }
+        int getCurrent() const { return garbage_current; }
     };
 
   private:
@@ -152,8 +159,8 @@ class FieldState2 {
      * \brief 落下中のぷよが既存のぷよに重なっているまたは画面外か調べる
      * \return フィールド上のぷよと重なるor画面外ならtrue
      */
-    PUMILA_DLL bool checkNextCollision(const Action &action);
-    bool checkNextCollision() { return checkNextCollision(next_.get()); }
+    PUMILA_DLL bool checkNextCollision(const Action &action) const;
+    bool checkNextCollision() const { return checkNextCollision(next_.get()); }
 
     /*!
      * \brief nextを落とした場合のy座標を調べる

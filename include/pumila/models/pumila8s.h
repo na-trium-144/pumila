@@ -113,15 +113,18 @@ class Pumila8s : public Pumila {
     }
     PUMILA_DLL static double calcRewardS(const FieldState &field);
 
-    int getAction(std::shared_ptr<FieldState> field) override {
+    int getAction(std::shared_ptr<FieldState2> field) override {
+        return getAction(std::make_shared<FieldState>(*field));
+    }
+    int getAction(std::shared_ptr<FieldState> field) {
         return getActionRnd(field, 0);
     }
     PUMILA_DLL int getActionRnd(std::shared_ptr<FieldState> field,
                                 double rnd_p);
     PUMILA_DLL double getActionCoeff(std::shared_ptr<FieldState> field);
-    
+
     int getActionRnd(const std::shared_ptr<GameSim> &sim, double rnd_p) {
-        return getActionRnd(sim->field, rnd_p);
+        return getActionRnd(sim->field1(), rnd_p);
     }
 
     PUMILA_DLL virtual void learnStep(std::shared_ptr<FieldState> field);

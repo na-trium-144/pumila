@@ -62,7 +62,8 @@ class Pumila4 : public Pumila {
          * \param delta それぞれqの誤差 (行数はq.rows()と同じでなければならない)
          *
          */
-        PUMILA_DLL void backward(const NNResult &result, const Eigen::VectorXd &diff);
+        PUMILA_DLL void backward(const NNResult &result,
+                                 const Eigen::VectorXd &diff);
 
         inline static Eigen::MatrixXd
         truncateInNodes(const Eigen::MatrixXd &in) {
@@ -75,15 +76,16 @@ class Pumila4 : public Pumila {
     using InFeatures = Pumila2::InFeatures;
     using InFeatureSingle = Pumila2::InFeatureSingle;
 
-    inline static std::future<InFeatures> getInNodes(std::shared_ptr<FieldState> field) {
+    inline static std::future<InFeatures>
+    getInNodes(std::shared_ptr<FieldState> field) {
         return Pumila2::getInNodes(field);
     }
     inline static std::future<InFeatures>
     getInNodes(std::shared_future<InFeatures> feature, int feat_a) {
         return Pumila2::getInNodes(feature, feat_a);
     }
-    inline static InFeatureSingle getInNodeSingle(std::shared_ptr<FieldState> field,
-                                                  int a);
+    inline static InFeatureSingle
+    getInNodeSingle(std::shared_ptr<FieldState> field, int a);
 
 
     PUMILA_DLL Pumila4(double learning_rate);
@@ -98,12 +100,16 @@ class Pumila4 : public Pumila {
         return Pumila2::calcRewardS(field);
     }
 
-    int getAction(std::shared_ptr<FieldState> field) override {
+    int getAction(std::shared_ptr<FieldState2> field) override {
+        return getAction(std::make_shared<FieldState>(*field));
+    }
+    int getAction(std::shared_ptr<FieldState> field) {
         return getActionRnd(field, 0);
     }
-    PUMILA_DLL virtual int getActionRnd(std::shared_ptr<FieldState> field, double rnd_p);
+    PUMILA_DLL virtual int getActionRnd(std::shared_ptr<FieldState> field,
+                                        double rnd_p);
     int getActionRnd(const std::shared_ptr<GameSim> &sim, double rnd_p) {
-        return getActionRnd(sim->field, rnd_p);
+        return getActionRnd(sim->field1(), rnd_p);
     }
     PUMILA_DLL virtual void learnStep(std::shared_ptr<FieldState> field);
 };

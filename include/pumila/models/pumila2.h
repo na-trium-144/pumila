@@ -1,5 +1,6 @@
 #pragma once
 #include "../model_base.h"
+#include "../field.h"
 #include <Eigen/Dense>
 #include <array>
 #include <memory>
@@ -142,7 +143,10 @@ class Pumila2 : public Pumila {
     }
     PUMILA_DLL static double calcRewardS(std::shared_ptr<FieldState> field);
 
-    int getAction(std::shared_ptr<FieldState> field) override {
+    int getAction(std::shared_ptr<FieldState2> field) override {
+        return getAction(std::make_shared<FieldState>(*field));
+    }
+    int getAction(std::shared_ptr<FieldState> field) {
         return getActionRnd(field, 0);
     }
     /*!
@@ -153,7 +157,7 @@ class Pumila2 : public Pumila {
      */
     PUMILA_DLL virtual int getActionRnd(std::shared_ptr<FieldState> field, double rnd_p);
     int getActionRnd(const std::shared_ptr<GameSim> &sim, double rnd_p) {
-        return getActionRnd(sim->field, rnd_p);
+        return getActionRnd(sim->field1(), rnd_p);
     }
 
     /*!

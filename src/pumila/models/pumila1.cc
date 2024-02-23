@@ -69,7 +69,7 @@ void Pumila1::NNModel::backward(const NNResult &result,
 }
 
 double Pumila1::calcReward(std::shared_ptr<GameSim> sim_after) const {
-    return Pumila2::calcRewardS(sim_after->field);
+    return Pumila2::calcRewardS(sim_after->field1());
 }
 
 int Pumila1::getAction(std::shared_ptr<FieldState> field) {

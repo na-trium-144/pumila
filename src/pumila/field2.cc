@@ -178,7 +178,7 @@ void FieldState2::putGarbage() {
     }
 }
 
-bool FieldState2::checkNextCollision(const Action &action) {
+bool FieldState2::checkNextCollision(const Action &action) const {
     PuyoPair pp{next_.get(), action};
     return (
         (pp.bottomY() < HEIGHT &&

@@ -1,5 +1,6 @@
 #pragma once
 #include "../model_base.h"
+#include "../field.h"
 #include <Eigen/Dense>
 #include <array>
 #include <memory>
@@ -51,7 +52,8 @@ class Pumila1 : public Pumila {
          * \param delta それぞれqの誤差 (行数はq.rows()と同じでなければならない)
          *
          */
-        PUMILA_DLL void backward(const NNResult &result, const Eigen::VectorXd &diff);
+        PUMILA_DLL void backward(const NNResult &result,
+                                 const Eigen::VectorXd &diff);
 
     } main, target;
     using NNResult = NNModel::NNResult;
@@ -60,7 +62,8 @@ class Pumila1 : public Pumila {
     std::unordered_map<int, int> learn_actions;
     int learn_results_index = 0;
 
-    PUMILA_DLL explicit Pumila1(double alpha, double gamma, double learning_rate);
+    PUMILA_DLL explicit Pumila1(double alpha, double gamma,
+                                double learning_rate);
     std::shared_ptr<Pumila1> copy() {
         auto copied =
             std::make_shared<Pumila1>(main.alpha, gamma, main.learning_rate);
@@ -74,9 +77,10 @@ class Pumila1 : public Pumila {
      * \return 22 * IN_NODES の行列
      */
     Eigen::MatrixXd getInNodes(std::shared_ptr<GameSim> sim) const {
-        return getInNodes(sim->field);
+        return getInNodes(sim->field1());
     }
-    PUMILA_DLL Eigen::MatrixXd getInNodes(std::shared_ptr<FieldState> field) const;
+    PUMILA_DLL Eigen::MatrixXd
+    getInNodes(std::shared_ptr<FieldState> field) const;
 
     /*!
      * \brief 報酬を計算
@@ -84,7 +88,10 @@ class Pumila1 : public Pumila {
      */
     PUMILA_DLL double calcReward(std::shared_ptr<GameSim> sim_after) const;
 
-    PUMILA_DLL int getAction(std::shared_ptr<FieldState> field) override;
+    PUMILA_DLL int getAction(std::shared_ptr<FieldState> field);
+    int getAction(std::shared_ptr<FieldState2> field) override {
+        return getAction(std::make_shared<FieldState>(*field));
+    }
     PUMILA_DLL std::pair<int, int> getLearnAction(std::shared_ptr<GameSim> sim);
     PUMILA_DLL double learnResult(int id, std::shared_ptr<GameSim> sim_after);
 };

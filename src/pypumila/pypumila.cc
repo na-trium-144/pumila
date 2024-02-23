@@ -70,6 +70,60 @@ PYBIND11_MODULE(pypumila, m) {
                    ", y = " + std::to_string(a.y) +
                    ", rot = " + std::to_string(static_cast<int>(a.rot)) + ">";
         });
+    auto fs2 =
+        py::class_<FieldState2, std::shared_ptr<FieldState2>>(m, "FieldState2")
+            .def(py::init<>())
+            .def("field", &FieldState2::field)
+            .def("next", py::overload_cast<>(&FieldState2::next, py::const_))
+            .def("current_step", &FieldState2::currentStep)
+            .def("prev_step", &FieldState2::prevStep)
+            .def("last_chain_step", &FieldState2::lastChainStep)
+            .def("prev_puyo_num", &FieldState2::prevPuyoNum)
+            .def("total_score", &FieldState2::totalScore)
+            .def("garbage",
+                 py::overload_cast<>(&FieldState2::garbage, py::const_))
+            .def("put_next",
+                 py::overload_cast<const Action &>(&FieldState2::putNext))
+            .def("put_next", py::overload_cast<>(&FieldState2::putNext))
+            .def("put_garbage", &FieldState2::putGarbage)
+            .def("check_next_collision",
+                 py::overload_cast<const Action &>(
+                     &FieldState2::checkNextCollision, py::const_))
+            .def("check_next_collision",
+                 py::overload_cast<>(&FieldState2::checkNextCollision,
+                                     py::const_))
+            .def("get_next_height",
+                 py::overload_cast<const Action &>(&FieldState2::getNextHeight,
+                                                   py::const_))
+            .def("get_next_height",
+                 py::overload_cast<>(&FieldState2::getNextHeight, py::const_))
+            .def("get_height", &FieldState2::getHeight)
+            .def("delete_chain", &FieldState2::deleteChain)
+            .def("delete_chain_recurse", &FieldState2::deleteChainRecurse)
+            .def("calc_chain_all", &FieldState2::calcChainAll)
+            .def("fall", &FieldState2::fall)
+            .def("is_game_over", &FieldState2::isGameOver);
+    py::class_<FieldState2::Field>(fs2, "Field")
+        .def("set", &FieldState2::Field::set)
+        .def("get", &FieldState2::Field::get)
+        .def("puyo_num", &FieldState2::Field::puyoNum);
+    py::class_<FieldState2::NextList>(fs2, "NextList")
+        .def("get", &FieldState2::NextList::get)
+        .def("update", &FieldState2::NextList::update)
+        .def("pop", &FieldState2::NextList::pop)
+        .def("push", &FieldState2::NextList::push)
+        .def("size", &FieldState2::NextList::size);
+    py::class_<FieldState2::StepInfo>(fs2, "StepInfo")
+        .def_readwrite("num", &FieldState2::StepInfo::num)
+        .def_readwrite("chain_num", &FieldState2::StepInfo::chain_num)
+        .def_readwrite("chain_score", &FieldState2::StepInfo::chain_score);
+    py::class_<FieldState2::GarbageInfo>(fs2, "GarbageInfo")
+        .def("push_score", &FieldState2::GarbageInfo::pushScore)
+        .def("add_garbage", &FieldState2::GarbageInfo::addGarbage)
+        .def("send", &FieldState2::GarbageInfo::send)
+        .def("get_ready", &FieldState2::GarbageInfo::getReady)
+        .def("get_current", &FieldState2::GarbageInfo::getCurrent);
+
     py::class_<FieldState, std::shared_ptr<FieldState>>(m, "FieldState")
         .def(py::init<>())
         .def_readwrite("field", &FieldState::field)
@@ -110,10 +164,11 @@ PYBIND11_MODULE(pypumila, m) {
     py::class_<GameSim, std::shared_ptr<GameSim>>(m, "GameSim")
         .def(py::init<>())
         .def(py::init<std::shared_ptr<Pumila>>())
-        .def("field_copy",
+        .def("field_copy", &GameSim::field1)
+        .def("field2_copy",
              [](std::shared_ptr<GameSim> sim) {
                  std::shared_lock lock(sim->field_m);
-                 return sim->field->copy();
+                 return std::make_shared<FieldState2>(*sim->field);
              })
         .def_readwrite("current_chain", &GameSim::current_chain)
         .def_readwrite("model", &GameSim::model)
@@ -133,8 +188,8 @@ PYBIND11_MODULE(pypumila, m) {
         .def("quit", &Window::quit)
         .def("is_running", &Window::isRunning);
     py::class_<Pumila, std::shared_ptr<Pumila>>(m, "Pumila")
-        .def("get_action",
-             py::overload_cast<std::shared_ptr<FieldState>>(&Pumila::getAction))
+        .def("get_action", py::overload_cast<std::shared_ptr<FieldState2>>(
+                               &Pumila::getAction))
         .def("get_action", py::overload_cast<const std::shared_ptr<GameSim> &>(
                                &Pumila::getAction))
         .def("load_file", py::overload_cast<>(&Pumila::loadFile))

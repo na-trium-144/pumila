@@ -12,6 +12,7 @@
 
 namespace PUMILA_NS {
 class Pumila;
+struct FieldState;
 /*!
  * \brief fieldに加えてネクスト、落下時間、スコアなども管理する(1プレイヤー分)
  *
@@ -50,6 +51,7 @@ class GameSim {
     std::weak_ptr<GameSim> opponent;
 
     std::shared_ptr<FieldState2> field;
+    PUMILA_DLL std::shared_ptr<FieldState> field1();
     /*!
      * \brief fieldにアクセスするときはmutexつかってね
      *
