@@ -181,12 +181,12 @@ void FieldState2::putGarbage() {
 bool FieldState2::checkNextCollision(const Action &action) const {
     PuyoPair pp{next_.get(), action};
     return (
-        (pp.bottomY() < HEIGHT &&
+        (std::floor(pp.bottomY()) < HEIGHT && std::floor(pp.topY()) < HEIGHT &&
          (!inRange(pp.bottomX(), std::floor(pp.bottomY())) ||
           !inRange(pp.topX(), std::floor(pp.topY())) ||
           field_.get(pp.bottomX(), std::floor(pp.bottomY())) != Puyo::none ||
           field_.get(pp.topX(), std::floor(pp.topY())) != Puyo::none)) ||
-        (pp.topY() < HEIGHT &&
+        (std::ceil(pp.bottomY()) < HEIGHT && std::ceil(pp.topY()) < HEIGHT &&
          (!inRange(pp.bottomX(), std::ceil(pp.bottomY())) ||
           !inRange(pp.topX(), std::ceil(pp.topY())) ||
           field_.get(pp.bottomX(), std::ceil(pp.bottomY())) != Puyo::none ||
