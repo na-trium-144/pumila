@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 3.18)
 project(pumila CXX)
-if(NOT DEFINED CMAKE_BUILD_TYPE)
+if("${CMAKE_BUILD_TYPE}" STREQUAL "")
     set(CMAKE_BUILD_TYPE RelWithDebInfo)
 endif()
+message(STATUS "Build Type = ${CMAKE_BUILD_TYPE}")
 
 if(MSVC)
     foreach(CONF DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
@@ -13,7 +14,8 @@ if(MSVC)
     message(${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG})
 endif()
 
-option(PUMILA_MKL off "Use MKL (fot Intel CPU on Linux / Windows)")
+option(PUMILA_MKL_DYNAMIC off "Use MKL Dynamic Library (fot Intel CPU on Linux / Windows)")
+option(PUMILA_MKL_STATIC off "Use MKL Static Library (fot Intel CPU on Linux)")
 set(PUMILA_MKL_ROOT "C:/Program Files (x86)/Intel/oneAPI" CACHE STRING "oneMKL Root Path (for Windows)")
 option(PUMILA_ACCELERATE off "Use Accelerate (for MacOS)")
 
@@ -79,7 +81,7 @@ else()
     endif()
 endif()
 
-if(PUMILA_MKL)
+if(PUMILA_MKL_DYNAMIC)
     if(MSVC)
         add_library(mkl INTERFACE)
         target_link_libraries(mkl INTERFACE mkl_rt.lib)
@@ -102,6 +104,20 @@ if(PUMILA_MKL)
     else()
         pkg_search_module(MKL REQUIRED mkl-dynamic-lp64-iomp)
         message(STATUS "mkl-dynamic-lp64-iomp found")
+        add_library(mkl INTERFACE)
+        target_link_directories(mkl INTERFACE ${MKL_LIBDIR})
+        target_include_directories(mkl INTERFACE ${MKL_INCLUDE_DIRS})
+        target_link_libraries(mkl INTERFACE ${MKL_LIBRARIES} ${MKL_LDFLAGS})
+        # target_link_options(mkl INTERFACE ${MKL_LDFLAGS})
+        set(mkl mkl)
+    endif()
+elseif(PUMILA_MKL_STATIC)
+    if(MSVC)
+        message(WARNING "PUMILA_MKL_STATIC for Windows not implemented")
+        set(PUMILA_MKL_STATIC off)
+    else()
+        pkg_search_module(MKL REQUIRED mkl-static-lp64-iomp)
+        message(STATUS "mkl-static-lp64-iomp found")
         add_library(mkl INTERFACE)
         target_link_directories(mkl INTERFACE ${MKL_LIBDIR})
         target_include_directories(mkl INTERFACE ${MKL_INCLUDE_DIRS})
@@ -175,6 +191,7 @@ set(PUMILA_SRC
     src/pumila/models/pumila6r.cc
     src/pumila/models/pumila7r.cc
     src/pumila/models/pumila8r.cc
+    src/pumila/models/pumila8s.cc
 )
 if(WIN32)
     set(PUMILA_SRC ${PUMILA_SRC} src/pumila/version.rc)
@@ -183,7 +200,7 @@ add_library(pumila SHARED ${PUMILA_SRC})
 target_include_directories(pumila PUBLIC include)
 target_compile_features(pumila PUBLIC cxx_std_20)
 target_link_libraries(pumila PUBLIC ${eigen} bs_thread_pool)
-if(PUMILA_MKL)
+if(PUMILA_MKL_STATIC OR PUMILA_MKL_DYNAMIC)
     target_link_libraries(pumila PUBLIC ${mkl})
     target_compile_definitions(pumila PUBLIC EIGEN_USE_MKL_ALL)
 endif()
@@ -212,6 +229,7 @@ pybind11_add_module(pypumila
     src/pypumila/pypumila6r.cc
     src/pypumila/pypumila7r.cc
     src/pypumila/pypumila8r.cc
+    src/pypumila/pypumila8s.cc
 )
 target_link_libraries(pypumila PUBLIC pumila)
 

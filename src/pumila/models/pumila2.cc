@@ -37,12 +37,12 @@ void Pumila2::save(std::ostream &os) {
              main.matrix_hq->rows() * main.matrix_hq->cols() * sizeof(double));
 }
 
-Pumila2::InFeatureSingle Pumila2::getInNodeSingle(std::shared_ptr<FieldState> field,
-                                                  int a) {
+Pumila2::InFeatureSingle
+Pumila2::getInNodeSingle(std::shared_ptr<FieldState> field_copy, int a) {
     InFeatureSingle feat;
-    feat.field_next = field->copy();
+    feat.field_next = field_copy;
     feat.field_next->put(actions[a]);
-    feat.field_next->next.pop_front();
+    feat.field_next->popNext();
     std::vector<Chain> chains = feat.field_next->deleteChainRecurse();
 
     feat.in = Eigen::VectorXd::Zero(NNModel::IN_NODES);
@@ -84,12 +84,14 @@ Pumila2::InFeatureSingle Pumila2::getInNodeSingle(std::shared_ptr<FieldState> fi
     return feat;
 }
 
-std::future<Pumila2::InFeatures> Pumila2::getInNodes(std::shared_ptr<FieldState> field) {
+std::future<Pumila2::InFeatures>
+Pumila2::getInNodes(std::shared_ptr<FieldState> field) {
     std::array<std::shared_future<InFeatureSingle>, ACTIONS_NUM> feat;
     for (int a = 0; a < ACTIONS_NUM; a++) {
-        feat[a] =
-            pool.submit_task([field, a] { return getInNodeSingle(field, a); })
-                .share();
+        feat[a] = pool.submit_task([field_copy = field->copy(), a] {
+                          return getInNodeSingle(field_copy, a);
+                      })
+                      .share();
     }
     return pool.submit_task([feat]() {
         InFeatures feats;
@@ -107,12 +109,18 @@ std::future<Pumila2::InFeatures> Pumila2::getInNodes(std::shared_ptr<FieldState>
 std::future<Pumila2::InFeatures>
 Pumila2::getInNodes(std::shared_future<InFeatures> feature, int feat_a) {
     std::array<std::shared_future<InFeatureSingle>, ACTIONS_NUM> feat;
+    auto field_copies = pool.submit_task([feature, feat_a]() {
+        std::array<std::shared_ptr<FieldState>, ACTIONS_NUM> field_copies;
+        for (std::size_t i = 0; i < ACTIONS_NUM; i++) {
+            field_copies[i] = feature.get().field_next[feat_a]->copy();
+        }
+        return field_copies;
+    }).share();
     for (int a = 0; a < ACTIONS_NUM; a++) {
-        feat[a] =
-            pool.submit_task([feature, feat_a, a] {
-                    return getInNodeSingle(feature.get().field_next[feat_a], a);
-                })
-                .share();
+        feat[a] = pool.submit_task([field_copies, a] {
+                          return getInNodeSingle(field_copies.get()[a], a);
+                      })
+                      .share();
     }
     return pool.submit_task([feat]() {
         InFeatures feats;

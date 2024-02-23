@@ -38,6 +38,7 @@ class Pumila6r : public Pumila {
         main = other.main;
         target = main->copy();
     }
+    auto &operator=(const Pumila6r &) = delete;
     std::shared_ptr<Pumila6r> copy() {
         return std::make_shared<Pumila6r>(*this);
     }
@@ -62,6 +63,7 @@ class Pumila6r : public Pumila {
             matrix_ih = other.matrix_ih;
             matrix_hq = other.matrix_hq;
         }
+        auto &operator=(const NNModel &) = delete;
         std::shared_ptr<NNModel> copy() const {
             return std::make_shared<NNModel>(*this);
         }
