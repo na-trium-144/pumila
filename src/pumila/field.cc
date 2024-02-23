@@ -164,7 +164,7 @@ Chain FieldState::deleteChain(int chain_num) {
             if (updated.at(y).at(x)) {
                 auto connection = state_tmp.deleteConnection(x, y);
                 if (connection.colored.size() >= 4) {
-                    chain.push_connections(get(x, y), connection.colored.size());
+                    chain.push_connection(get(x, y), connection.colored.size());
                     deleteConnection(x, y); // thisの盤面にも反映
                 }
             }
