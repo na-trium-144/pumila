@@ -109,5 +109,7 @@ class Pumila10 : public Pumila {
     }
 
     PUMILA_DLL virtual void learnStep(std::shared_ptr<FieldState2> field);
+
+    std::vector<double> diff_history = {};
 };
 } // namespace PUMILA_NS

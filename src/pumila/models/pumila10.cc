@@ -256,12 +256,17 @@ void Pumila10::learnStep(std::shared_ptr<FieldState2> field) {
                     }
                 }
             }
+            double max_diff = 0;
             for (int r = a; r < delta_2.rows(); r += ACTIONS_NUM) {
                 double diff = (calcReward(next.get().each[a].get().field_next) +
                                fw_next3_q.maxCoeff()) -
                               fw_result.q(r, 0);
                 delta_2(r, 0) = diff;
+                if (std::abs(diff) > std::abs(max_diff)) {
+                    max_diff = diff;
+                }
             }
+            diff_history.push_back(max_diff);
         }
         delta_2.array() /= BATCH_SIZE;
         backward(fw_result, delta_2);
