@@ -252,14 +252,16 @@ std::unique_ptr<GameSim::Phase> GameSim::FreePhase::step() {
         std::lock_guard lock(sim->field_m);
         auto current_pair = sim->field->next().get();
         current_pair.y -= FALL_SPEED / 60;
-        auto yb = sim->field->getHeight(current_pair.bottomX());
-        auto yt = sim->field->getHeight(current_pair.topX());
-        if (yb < current_pair.bottomY() || yt < current_pair.topY()) {
+        auto [yb, yt] = sim->field->getNextHeight(current_pair);
+        if (yb < current_pair.bottomY() && yt < current_pair.topY()) {
             put_t = PUT_T;
             sim->field->next().update(current_pair);
         } else {
             put_t--;
             current_pair.y = yb;
+            if (yt > current_pair.topY()) {
+                current_pair.y += yt - current_pair.topY();
+            }
             sim->field->next().update(current_pair);
             if (put_t < 0) {
                 sim->soft_put_target = std::nullopt;
