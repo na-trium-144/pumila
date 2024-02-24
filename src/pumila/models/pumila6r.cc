@@ -109,9 +109,9 @@ int Pumila6r::getActionRnd(std::shared_ptr<FieldState> field, double rnd_p) {
             fw_result.q(a2, 0) = fw_result.q.minCoeff();
         }
     }
+    int action = 0;
+    setActionCoeff(fw_result.q.maxCoeff(&action));
     if (getRndD() >= rnd_p) {
-        int action = 0;
-        fw_result.q.maxCoeff(&action);
         return action;
     } else {
         fw_result.q.array() -= fw_result.q.minCoeff();

@@ -13,7 +13,6 @@ void initPumila8sModule(py::module_ &m) {
                  [](int n) { return std::make_shared<Pumila8s>(n); })
             .def_readwrite("main", &Pumila8s::main)
             .def_readwrite("target", &Pumila8s::target)
-            .def("get_action_coeff", &Pumila8s::getActionCoeff)
             .def("get_action_rnd",
                  py::overload_cast<std::shared_ptr<FieldState>, double>(
                      &Pumila8s::getActionRnd))

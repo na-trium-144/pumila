@@ -7,6 +7,7 @@
 #include <memory>
 #include <string>
 #include <iostream>
+#include <atomic>
 
 namespace PUMILA_NS {
 class Pumila : public std::enable_shared_from_this<Pumila> {
@@ -24,6 +25,9 @@ class Pumila : public std::enable_shared_from_this<Pumila> {
 
     virtual void load(std::istream &) {}
     virtual void save(std::ostream &) {}
+
+    std::atomic<double> action_coeff = 0;
+    void setActionCoeff(double coeff) { action_coeff.store(coeff); }
 
   public:
     Pumila() = default;
@@ -57,5 +61,6 @@ class Pumila : public std::enable_shared_from_this<Pumila> {
     int getAction(const std::shared_ptr<GameSim> &sim) {
         return getAction(sim->field);
     }
+    double actionCoeff() const { return action_coeff.load(); }
 };
 } // namespace PUMILA_NS

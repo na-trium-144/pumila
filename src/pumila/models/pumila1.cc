@@ -75,7 +75,7 @@ double Pumila1::calcReward(std::shared_ptr<GameSim> sim_after) const {
 int Pumila1::getAction(std::shared_ptr<FieldState> field) {
     NNResult fw_result = main.forward(getInNodes(field));
     int action = 0;
-    fw_result.q.maxCoeff(&action);
+    setActionCoeff(fw_result.q.maxCoeff(&action));
     return action;
 }
 std::pair<int, int> Pumila1::getLearnAction(std::shared_ptr<GameSim> sim) {

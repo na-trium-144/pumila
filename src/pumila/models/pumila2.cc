@@ -237,9 +237,9 @@ double Pumila2::calcRewardS(std::shared_ptr<FieldState> field) {
 int Pumila2::getActionRnd(std::shared_ptr<FieldState> field, double rnd_p) {
     NNResult fw_result;
     fw_result = main.forward(getInNodes(field).get().in);
+    int action = 0;
+    setActionCoeff(fw_result.q.maxCoeff(&action));
     if (getRndD() >= rnd_p) {
-        int action = 0;
-        fw_result.q.maxCoeff(&action);
         return action;
     } else {
         fw_result.q.array() -= fw_result.q.minCoeff();

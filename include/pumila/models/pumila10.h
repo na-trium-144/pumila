@@ -102,7 +102,6 @@ class Pumila10 : public Pumila {
     }
     PUMILA_DLL int getActionRnd(std::shared_ptr<FieldState2> field,
                                 double rnd_p);
-    PUMILA_DLL double getActionCoeff(std::shared_ptr<FieldState2> field);
 
     int getActionRnd(const std::shared_ptr<GameSim> &sim, double rnd_p) {
         return getActionRnd(sim->field, rnd_p);

@@ -192,6 +192,7 @@ PYBIND11_MODULE(pypumila, m) {
                                &Pumila::getAction))
         .def("get_action", py::overload_cast<const std::shared_ptr<GameSim> &>(
                                &Pumila::getAction))
+        .def("action_coeff", &Pumila::actionCoeff)
         .def("load_file", py::overload_cast<>(&Pumila::loadFile))
         .def("load_file", py::overload_cast<std::string>(&Pumila::loadFile))
         .def("save_file", py::overload_cast<>(&Pumila::saveFile))

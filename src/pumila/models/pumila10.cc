@@ -162,18 +162,6 @@ void Pumila10::backward(const NNResult &result, const Eigen::VectorXd &diff) {
     }
 }
 
-double Pumila10::getActionCoeff(std::shared_ptr<FieldState2> field) {
-    NNResult fw_result;
-    auto in_feat = Pumila10::getInNodes(*field).get();
-    fw_result = forward(in_feat.in);
-    for (int a2 = 0; a2 < ACTIONS_NUM; a2++) {
-        if (/*!in_feat.each[a2].get().field_next.is_valid ||*/
-            in_feat.each[a2].get().field_next.isGameOver()) {
-            fw_result.q(a2, 0) = fw_result.q.minCoeff();
-        }
-    }
-    return fw_result.q.maxCoeff();
-}
 int Pumila10::getActionRnd(std::shared_ptr<FieldState2> field, double rnd_p) {
     NNResult fw_result;
     auto in_feat = Pumila10::getInNodes(*field).get();
@@ -184,9 +172,9 @@ int Pumila10::getActionRnd(std::shared_ptr<FieldState2> field, double rnd_p) {
             fw_result.q(a2, 0) = fw_result.q.minCoeff();
         }
     }
+    int action = 0;
+    setActionCoeff(fw_result.q.maxCoeff(&action));
     if (getRndD() >= rnd_p) {
-        int action = 0;
-        fw_result.q.maxCoeff(&action);
         return action;
     } else {
         fw_result.q.array() -= fw_result.q.minCoeff();
@@ -266,12 +254,14 @@ void Pumila10::learnStep(std::shared_ptr<FieldState2> field) {
                     max_diff = diff;
                 }
             }
-            diff_history.push_back(max_diff);
+            {
+                std::lock_guard lock(learning_m);
+                diff_history.push_back(max_diff);
+            }
         }
         delta_2.array() /= BATCH_SIZE;
         backward(fw_result, delta_2);
         {
-            std::unique_lock lock(learning_m);
             step_finished++;
             if (step_finished >= BATCH_SIZE) {
                 pool.detach_task([this, pumila] {
