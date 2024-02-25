@@ -10,7 +10,8 @@ namespace PUMILA_NS {
  * * gammaを変更可能にした
  * * FieldStateを改良→FieldState2
  */
-class Pumila10 : public Pumila {
+template <typename NNModel>
+class Pumila10Base : public Pumila {
   public:
     using NNResult = Pumila8s::NNResult;
 
@@ -26,23 +27,15 @@ class Pumila10 : public Pumila {
     std::mutex learning_m;
     std::condition_variable learning_cond;
 
-    void load(std::istream &is) override;
-    void save(std::ostream &os) override;
-
   public:
-    std::string name() const override { return "pumila10"; }
-    PUMILA_DLL explicit Pumila10(int hidden_nodes, double gamma);
-    Pumila10(const Pumila10 &other) : Pumila10(1, 1) {
+    PUMILA_DLL explicit Pumila10Base(int hidden_nodes, double gamma);
+    Pumila10Base(const Pumila10Base &other) : Pumila10Base(1, 1) {
         std::lock_guard lock_main(other.main_m);
         gamma = other.gamma;
         main = target = other.main;
     }
-    auto &operator=(const Pumila10 &) = delete;
-    std::shared_ptr<Pumila10> copy() {
-        return std::make_shared<Pumila10>(*this);
-    }
+    auto &operator=(const Pumila10Base &) = delete;
 
-    using NNModel = Pumila8s::NNModel;
     /*!
      * getAction時はmainを使う
      * learn時はmainで計算し、targetに反映し、mainをtargetで上書き
@@ -79,23 +72,18 @@ class Pumila10 : public Pumila {
      * (Pumila::poolで実行され完了するまで待機)
      * \return 22 * IN_NODES の行列
      */
-    PUMILA_DLL static std::future<InFeatures>
-    getInNodes(const FieldState2 &field);
-    PUMILA_DLL static std::future<InFeatures>
-    getInNodes(std::shared_future<InFeatures> feature, int feat_a);
-    /*!
-     * \brief フィールドにaのアクションをしたあとの特徴量を計算
-     */
-    PUMILA_DLL static InFeatureSingle getInNodeSingle(const FieldState2 &field,
-                                                      int a);
+    PUMILA_DLL std::future<InFeatures>
+    getInNodes(const FieldState2 &field) const;
+    PUMILA_DLL std::future<InFeatures>
+    getInNodes(std::shared_future<InFeatures> feature, int feat_a) const;
+
+    virtual InFeatureSingle getInNodeSingle(const FieldState2 &field,
+                                            int a) const = 0;
 
     double calcReward(std::shared_ptr<FieldState2> field) const {
         return calcReward(*field);
     }
-    virtual double calcReward(const FieldState2 &field) const {
-        return Pumila10::calcRewardS(field);
-    }
-    PUMILA_DLL static double calcRewardS(const FieldState2 &field);
+    virtual double calcReward(const FieldState2 &field) const = 0;
 
     int getAction(std::shared_ptr<FieldState2> field) override {
         return getActionRnd(field, 0);
@@ -107,8 +95,33 @@ class Pumila10 : public Pumila {
         return getActionRnd(sim->field, rnd_p);
     }
 
-    PUMILA_DLL virtual void learnStep(std::shared_ptr<FieldState2> field);
+    PUMILA_DLL void learnStep(std::shared_ptr<FieldState2> field);
 
     std::vector<double> diff_history = {};
+};
+
+class Pumila10 : public Pumila10Base<Pumila8s::NNModel> {
+    void load(std::istream &is) override;
+    void save(std::ostream &os) override;
+
+  public:
+    std::string name() const override { return "pumila10"; }
+    explicit Pumila10(int hidden_nodes, double gamma)
+        : Pumila10Base(hidden_nodes, gamma) {}
+    std::shared_ptr<Pumila10> copy() {
+        return std::make_shared<Pumila10>(*this);
+    }
+
+    using NNModel = Pumila8s::NNModel;
+    /*!
+     * \brief フィールドにaのアクションをしたあとの特徴量を計算
+     */
+    PUMILA_DLL InFeatureSingle getInNodeSingle(const FieldState2 &field,
+                                               int a) const override;
+
+    double calcReward(const FieldState2 &field) const override {
+        return Pumila10::calcRewardS(field);
+    }
+    PUMILA_DLL static double calcRewardS(const FieldState2 &field);
 };
 } // namespace PUMILA_NS

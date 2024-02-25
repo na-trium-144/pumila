@@ -1,7 +1,8 @@
 #include <pumila/models/pumila10.h>
 
 namespace PUMILA_NS {
-Pumila10::Pumila10(int hidden_nodes, double gamma)
+template <typename NNModel>
+Pumila10Base<NNModel>::Pumila10Base(int hidden_nodes, double gamma)
     : Pumila(), gamma(gamma), main(hidden_nodes), target(main) {}
 
 void Pumila10::load(std::istream &is) {
@@ -32,7 +33,7 @@ void Pumila10::save(std::ostream &os) {
 }
 
 Pumila10::InFeatureSingle
-Pumila10::getInNodeSingle(const FieldState2 &field_copy, int a) {
+Pumila10::getInNodeSingle(const FieldState2 &field_copy, int a) const {
     InFeatureSingle feat;
     feat.field_next = field_copy;
     feat.field_next.putNext(actions[a]);
@@ -74,30 +75,34 @@ Pumila10::getInNodeSingle(const FieldState2 &field_copy, int a) {
     return feat;
 }
 
-std::future<Pumila10::InFeatures>
-Pumila10::getInNodes(const FieldState2 &field) {
+template <typename NNModel>
+std::future<typename Pumila10Base<NNModel>::InFeatures>
+Pumila10Base<NNModel>::getInNodes(const FieldState2 &field) const {
     std::array<std::shared_future<InFeatureSingle>, ACTIONS_NUM> feat;
     for (int a = 0; a < ACTIONS_NUM; a++) {
-        feat[a] =
-            pool.submit_task([field, a] { return getInNodeSingle(field, a); })
-                .share();
+        feat[a] = pool.submit_task([this, field, a] {
+                          return getInNodeSingle(field, a);
+                      })
+                      .share();
     }
     return pool.submit_task([feat]() {
         InFeatures feats;
         feats.each = feat;
         feats.in = Eigen::MatrixXd(ACTIONS_NUM, NNModel::IN_NODES);
         for (int a = 0; a < ACTIONS_NUM; a++) {
-            feats.in.middleRows<1>(a) = feat[a].get().in.transpose();
+            feats.in.template middleRows<1>(a) = feat[a].get().in.transpose();
         }
         return feats;
     });
 }
-std::future<Pumila10::InFeatures>
-Pumila10::getInNodes(std::shared_future<Pumila10::InFeatures> feature,
-                     int feat_a) {
+template <typename NNModel>
+std::future<typename Pumila10Base<NNModel>::InFeatures>
+Pumila10Base<NNModel>::getInNodes(
+    std::shared_future<typename Pumila10Base<NNModel>::InFeatures> feature,
+    int feat_a) const {
     std::array<std::shared_future<InFeatureSingle>, ACTIONS_NUM> feat;
     for (int a = 0; a < ACTIONS_NUM; a++) {
-        feat[a] = pool.submit_task([feature, feat_a, a] {
+        feat[a] = pool.submit_task([this, feature, feat_a, a] {
                           return getInNodeSingle(
                               feature.get().each[feat_a].get().field_next, a);
                       })
@@ -108,13 +113,15 @@ Pumila10::getInNodes(std::shared_future<Pumila10::InFeatures> feature,
         feats.each = feat;
         feats.in = Eigen::MatrixXd(ACTIONS_NUM, NNModel::IN_NODES);
         for (int a = 0; a < ACTIONS_NUM; a++) {
-            feats.in.middleRows<1>(a) = feat[a].get().in.transpose();
+            feats.in.template middleRows<1>(a) = feat[a].get().in.transpose();
         }
         return feats;
     });
 }
 
-Pumila10::NNResult Pumila10::forward(const Eigen::MatrixXd &in) const {
+template <typename NNModel>
+Pumila10Base<NNModel>::NNResult
+Pumila10Base<NNModel>::forward(const Eigen::MatrixXd &in) const {
     if (in.cols() != NNModel::IN_NODES) {
         throw std::invalid_argument("invalid size in forward: in -> " +
                                     std::to_string(in.cols()) + ", expected " +
@@ -132,7 +139,9 @@ Pumila10::NNResult Pumila10::forward(const Eigen::MatrixXd &in) const {
     assert(ret.q.cols() == 1);
     return ret;
 }
-void Pumila10::backward(const NNResult &result, const Eigen::VectorXd &diff) {
+template <typename NNModel>
+void Pumila10Base<NNModel>::backward(const NNResult &result,
+                                     const Eigen::VectorXd &diff) {
     if (diff.rows() * 24 != result.q.rows() && diff.rows() != result.q.rows()) {
         throw std::invalid_argument("invalid diff size in backward: q -> " +
                                     std::to_string(result.q.rows()) +
@@ -162,9 +171,11 @@ void Pumila10::backward(const NNResult &result, const Eigen::VectorXd &diff) {
     }
 }
 
-int Pumila10::getActionRnd(std::shared_ptr<FieldState2> field, double rnd_p) {
+template <typename NNModel>
+int Pumila10Base<NNModel>::getActionRnd(std::shared_ptr<FieldState2> field,
+                                        double rnd_p) {
     NNResult fw_result;
-    auto in_feat = Pumila10::getInNodes(*field).get();
+    auto in_feat = getInNodes(*field).get();
     fw_result = forward(in_feat.in);
     for (int a2 = 0; a2 < ACTIONS_NUM; a2++) {
         if (/*!in_feat.each[a2].get().field_next.is_valid ||*/
@@ -195,24 +206,25 @@ double Pumila10::calcRewardS(const FieldState2 &field) {
     return field.currentStep().chain_score;
 }
 
-void Pumila10::learnStep(std::shared_ptr<FieldState2> field) {
+template <typename NNModel>
+void Pumila10Base<NNModel>::learnStep(std::shared_ptr<FieldState2> field) {
     {
         std::unique_lock lock(learning_m);
         learning_cond.wait(lock, [&] { return step_started < BATCH_SIZE; });
         step_started++;
     }
     auto pumila = shared_from_this();
-    auto next = Pumila10::getInNodes(*field).share();
+    auto next = getInNodes(*field).share();
     std::array<std::shared_future<InFeatures>, ACTIONS_NUM> next2;
     std::array<std::array<std::shared_future<InFeatures>, ACTIONS_NUM>,
                ACTIONS_NUM>
         next3;
     for (std::size_t a = 0; a < ACTIONS_NUM; a++) {
-        next2[a] = Pumila10::getInNodes(next, a).share();
+        next2[a] = getInNodes(next, a).share();
     }
     for (std::size_t a = 0; a < ACTIONS_NUM; a++) {
         for (std::size_t a2 = 0; a2 < ACTIONS_NUM; a2++) {
-            next3[a][a2] = Pumila10::getInNodes(next2[a], a2).share();
+            next3[a][a2] = getInNodes(next2[a], a2).share();
         }
     }
     pool.detach_task([this, pumila, next, next2 = std::move(next2),
@@ -280,5 +292,7 @@ void Pumila10::learnStep(std::shared_ptr<FieldState2> field) {
         }
     });
 }
+
+template class Pumila10Base<Pumila8s::NNModel>;
 
 } // namespace PUMILA_NS
