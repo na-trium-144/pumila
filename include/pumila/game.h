@@ -1,6 +1,6 @@
 #pragma once
 #include "def.h"
-#include "field.h"
+#include "field2.h"
 #include "chain.h"
 #include <random>
 #include <memory>
@@ -12,6 +12,7 @@
 
 namespace PUMILA_NS {
 class Pumila;
+struct FieldState;
 /*!
  * \brief fieldに加えてネクスト、落下時間、スコアなども管理する(1プレイヤー分)
  *
@@ -49,7 +50,8 @@ class GameSim {
      */
     std::weak_ptr<GameSim> opponent;
 
-    std::shared_ptr<FieldState> field;
+    std::shared_ptr<FieldState2> field;
+    PUMILA_DLL std::shared_ptr<FieldState> field1();
     /*!
      * \brief fieldにアクセスするときはmutexつかってね
      *
@@ -69,6 +71,8 @@ class GameSim {
 
     int soft_put_interval = 6;
     int soft_put_cnt = 0;
+
+    bool is_over = false;
 
     PUMILA_DLL explicit GameSim(
         std::shared_ptr<Pumila> model, const std::string &name = "",

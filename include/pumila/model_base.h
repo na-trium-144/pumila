@@ -1,12 +1,13 @@
 #pragma once
 #include "def.h"
 #include "game.h"
-#include "field.h"
+#include "field2.h"
 #include <BS_thread_pool.hpp>
 #include <random>
 #include <memory>
 #include <string>
 #include <iostream>
+#include <atomic>
 
 namespace PUMILA_NS {
 class Pumila : public std::enable_shared_from_this<Pumila> {
@@ -24,6 +25,9 @@ class Pumila : public std::enable_shared_from_this<Pumila> {
 
     virtual void load(std::istream &) {}
     virtual void save(std::ostream &) {}
+
+    std::atomic<double> action_coeff = 0;
+    void setActionCoeff(double coeff) { action_coeff.store(coeff); }
 
   public:
     Pumila() = default;
@@ -53,9 +57,10 @@ class Pumila : public std::enable_shared_from_this<Pumila> {
      * \return 0〜21 (actionsに対応)
      *
      */
-    virtual int getAction(std::shared_ptr<FieldState> field) = 0;
+    virtual int getAction(std::shared_ptr<FieldState2> field) = 0;
     int getAction(const std::shared_ptr<GameSim> &sim) {
         return getAction(sim->field);
     }
+    double actionCoeff() const { return action_coeff.load(); }
 };
 } // namespace PUMILA_NS

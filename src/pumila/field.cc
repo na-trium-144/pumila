@@ -7,6 +7,20 @@
 #include <iostream>
 
 namespace PUMILA_NS {
+FieldState::FieldState(const FieldState2 &field2)
+    : field(field2.field().field), updated(field2.field().updated),
+      next(field2.next().next), next_num(field2.next().next_num),
+      step_num(field2.currentStep().num),
+      prev_chain_num(field2.currentStep().chain_num),
+      prev_chain_score(field2.currentStep().chain_score),
+      puyo_num(field2.field().puyoNum()), prev_puyo_num(field2.prevPuyoNum()),
+      last_chain_step_num(field2.lastChainStep().num),
+      total_score(field2.totalScore()),
+      garbage_ready(field2.garbage().getReady()),
+      garbage_current(field2.garbage().getCurrent()),
+      garbage_score(field2.garbage().garbage_score), is_valid(true),
+      is_over(field2.isGameOver()) {}
+
 Puyo FieldState::get(std::size_t x, std::size_t y) const {
     assert(inRange(x, y)); // debug時のみ
     if (!inRange(x, y)) {
@@ -79,14 +93,13 @@ void FieldState::put(std::size_t x, std::size_t y, Puyo p) {
     }
 }
 
-FieldState::PuyoConnection FieldState::deleteConnection(std::size_t x,
-                                                        std::size_t y) {
-    FieldState::PuyoConnection deleted;
+PuyoConnection FieldState::deleteConnection(std::size_t x, std::size_t y) {
+    PuyoConnection deleted;
     deleteConnection(x, y, deleted);
     return deleted;
 }
 void FieldState::deleteConnection(std::size_t x, std::size_t y,
-                                  FieldState::PuyoConnection &deleted) {
+                                  PuyoConnection &deleted) {
     if (!inRange(x, y)) {
         std::cerr << "out of range in FieldState::deleteConnection(x = " << x
                   << ", y = " << y << ")";

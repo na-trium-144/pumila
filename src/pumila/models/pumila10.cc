@@ -1,21 +1,16 @@
-#include <pumila/models/pumila8s.h>
-#include <cassert>
-#include <stdexcept>
-#include <string>
+#include <pumila/models/pumila10.h>
+#include <pumila/models/pumila11.h>
 
 namespace PUMILA_NS {
-Pumila8s::NNModel::NNModel(int hidden_nodes)
-    : hidden_nodes(hidden_nodes),
-      matrix_ih(Eigen::MatrixXd::Random(IN_NODES, hidden_nodes)),
-      matrix_hq(Eigen::VectorXd::Random(hidden_nodes)) {}
+template <typename NNModel>
+Pumila10Base<NNModel>::Pumila10Base(int hidden_nodes, double gamma)
+    : Pumila(), gamma(gamma), main(hidden_nodes), target(main) {}
 
-Pumila8s::Pumila8s(int hidden_nodes)
-    : Pumila(), main(hidden_nodes), target(main) {}
-
-void Pumila8s::load(std::istream &is) {
+void Pumila10::load(std::istream &is) {
     std::lock_guard lock_main(main_m);
     std::lock_guard lock_target(target_m);
     {
+        is.read(reinterpret_cast<char *>(&gamma), sizeof(gamma));
         is.read(reinterpret_cast<char *>(&main.hidden_nodes),
                 sizeof(main.hidden_nodes));
         main.matrix_ih = Eigen::MatrixXd(NNModel::IN_NODES, main.hidden_nodes);
@@ -27,8 +22,9 @@ void Pumila8s::load(std::istream &is) {
         target = main;
     }
 }
-void Pumila8s::save(std::ostream &os) {
+void Pumila10::save(std::ostream &os) {
     std::shared_lock lock_main(main_m);
+    os.write(reinterpret_cast<char *>(&gamma), sizeof(gamma));
     os.write(reinterpret_cast<char *>(&main.hidden_nodes),
              sizeof(main.hidden_nodes));
     os.write(reinterpret_cast<char *>(main.matrix_ih.data()),
@@ -37,13 +33,12 @@ void Pumila8s::save(std::ostream &os) {
              main.matrix_hq.rows() * main.matrix_hq.cols() * sizeof(double));
 }
 
-Pumila8s::InFeatureSingle
-Pumila8s::getInNodeSingle(const FieldState &field_copy, int a) {
+Pumila10::InFeatureSingle
+Pumila10::getInNodeSingleS(const FieldState2 &field_copy, int a) {
     InFeatureSingle feat;
     feat.field_next = field_copy;
-    feat.field_next.put(actions[a]);
-    feat.field_next.popNext();
-    std::vector<Chain> chains = feat.field_next.deleteChainRecurse();
+    feat.field_next.putNext(actions[a]);
+    feat.field_next.deleteChainRecurse();
 
     feat.in = Eigen::VectorXd::Zero(NNModel::IN_NODES);
     NNModel::InNodes &in_nodes =
@@ -53,7 +48,7 @@ Pumila8s::getInNodeSingle(const FieldState &field_copy, int a) {
     for (std::size_t y = 0; y < FieldState::HEIGHT; y++) {
         for (std::size_t x = 0; x < FieldState::WIDTH; x++) {
             int p;
-            switch (feat.field_next.get(x, y)) {
+            switch (feat.field_next.field().get(x, y)) {
             case Puyo::red:
                 p = 0;
                 break;
@@ -77,36 +72,38 @@ Pumila8s::getInNodeSingle(const FieldState &field_copy, int a) {
             }
         }
     }
-    in_nodes.score_diff = 0;
-    for (const auto &c : chains) {
-        in_nodes.score_diff += c.score();
-    }
+    in_nodes.score_diff = feat.field_next.currentStep().chain_score;
     return feat;
 }
 
-std::future<Pumila8s::InFeatures>
-Pumila8s::getInNodes(const FieldState &field) {
+template <typename NNModel>
+std::future<typename Pumila10Base<NNModel>::InFeatures>
+Pumila10Base<NNModel>::getInNodes(const FieldState2 &field) const {
     std::array<std::shared_future<InFeatureSingle>, ACTIONS_NUM> feat;
     for (int a = 0; a < ACTIONS_NUM; a++) {
-        feat[a] =
-            pool.submit_task([field, a] { return getInNodeSingle(field, a); })
-                .share();
+        feat[a] = pool.submit_task([this, field, a] {
+                          return getInNodeSingle(field, a);
+                      })
+                      .share();
     }
     return pool.submit_task([feat]() {
         InFeatures feats;
         feats.each = feat;
         feats.in = Eigen::MatrixXd(ACTIONS_NUM, NNModel::IN_NODES);
         for (int a = 0; a < ACTIONS_NUM; a++) {
-            feats.in.middleRows<1>(a) = feat[a].get().in.transpose();
+            feats.in.template middleRows<1>(a) = feat[a].get().in.transpose();
         }
         return feats;
     });
 }
-std::future<Pumila8s::InFeatures>
-Pumila8s::getInNodes(std::shared_future<InFeatures> feature, int feat_a) {
+template <typename NNModel>
+std::future<typename Pumila10Base<NNModel>::InFeatures>
+Pumila10Base<NNModel>::getInNodes(
+    std::shared_future<typename Pumila10Base<NNModel>::InFeatures> feature,
+    int feat_a) const {
     std::array<std::shared_future<InFeatureSingle>, ACTIONS_NUM> feat;
     for (int a = 0; a < ACTIONS_NUM; a++) {
-        feat[a] = pool.submit_task([feature, feat_a, a] {
+        feat[a] = pool.submit_task([this, feature, feat_a, a] {
                           return getInNodeSingle(
                               feature.get().each[feat_a].get().field_next, a);
                       })
@@ -117,14 +114,15 @@ Pumila8s::getInNodes(std::shared_future<InFeatures> feature, int feat_a) {
         feats.each = feat;
         feats.in = Eigen::MatrixXd(ACTIONS_NUM, NNModel::IN_NODES);
         for (int a = 0; a < ACTIONS_NUM; a++) {
-            feats.in.middleRows<1>(a) = feat[a].get().in.transpose();
+            feats.in.template middleRows<1>(a) = feat[a].get().in.transpose();
         }
         return feats;
     });
 }
 
-
-Pumila8s::NNResult Pumila8s::forward(const Eigen::MatrixXd &in) const {
+template <typename NNModel>
+Pumila10Base<NNModel>::NNResult
+Pumila10Base<NNModel>::forward(const Eigen::MatrixXd &in) const {
     if (in.cols() != NNModel::IN_NODES) {
         throw std::invalid_argument("invalid size in forward: in -> " +
                                     std::to_string(in.cols()) + ", expected " +
@@ -142,7 +140,9 @@ Pumila8s::NNResult Pumila8s::forward(const Eigen::MatrixXd &in) const {
     assert(ret.q.cols() == 1);
     return ret;
 }
-void Pumila8s::backward(const NNResult &result, const Eigen::VectorXd &diff) {
+template <typename NNModel>
+void Pumila10Base<NNModel>::backward(const NNResult &result,
+                                     const Eigen::VectorXd &diff) {
     if (diff.rows() * 24 != result.q.rows() && diff.rows() != result.q.rows()) {
         throw std::invalid_argument("invalid diff size in backward: q -> " +
                                     std::to_string(result.q.rows()) +
@@ -172,13 +172,15 @@ void Pumila8s::backward(const NNResult &result, const Eigen::VectorXd &diff) {
     }
 }
 
-int Pumila8s::getActionRnd(std::shared_ptr<FieldState> field, double rnd_p) {
+template <typename NNModel>
+int Pumila10Base<NNModel>::getActionRnd(std::shared_ptr<FieldState2> field,
+                                        double rnd_p) {
     NNResult fw_result;
     auto in_feat = getInNodes(*field).get();
     fw_result = forward(in_feat.in);
     for (int a2 = 0; a2 < ACTIONS_NUM; a2++) {
-        if (!in_feat.each[a2].get().field_next.is_valid ||
-            in_feat.each[a2].get().field_next.is_over) {
+        if (/*!in_feat.each[a2].get().field_next.is_valid ||*/
+            in_feat.each[a2].get().field_next.isGameOver()) {
             fw_result.q(a2, 0) = fw_result.q.minCoeff();
         }
     }
@@ -201,11 +203,12 @@ int Pumila8s::getActionRnd(std::shared_ptr<FieldState> field, double rnd_p) {
 }
 
 // pumila5より
-double Pumila8s::calcRewardS(const FieldState &field) {
-    return field.prev_chain_score;
+double Pumila10::calcRewardS(const FieldState2 &field) {
+    return field.currentStep().chain_score;
 }
 
-void Pumila8s::learnStep(std::shared_ptr<FieldState> field) {
+template <typename NNModel>
+void Pumila10Base<NNModel>::learnStep(std::shared_ptr<FieldState2> field) {
     {
         std::unique_lock lock(learning_m);
         learning_cond.wait(lock, [&] { return step_started < BATCH_SIZE; });
@@ -227,7 +230,7 @@ void Pumila8s::learnStep(std::shared_ptr<FieldState> field) {
     }
     pool.detach_task([this, pumila, next, next2 = std::move(next2),
                       next3 = std::move(next3)] {
-        auto in_t = Pumila2::NNModel::truncateInNodes(next.get().in);
+        auto in_t = truncateInNodes(next.get().in);
         NNResult fw_result;
         fw_result = forward(in_t);
         Eigen::VectorXd delta_2(fw_result.q.rows());
@@ -236,34 +239,42 @@ void Pumila8s::learnStep(std::shared_ptr<FieldState> field) {
             Eigen::MatrixXd fw_next3_q(ACTIONS_NUM, ACTIONS_NUM);
             for (std::size_t a2 = 0; a2 < ACTIONS_NUM; a2++) {
                 fw_next3_q.middleCols<1>(a2) =
-                    GAMMA * GAMMA * forward(next3[a][a2].get().in).q;
+                    gamma * gamma * forward(next3[a][a2].get().in).q;
                 fw_next3_q.middleCols<1>(a2).array() +=
-                    GAMMA *
+                    gamma *
                     calcReward(next2[a].get().each[a2].get().field_next);
             }
             for (std::size_t a2 = 0; a2 < ACTIONS_NUM; a2++) {
                 for (std::size_t a3 = 0; a3 < ACTIONS_NUM; a3++) {
-                    if (!next3[a][a2]
-                             .get()
-                             .each[a3]
-                             .get()
-                             .field_next.is_valid ||
-                        next3[a][a2].get().each[a3].get().field_next.is_over) {
+                    if (/*!next3[a][a2].get().each[a3].get().field_next.is_valid
+                           || */
+                        next3[a][a2]
+                            .get()
+                            .each[a3]
+                            .get()
+                            .field_next.isGameOver()) {
                         fw_next3_q(a3, a2) = fw_next3_q.minCoeff();
                     }
                 }
             }
+            double max_diff = 0;
             for (int r = a; r < delta_2.rows(); r += ACTIONS_NUM) {
                 double diff = (calcReward(next.get().each[a].get().field_next) +
                                fw_next3_q.maxCoeff()) -
                               fw_result.q(r, 0);
                 delta_2(r, 0) = diff;
+                if (std::abs(diff) > std::abs(max_diff)) {
+                    max_diff = diff;
+                }
+            }
+            {
+                std::lock_guard lock(learning_m);
+                diff_history.push_back(max_diff);
             }
         }
         delta_2.array() /= BATCH_SIZE;
         backward(fw_result, delta_2);
         {
-            std::unique_lock lock(learning_m);
             step_finished++;
             if (step_finished >= BATCH_SIZE) {
                 pool.detach_task([this, pumila] {
@@ -282,5 +293,8 @@ void Pumila8s::learnStep(std::shared_ptr<FieldState> field) {
         }
     });
 }
+
+template class Pumila10Base<Pumila8s::NNModel>;
+template class Pumila10Base<Pumila11::NNModel>;
 
 } // namespace PUMILA_NS

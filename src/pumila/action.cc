@@ -26,7 +26,7 @@ const std::array<Action, 22> actions = {{
     {5, Action::Rotation::horizontal_left},
 }};
 
-int PuyoPair::topX() const {
+int Action::topX() const {
     switch (rot) {
     case Rotation::vertical:
     case Rotation::vertical_inverse:
@@ -50,7 +50,7 @@ double PuyoPair::topY() const {
     }
     return 0;
 }
-void PuyoPair::rotate(int right) {
+void Action::rotate(int right) {
     rot = static_cast<Rotation>(((static_cast<int>(rot) + right) % 4 + 4) % 4);
 }
 

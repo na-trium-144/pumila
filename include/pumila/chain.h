@@ -5,6 +5,10 @@
 #include <utility>
 
 namespace PUMILA_NS {
+struct PuyoConnection {
+    std::vector<std::pair<std::size_t, std::size_t>> colored, garbage;
+    PuyoConnection() : colored(), garbage() {}
+};
 /*!
  * \brief 1連鎖で消えるぷよの情報
  *
@@ -23,10 +27,13 @@ struct Chain {
     int chain_num;
     Chain(int chain_num)
         : connections(), connection_num(0), chain_num(chain_num) {}
-    void push_connection(Puyo p, int n) ;
+    void push_connection(Puyo p, int n);
     bool isEmpty() const { return connection_num == 0; }
     PUMILA_DLL int connectionNum() const;
-    PUMILA_DLL int chainBonus() const;
+    int chainBonus() const {
+        return chainBonus(chain_num);
+    }
+    PUMILA_DLL static int chainBonus(int chain_num);
     PUMILA_DLL int connectionBonus() const;
     PUMILA_DLL int colorBonus() const;
     PUMILA_DLL int scoreA() const;

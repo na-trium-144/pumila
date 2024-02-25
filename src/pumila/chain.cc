@@ -12,10 +12,10 @@ void Chain::push_connection(Puyo p, int n) {
 
 int Chain::connectionNum() const {
     return std::accumulate(
-        connections.begin(), connections.end(), 0,
+        connections.begin(), connections.begin() + connection_num, 0,
         [](int acc, const auto &con) { return acc + con.second; });
 }
-int Chain::chainBonus() const {
+int Chain::chainBonus(int chain_num) {
     if (chain_num < 4) {
         return 8 * (chain_num - 1);
     } else {
@@ -24,8 +24,8 @@ int Chain::chainBonus() const {
 }
 int Chain::connectionBonus() const {
     int b = 0;
-    for (const auto &con : connections) {
-        int c = con.second;
+    for (std::size_t i = 0; i < connection_num; i++) {
+        int c = connections[i].second;
         if (c >= 5 && c <= 10) {
             b += c - 3;
         } else if (c > 10) {
@@ -36,8 +36,8 @@ int Chain::connectionBonus() const {
 }
 int Chain::colorBonus() const {
     std::array<bool, 6> colors = {};
-    for (const auto &con : connections) {
-        colors[static_cast<int>(con.first)] = true;
+    for (std::size_t i = 0; i < connection_num; i++) {
+        colors[static_cast<int>(connections[i].first)] = true;
     }
     int cn =
         std::count_if(colors.begin(), colors.end(), [](auto c) { return c; });

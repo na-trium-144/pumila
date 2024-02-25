@@ -2,10 +2,8 @@
 #include "def.h"
 #include "action.h"
 #include "chain.h"
+#include "field2.h"
 #include <utility>
-#include <vector>
-#include <deque>
-#include <shared_mutex>
 #include <memory>
 
 namespace PUMILA_NS {
@@ -94,6 +92,8 @@ struct FieldState {
     bool is_over = false;
 
     FieldState() : field(), updated(), next() {}
+    PUMILA_DLL FieldState(const FieldState2 &field2);
+    
     std::shared_ptr<FieldState> copy() const {
         return std::make_shared<FieldState>(*this);
     }
@@ -108,11 +108,6 @@ struct FieldState {
     PUMILA_DLL int calcGarbageSend();
 
     PUMILA_DLL void put(std::size_t x, std::size_t y, Puyo p);
-
-    struct PuyoConnection {
-        std::vector<std::pair<std::size_t, std::size_t>> colored, garbage;
-        PuyoConnection() : colored(), garbage() {}
-    };
 
     /*!
      * \brief x, y とつながっているぷよの数を数え、
