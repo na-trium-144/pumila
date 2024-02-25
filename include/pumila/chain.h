@@ -30,7 +30,10 @@ struct Chain {
     void push_connection(Puyo p, int n);
     bool isEmpty() const { return connection_num == 0; }
     PUMILA_DLL int connectionNum() const;
-    PUMILA_DLL int chainBonus() const;
+    int chainBonus() const {
+        return chainBonus(chain_num);
+    }
+    PUMILA_DLL static int chainBonus(int chain_num);
     PUMILA_DLL int connectionBonus() const;
     PUMILA_DLL int colorBonus() const;
     PUMILA_DLL int scoreA() const;

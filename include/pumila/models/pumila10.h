@@ -79,6 +79,8 @@ class Pumila10Base : public Pumila {
 
     virtual InFeatureSingle getInNodeSingle(const FieldState2 &field,
                                             int a) const = 0;
+    virtual Eigen::MatrixXd
+    truncateInNodes(const Eigen::MatrixXd &in) const = 0;
 
     double calcReward(std::shared_ptr<FieldState2> field) const {
         return calcReward(*field);
@@ -113,12 +115,15 @@ class Pumila10 : public Pumila10Base<Pumila8s::NNModel> {
     }
 
     using NNModel = Pumila8s::NNModel;
-    /*!
-     * \brief フィールドにaのアクションをしたあとの特徴量を計算
-     */
-    PUMILA_DLL InFeatureSingle getInNodeSingle(const FieldState2 &field,
-                                               int a) const override;
-
+    InFeatureSingle getInNodeSingle(const FieldState2 &field,
+                                    int a) const override {
+        return Pumila10::getInNodeSingleS(field, a);
+    }
+    PUMILA_DLL static InFeatureSingle getInNodeSingleS(const FieldState2 &field,
+                                                      int a);
+    Eigen::MatrixXd truncateInNodes(const Eigen::MatrixXd &in) const override {
+        return Pumila2::NNModel::truncateInNodes(in);
+    }
     double calcReward(const FieldState2 &field) const override {
         return Pumila10::calcRewardS(field);
     }

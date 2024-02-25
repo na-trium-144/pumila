@@ -15,7 +15,7 @@ int Chain::connectionNum() const {
         connections.begin(), connections.begin() + connection_num, 0,
         [](int acc, const auto &con) { return acc + con.second; });
 }
-int Chain::chainBonus() const {
+int Chain::chainBonus(int chain_num) {
     if (chain_num < 4) {
         return 8 * (chain_num - 1);
     } else {

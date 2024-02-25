@@ -1,4 +1,5 @@
 #include <pumila/models/pumila10.h>
+#include <pumila/models/pumila11.h>
 
 namespace PUMILA_NS {
 template <typename NNModel>
@@ -33,7 +34,7 @@ void Pumila10::save(std::ostream &os) {
 }
 
 Pumila10::InFeatureSingle
-Pumila10::getInNodeSingle(const FieldState2 &field_copy, int a) const {
+Pumila10::getInNodeSingleS(const FieldState2 &field_copy, int a) {
     InFeatureSingle feat;
     feat.field_next = field_copy;
     feat.field_next.putNext(actions[a]);
@@ -229,7 +230,7 @@ void Pumila10Base<NNModel>::learnStep(std::shared_ptr<FieldState2> field) {
     }
     pool.detach_task([this, pumila, next, next2 = std::move(next2),
                       next3 = std::move(next3)] {
-        auto in_t = Pumila2::NNModel::truncateInNodes(next.get().in);
+        auto in_t = truncateInNodes(next.get().in);
         NNResult fw_result;
         fw_result = forward(in_t);
         Eigen::VectorXd delta_2(fw_result.q.rows());
@@ -294,5 +295,6 @@ void Pumila10Base<NNModel>::learnStep(std::shared_ptr<FieldState2> field) {
 }
 
 template class Pumila10Base<Pumila8s::NNModel>;
+template class Pumila10Base<Pumila11::NNModel>;
 
 } // namespace PUMILA_NS

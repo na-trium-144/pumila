@@ -16,6 +16,11 @@ void initPumila10Module(py::module_ &m) {
             .def_readwrite("main", &Pumila10::main)
             .def_readwrite("target", &Pumila10::target)
             .def_readwrite("diff_history", &Pumila10::diff_history)
+            .def(
+                "get_in_nodes",
+                [](std::shared_ptr<Pumila10> pumila, const FieldState2 &field) {
+                    return pumila->getInNodes(field).get();
+                })
             .def("get_action_rnd",
                  py::overload_cast<std::shared_ptr<FieldState2>, double>(
                      &Pumila10::getActionRnd))
@@ -28,4 +33,8 @@ void initPumila10Module(py::module_ &m) {
             .def("copy", &Pumila10::copy)
             .def("forward", &Pumila10::forward)
             .def("backward", &Pumila10::backward);
+    py::class_<Pumila10::InFeatures>(pumila10, "InFeatures")
+        .def("field", [](const Pumila10::InFeatures &feat,
+                         int a) { return feat.each[a].get().field_next; })
+        .def_readwrite("in", &Pumila10::InFeatures::in);
 }
