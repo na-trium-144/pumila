@@ -4,6 +4,7 @@
 #include <string>
 
 int main(int argc, char const *argv[]) {
+    using namespace std::string_literals;
     CLI::App app{"pumila-sim"};
 
     std::vector<std::string> models = {
@@ -30,7 +31,11 @@ int main(int argc, char const *argv[]) {
         models.push_back("pumila8s_" + std::to_string(i));
     }
     models.push_back("pumila9_" + std::to_string(300));
-    
+    for (const std::string &i :
+         std::array<std::string, 4>{"0.5", "0.75", "0.9", "0.99"}) {
+        models.push_back("pumila11_300_"s + i + "_100000"s);
+    }
+
     std::vector<std::string> selected_models;
     app.add_option("model", selected_models, "Select Player or AI Model")
         ->required()
@@ -74,6 +79,9 @@ int main(int argc, char const *argv[]) {
             model->loadFile(selected_models[i]);
         } else if (selected_models[i].starts_with("pumila9")) {
             model = std::make_shared<pumila::Pumila9>(1);
+            model->loadFile(selected_models[i]);
+        } else if (selected_models[i].starts_with("pumila11")) {
+            model = std::make_shared<pumila::Pumila11>(1, 1);
             model->loadFile(selected_models[i]);
         }
         sim.push_back(std::make_shared<pumila::GameSim>(
