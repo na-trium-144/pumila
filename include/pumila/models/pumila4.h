@@ -100,8 +100,8 @@ class Pumila4 : public Pumila {
         return Pumila2::calcRewardS(field);
     }
 
-    int getAction(std::shared_ptr<FieldState2> field) override {
-        return getAction(std::make_shared<FieldState>(*field));
+    int getAction(const FieldState2 &field) override {
+        return getAction(std::make_shared<FieldState>(field));
     }
     int getAction(std::shared_ptr<FieldState> field) {
         return getActionRnd(field, 0);

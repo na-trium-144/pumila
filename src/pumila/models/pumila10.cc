@@ -173,10 +173,10 @@ void Pumila10Base<NNModel>::backward(const NNResult &result,
 }
 
 template <typename NNModel>
-int Pumila10Base<NNModel>::getActionRnd(std::shared_ptr<FieldState2> field,
+int Pumila10Base<NNModel>::getActionRnd(const FieldState2 &field,
                                         double rnd_p) {
     NNResult fw_result;
-    auto in_feat = getInNodes(*field).get();
+    auto in_feat = getInNodes(field).get();
     fw_result = forward(in_feat.in);
     for (int a2 = 0; a2 < ACTIONS_NUM; a2++) {
         if (/*!in_feat.each[a2].get().field_next.is_valid ||*/
@@ -208,14 +208,14 @@ double Pumila10::calcRewardS(const FieldState2 &field) {
 }
 
 template <typename NNModel>
-void Pumila10Base<NNModel>::learnStep(std::shared_ptr<FieldState2> field) {
+void Pumila10Base<NNModel>::learnStep(const FieldState2 &field) {
     {
         std::unique_lock lock(learning_m);
         learning_cond.wait(lock, [&] { return step_started < BATCH_SIZE; });
         step_started++;
     }
     auto pumila = shared_from_this();
-    auto next = getInNodes(*field).share();
+    auto next = getInNodes(field).share();
     std::array<std::shared_future<InFeatures>, ACTIONS_NUM> next2;
     std::array<std::array<std::shared_future<InFeatures>, ACTIONS_NUM>,
                ACTIONS_NUM>

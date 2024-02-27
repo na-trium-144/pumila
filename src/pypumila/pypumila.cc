@@ -111,9 +111,7 @@ PYBIND11_MODULE(pypumila, m) {
     py::class_<FieldState2::NextList>(fs2, "NextList")
         .def("get", &FieldState2::NextList::get)
         .def("update", &FieldState2::NextList::update)
-        .def("pop", &FieldState2::NextList::pop)
-        .def("push", &FieldState2::NextList::push)
-        .def("size", &FieldState2::NextList::size);
+        .def("pop", &FieldState2::NextList::pop);
     py::class_<FieldState2::StepInfo>(fs2, "StepInfo")
         .def_readwrite("num", &FieldState2::StepInfo::num)
         .def_readwrite("chain_num", &FieldState2::StepInfo::chain_num)
@@ -171,7 +169,6 @@ PYBIND11_MODULE(pypumila, m) {
                  std::shared_lock lock(sim->field_m);
                  return std::make_shared<FieldState2>(*sim->field);
              })
-        .def_readwrite("current_chain", &GameSim::current_chain)
         .def_readwrite("model", &GameSim::model)
         .def("has_model", &GameSim::hasModel)
         .def("move_pair", &GameSim::movePair)
@@ -189,8 +186,8 @@ PYBIND11_MODULE(pypumila, m) {
         .def("quit", &Window::quit)
         .def("is_running", &Window::isRunning);
     py::class_<Pumila, std::shared_ptr<Pumila>>(m, "Pumila")
-        .def("get_action", py::overload_cast<std::shared_ptr<FieldState2>>(
-                               &Pumila::getAction))
+        .def("get_action",
+             py::overload_cast<const FieldState2 &>(&Pumila::getAction))
         .def("get_action", py::overload_cast<const std::shared_ptr<GameSim> &>(
                                &Pumila::getAction))
         .def("action_coeff", &Pumila::actionCoeff)

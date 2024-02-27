@@ -10,8 +10,10 @@ void FieldState2::Field::set(std::size_t x, std::size_t y, Puyo p) {
     if (inRange(x, y)) {
         if (p == Puyo::none && field.at(y).at(x) != Puyo::none) {
             puyo_num--;
+            assert(puyo_num >= 0);
         } else if (p != Puyo::none && field.at(y).at(x) == Puyo::none) {
             puyo_num++;
+            assert(puyo_num <= static_cast<int>(WIDTH * HEIGHT));
         }
         field.at(y).at(x) = p;
         updated.at(y).at(x) = true;
@@ -37,34 +39,37 @@ bool FieldState2::Field::getUpdated(std::size_t x, std::size_t y) const {
     return updated.at(y).at(x);
 }
 
-PuyoPair FieldState2::NextList::get() const {
-    if (next_num == 0) {
-        throw std::out_of_range("field.next is not available");
+FieldState2::NextList::NextList(typename std::mt19937::result_type seed)
+    : rnd_next(seed) {
+    for (std::size_t i = 0; i < next.size(); i++) {
+        next[i] = PuyoPair{nextColor(), nextColor()};
     }
-    return next[0];
 }
-void FieldState2::NextList::update(const PuyoPair &pp) {
-    if (next_num == 0) {
-        throw std::out_of_range("field.next is not available");
+Puyo FieldState2::NextList::nextColor() {
+    int next_n = static_cast<int>(
+        (static_cast<double>(rnd_next()) - rnd_next.min()) /
+        (static_cast<double>(rnd_next.max()) - rnd_next.min()) * 4.0);
+    switch (next_n) {
+    case 0:
+        return Puyo::red;
+    case 1:
+        return Puyo::blue;
+    case 2:
+        return Puyo::green;
+    case 3:
+    default:
+        return Puyo::yellow;
     }
-    next[0] = pp;
-}
-void FieldState2::NextList::pop() {
-    if (next_num == 0) {
-        throw std::out_of_range("field.next is not available");
-    }
-    for (std::size_t i = 1; i < next_num && i < next.size(); i++) {
-        next[i - 1] = next[i];
-    }
-    next_num--;
-}
-void FieldState2::NextList::push(const PuyoPair &pp) {
-    if (next_num >= next.size()) {
-        throw std::out_of_range("field.next is full");
-    }
-    next[next_num++] = pp;
 }
 
+PuyoPair FieldState2::NextList::get() const { return next[0]; }
+void FieldState2::NextList::update(const PuyoPair &pp) { next[0] = pp; }
+void FieldState2::NextList::pop() {
+    for (std::size_t i = 1; i < next.size(); i++) {
+        next[i - 1] = next[i];
+    }
+    next[next.size() - 1] = PuyoPair{nextColor(), nextColor()};
+}
 
 void FieldState2::GarbageInfo::pushScore(int score_add) {
     garbage_score += score_add;
@@ -158,23 +163,41 @@ void FieldState2::putNext(const Action &action) {
     current_step_.chain_num = 0;
     current_step_.chain_score = 0;
 }
-void FieldState2::putGarbage() {
+void FieldState2::putGarbage(
+    std::array<std::pair<std::size_t, std::size_t>, 30> *garbage_list,
+    std::size_t *garbage_num) {
     std::size_t r = 0;
-    std::size_t garbage_num = static_cast<std::size_t>(garbage_.getReady());
-    for (; (r + 1) * WIDTH <= garbage_num && r < 5; r++) {
+    std::size_t garbage_num_all = static_cast<std::size_t>(garbage_.getReady());
+    std::size_t garbage_index = 0;
+    for (; (r + 1) * WIDTH <= garbage_num_all && r < 5; r++) {
         for (std::size_t x = 0; x < WIDTH; x++) {
-            field_.set(x, getHeight(x), Puyo::garbage);
+            auto y = getHeight(x);
+            field_.set(x, y, Puyo::garbage);
+            if (garbage_list) {
+                garbage_list->at(garbage_index++) = std::make_pair(x, y);
+            }
         }
     }
     if (r < 5) {
         std::array<int, WIDTH> target_x = {0, 1, 2, 3, 4, 5};
-        std::shuffle(target_x.begin(), target_x.end(), rnd);
-        for (std::size_t i = 0; r * WIDTH + i < garbage_num; i++) {
-            field_.set(target_x[i], getHeight(target_x[i]), Puyo::garbage);
+        std::shuffle(target_x.begin(), target_x.end(), rnd_general);
+        for (std::size_t i = 0; r * WIDTH + i < garbage_num_all; i++) {
+            auto y = getHeight(target_x[i]);
+            field_.set(target_x[i], y, Puyo::garbage);
+            if (garbage_list) {
+                garbage_list->at(garbage_index++) =
+                    std::make_pair(target_x[i], y);
+            }
         }
-        garbage_.addGarbage(-1 * static_cast<int>(garbage_num));
+        garbage_.addGarbage(-1 * static_cast<int>(garbage_num_all));
+        if (garbage_num) {
+            *garbage_num = garbage_num_all;
+        }
     } else {
         garbage_.addGarbage(-1 * static_cast<int>(WIDTH * 5));
+        if (garbage_num) {
+            *garbage_num = WIDTH * 5;
+        }
     }
 }
 

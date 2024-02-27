@@ -112,38 +112,39 @@ void Window::draw() {
     SDL_RenderClear(sdl_renderer);
 
     for (std::size_t i = 0; i < sim.size(); i++) {
-        std::shared_lock lock(sim[i]->field_m);
+        std::shared_lock lock_f(sim[i]->field_m);
+        std::lock_guard lock_s(sim[i]->step_m);
         // 枠
         SDL_SetRenderDrawColor(sdl_renderer, 0, 0, 0, 255);
         SDL_Rect field_rect = {FIELD_X[i], FIELD_Y - PUYO_SIZE * 12,
                                PUYO_SIZE * 6, PUYO_SIZE * 12};
         SDL_RenderDrawRect(sdl_renderer, &field_rect);
 
+        FieldState2 *field = &*sim[i]->field;
+        auto fall_phase =
+            dynamic_cast<GameSim::FallPhase *>(sim[i]->phase.get());
+        if (fall_phase) {
+            field = &fall_phase->display_field;
+        }
         if (sim[i]->isFreePhase()) {
-            auto current_pair = sim[i]->field->next().get();
+            auto current_pair = field->next().get();
             drawPuyo(current_pair.bottom, current_pair.bottomX(),
-                     sim[i]->field->getNextHeight(current_pair).first, i,
-                     false);
+                     field->getNextHeight(current_pair).first, i, false);
             drawPuyo(current_pair.top, current_pair.topX(),
-                     sim[i]->field->getNextHeight(current_pair).second, i,
-                     false);
+                     field->getNextHeight(current_pair).second, i, false);
             drawPuyo(current_pair.bottom, current_pair.bottomX(),
                      current_pair.bottomY(), i, true);
             drawPuyo(current_pair.top, current_pair.topX(), current_pair.topY(),
                      i, true);
         }
         std::size_t next_p = sim[i]->isFreePhase() ? 1 : 0;
-        if (sim[i]->field->next().size() > next_p) {
-            drawPuyo(sim[i]->field->next()[next_p].bottom, 6.5, 10.5, i, true);
-            drawPuyo(sim[i]->field->next()[next_p].top, 6.5, 11.5, i, true);
-        }
-        if (sim[i]->field->next().size() > next_p + 1) {
-            drawPuyo(sim[i]->field->next()[next_p + 1].bottom, 8, 9.5, i, true);
-            drawPuyo(sim[i]->field->next()[next_p + 1].top, 8, 10.5, i, true);
-        }
+        drawPuyo(field->next()[next_p].bottom, 6.5, 10.5, i, true);
+        drawPuyo(field->next()[next_p].top, 6.5, 11.5, i, true);
+        drawPuyo(field->next()[next_p + 1].bottom, 8, 9.5, i, true);
+        drawPuyo(field->next()[next_p + 1].top, 8, 10.5, i, true);
         for (std::size_t y = 0; y < FieldState2::HEIGHT; y++) {
             for (std::size_t x = 0; x < FieldState2::WIDTH; x++) {
-                drawPuyo(sim[i]->field->field().get(x, y), x, y, i, true);
+                drawPuyo(field->field().get(x, y), x, y, i, true);
             }
         }
 
@@ -161,7 +162,7 @@ void Window::draw() {
             SDL_RenderCopy(sdl_renderer, text, NULL, &rect);
             SDL_DestroyTexture(text);
 
-            ss << sim[i]->field->totalScore();
+            ss << field->totalScore();
             text = drawText(sdl_renderer, ss.str(), ttf_font, {0, 0, 0, 255},
                             &text_w, &text_h);
             rect = {FIELD_X[i] + PUYO_SIZE * 6 - text_w - 10, FIELD_Y + 35,
@@ -170,7 +171,8 @@ void Window::draw() {
             SDL_DestroyTexture(text);
             ss.str("");
 
-            int ready = sim[i]->field->garbage().getReady();
+
+            int ready = field->garbage().getReady();
             bool red = ready >= 30;
             auto garbage_gauge = [](int garbage) {
                 return static_cast<int>(
@@ -198,7 +200,7 @@ void Window::draw() {
                 SDL_RenderFillRect(sdl_renderer, &rect);
             }
 
-            int current = sim[i]->field->garbage().getCurrent();
+            int current = field->garbage().getCurrent();
             if (current > 0) {
                 ss << "- " << current;
                 text = drawText(sdl_renderer, ss.str(), ttf_font,
@@ -244,9 +246,9 @@ void Window::draw() {
                 SDL_DestroyTexture(text);
                 ss.str("");
             }
-            if (sim[i]->current_chain) {
-                ss << sim[i]->current_chain->scoreA() << " x "
-                   << sim[i]->current_chain->scoreB();
+            if (fall_phase && fall_phase->current_chain) {
+                ss << fall_phase->current_chain->scoreA() << " x "
+                   << fall_phase->current_chain->scoreB();
                 text = drawText(sdl_renderer, ss.str(), ttf_font,
                                 {0, 0, 0, 255}, &text_w, &text_h);
                 rect = {FIELD_X[i] + PUYO_SIZE * 6 - text_w - 10, FIELD_Y + 60,
@@ -255,7 +257,7 @@ void Window::draw() {
                 SDL_DestroyTexture(text);
                 ss.str("");
 
-                ss << sim[i]->field->currentStep().chain_num;
+                ss << fall_phase->current_chain->chain_num;
                 text = drawText(sdl_renderer, ss.str(), ttf_font,
                                 {0, 0, 0, 255}, &text_w, &text_h);
                 rect = {FIELD_X[i] + static_cast<int>(PUYO_SIZE * 7.5) -
@@ -266,7 +268,7 @@ void Window::draw() {
                 ss.str("");
 
                 ss << "chain";
-                if (sim[i]->field->currentStep().chain_num >= 2) {
+                if (fall_phase->current_chain->chain_num >= 2) {
                     ss << "s";
                 }
                 ss << "!";

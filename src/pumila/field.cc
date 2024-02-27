@@ -9,7 +9,7 @@
 namespace PUMILA_NS {
 FieldState::FieldState(const FieldState2 &field2)
     : field(field2.field().field), updated(field2.field().updated),
-      next(field2.next().next), next_num(field2.next().next_num),
+      next(field2.next().next), next_num(field2.next().next.size()),
       step_num(field2.currentStep().num),
       prev_chain_num(field2.currentStep().chain_num),
       prev_chain_score(field2.currentStep().chain_score),

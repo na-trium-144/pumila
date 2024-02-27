@@ -87,17 +87,16 @@ class Pumila10Base : public Pumila {
     }
     virtual double calcReward(const FieldState2 &field) const = 0;
 
-    int getAction(std::shared_ptr<FieldState2> field) override {
+    int getAction(const FieldState2 &field) override {
         return getActionRnd(field, 0);
     }
-    PUMILA_DLL int getActionRnd(std::shared_ptr<FieldState2> field,
-                                double rnd_p);
+    PUMILA_DLL int getActionRnd(const FieldState2 &field, double rnd_p);
 
     int getActionRnd(const std::shared_ptr<GameSim> &sim, double rnd_p) {
-        return getActionRnd(sim->field, rnd_p);
+        return getActionRnd(*sim->field, rnd_p);
     }
 
-    PUMILA_DLL void learnStep(std::shared_ptr<FieldState2> field);
+    PUMILA_DLL void learnStep(const FieldState2 &field);
 
     std::vector<double> diff_history = {};
 };
@@ -120,7 +119,7 @@ class Pumila10 : public Pumila10Base<Pumila8s::NNModel> {
         return Pumila10::getInNodeSingleS(field, a);
     }
     PUMILA_DLL static InFeatureSingle getInNodeSingleS(const FieldState2 &field,
-                                                      int a);
+                                                       int a);
     Eigen::MatrixXd truncateInNodes(const Eigen::MatrixXd &in) const override {
         return Pumila2::NNModel::truncateInNodes(in);
     }

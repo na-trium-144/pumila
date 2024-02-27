@@ -57,9 +57,9 @@ class Pumila : public std::enable_shared_from_this<Pumila> {
      * \return 0〜21 (actionsに対応)
      *
      */
-    virtual int getAction(std::shared_ptr<FieldState2> field) = 0;
+    virtual int getAction(const FieldState2 &field) = 0;
     int getAction(const std::shared_ptr<GameSim> &sim) {
-        return getAction(sim->field);
+        return getAction(*sim->field);
     }
     double actionCoeff() const { return action_coeff.load(); }
 };

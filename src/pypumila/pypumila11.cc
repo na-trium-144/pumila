@@ -22,7 +22,7 @@ void initPumila11Module(py::module_ &m) {
                     return pumila->getInNodes(field).get();
                 })
             .def("get_action_rnd",
-                 py::overload_cast<std::shared_ptr<FieldState2>, double>(
+                 py::overload_cast<const FieldState2 &, double>(
                      &Pumila11::getActionRnd))
             .def("get_action_rnd",
                  py::overload_cast<const std::shared_ptr<GameSim> &, double>(
