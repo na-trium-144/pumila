@@ -25,9 +25,6 @@ struct NNModel11 {
  * * 入力にスコアをそのままではなく連鎖1回ごとにわけて与えるようにする
  */
 class Pumila11 : public Pumila10Base<NNModel11> {
-    void load(std::istream &is) override;
-    void save(std::ostream &os) override;
-
   public:
     std::string name() const override { return "pumila11"; }
     explicit Pumila11(int hidden_nodes, double gamma)

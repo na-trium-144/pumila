@@ -6,7 +6,8 @@ template <typename NNModel>
 Pumila10Base<NNModel>::Pumila10Base(int hidden_nodes, double gamma)
     : Pumila(), gamma(gamma), main(hidden_nodes), target(main) {}
 
-void Pumila10::load(std::istream &is) {
+template <typename NNModel>
+void Pumila10Base<NNModel>::load(std::istream &is) {
     std::lock_guard lock_main(main_m);
     std::lock_guard lock_target(target_m);
     {
@@ -22,7 +23,8 @@ void Pumila10::load(std::istream &is) {
         target = main;
     }
 }
-void Pumila10::save(std::ostream &os) {
+template <typename NNModel>
+void Pumila10Base<NNModel>::save(std::ostream &os) {
     std::shared_lock lock_main(main_m);
     os.write(reinterpret_cast<char *>(&gamma), sizeof(gamma));
     os.write(reinterpret_cast<char *>(&main.hidden_nodes),
@@ -72,7 +74,7 @@ Pumila10::getInNodeSingleS(const FieldState2 &field_copy, int a) {
             }
         }
     }
-    in_nodes.score_diff = feat.field_next.currentStep().chain_score;
+    in_nodes.score_diff = feat.field_next.currentStep().chainScore();
     return feat;
 }
 
@@ -204,7 +206,7 @@ int Pumila10Base<NNModel>::getActionRnd(const FieldState2 &field,
 
 // pumila5より
 double Pumila10::calcRewardS(const FieldState2 &field) {
-    return field.currentStep().chain_score;
+    return field.currentStep().chainScore();
 }
 
 template <typename NNModel>

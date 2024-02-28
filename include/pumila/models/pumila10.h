@@ -12,6 +12,9 @@ namespace PUMILA_NS {
  */
 template <typename NNModel>
 class Pumila10Base : public Pumila {
+    void load(std::istream &is) override;
+    void save(std::ostream &os) override;
+
   public:
     using NNResult = Pumila8s::NNResult;
 
@@ -102,9 +105,6 @@ class Pumila10Base : public Pumila {
 };
 
 class Pumila10 : public Pumila10Base<Pumila8s::NNModel> {
-    void load(std::istream &is) override;
-    void save(std::ostream &os) override;
-
   public:
     std::string name() const override { return "pumila10"; }
     explicit Pumila10(int hidden_nodes, double gamma)

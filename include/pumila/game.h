@@ -152,14 +152,8 @@ class GameSim {
         PUMILA_DLL explicit FallPhase(GameSim *sim);
         PhaseEnum get() const override { return PhaseEnum::fall; }
         PUMILA_DLL std::unique_ptr<Phase> step() override;
-        static constexpr int FALL_T = 20;
-        static constexpr int CHAIN_T = 30;
-        struct WaitTime {
-            int wait_t;
-            std::optional<Chain> chain;
-        };
-        std::optional<Chain> current_chain;
-        std::deque<WaitTime> wait_list;
+        const Chain *current_chain;
+        int fall_wait_t;
         FieldState2 display_field;
     };
 };

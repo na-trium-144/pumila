@@ -258,33 +258,28 @@ std::unique_ptr<GameSim::Phase> GameSim::FreePhase::step() {
 }
 
 GameSim::FallPhase::FallPhase(GameSim *sim)
-    : Phase(sim), wait_list(), display_field(*sim->field) {
+    : Phase(sim), current_chain(nullptr), fall_wait_t(0),
+      display_field(*sim->field) {
     std::shared_lock lock(sim->field_m);
-    wait_list.emplace_back(0, std::nullopt);
-    while (true) {
-        if (sim->field->fall()) {
-            wait_list.emplace_back(FALL_T, std::nullopt);
-        }
-        Chain chain = sim->field->deleteChain();
-        if (chain.isEmpty()) {
-            break;
-        }
-        wait_list.emplace_back(CHAIN_T, std::move(chain));
+    if (sim->field->fall()) {
+        fall_wait_t = Chain::FALL_T;
     }
+    sim->field->deleteChainRecurse();
 }
 std::unique_ptr<GameSim::Phase> GameSim::FallPhase::step() {
-    if (--wait_list[0].wait_t < 0) {
-        wait_list.pop_front();
-        if (wait_list.size() == 0) {
+    if (fall_wait_t > 0) {
+        fall_wait_t--;
+    } else {
+        auto current_chain_new = sim->field->currentStep().step();
+        if (current_chain_new == nullptr) {
             assert(*sim->field == display_field);
             return std::make_unique<GameSim::GarbagePhase>(sim);
-        } else {
-            if (wait_list[0].chain) {
-                display_field.deleteChain();
-                current_chain = wait_list[0].chain;
-            } else {
-                display_field.fall();
-            }
+        } else if (current_chain_new != current_chain) {
+            current_chain = current_chain_new;
+            display_field.deleteChain();
+        }
+        if (current_chain->wait_time == Chain::FALL_T) {
+            display_field.fall();
         }
     }
     return nullptr;

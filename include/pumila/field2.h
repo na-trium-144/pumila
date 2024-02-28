@@ -71,13 +71,26 @@ class FieldState2 {
             return next == other.next && rnd_next == other.rnd_next;
         }
     };
-    struct StepInfo {
-        int num = 0;
-        int chain_num = 0, chain_score = 0;
+    class StepInfo {
+        int num_;
+        std::vector<Chain> chains_;
+        int chain_score_;
+
+      public:
+        explicit StepInfo(int num) : num_(num), chains_(), chain_score_(0) {}
+        PUMILA_DLL void pushChain(const Chain &chain);
+        std::size_t chainNum() const { return chains_.size(); }
+        int num() const { return num_; }
+        const std::vector<Chain> &chains() const { return chains_; }
+        int chainScore() const { return chain_score_; }
+        /*!
+         * \brief wait_timeを1減らし、現在waitしている連鎖の情報を返す
+         */
+        PUMILA_DLL const Chain *step();
 
         bool operator==(const StepInfo &other) const {
-            return num == other.num && chain_num == other.chain_num &&
-                   chain_score == other.chain_score;
+            return num_ == other.num_ && chains_ == other.chains_ &&
+                   chain_score_ == other.chain_score_;
         }
     };
     class GarbageInfo {
@@ -117,6 +130,9 @@ class FieldState2 {
     NextList next_;
     /*!
      * \brief 現在、1手前、最後に連鎖したときの手数と連鎖の情報
+     *
+     * * putNextでcurrentをprevに移動し初期化、
+     * * deleteChainでcurrentを更新
      */
     StepInfo current_step_, prev_step_, last_chain_step_;
     /*!
@@ -157,13 +173,14 @@ class FieldState2 {
 
     FieldState2(
         typename std::mt19937::result_type seed = std::random_device()())
-        : field_(), next_(seed), current_step_(), prev_step_(),
-          last_chain_step_(), garbage_() {}
+        : field_(), next_(seed), current_step_(0), prev_step_(0),
+          last_chain_step_(0), garbage_() {}
 
     const Field &field() const { return field_; }
     NextList &next() { return next_; }
     const NextList &next() const { return next_; }
     const StepInfo &currentStep() const { return current_step_; }
+    StepInfo &currentStep() { return current_step_; }
     const StepInfo &prevStep() const { return prev_step_; }
     const StepInfo &lastChainStep() const { return last_chain_step_; }
     int prevPuyoNum() const { return prev_puyo_num_; }

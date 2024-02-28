@@ -71,6 +71,22 @@ void FieldState2::NextList::pop() {
     next[next.size() - 1] = PuyoPair{nextColor(), nextColor()};
 }
 
+void FieldState2::StepInfo::pushChain(const Chain &chain) {
+    assert(chain.chain_num == static_cast<int>(chains_.size() + 1));
+    chains_.push_back(chain);
+    chain_score_ += chain.score();
+}
+const Chain *FieldState2::StepInfo::step() {
+    for (std::size_t i = 0; i < chains_.size(); i++) {
+        if (chains_[i].wait_time > 0) {
+            chains_[i].wait_time--;
+            return &chains_[i];
+        }
+    }
+    return nullptr;
+}
+
+
 void FieldState2::GarbageInfo::pushScore(int score_add) {
     garbage_score += score_add;
     int garbage_add = garbage_score / rate;
@@ -155,13 +171,11 @@ void FieldState2::putNext(const Action &action) {
     field_.set(pp.topX(), yt, pp.top);
     field_.set(pp.bottomX(), yb, pp.bottom);
     next_.pop();
-    if (current_step_.chain_num > 0) {
+    if (current_step_.chainNum() > 0) {
         last_chain_step_ = current_step_;
     }
-    prev_step_ = current_step_;
-    current_step_.num++;
-    current_step_.chain_num = 0;
-    current_step_.chain_score = 0;
+    prev_step_ = std::move(current_step_);
+    current_step_ = StepInfo(prev_step_.num() + 1);
 }
 void FieldState2::putGarbage(
     std::array<std::pair<std::size_t, std::size_t>, 30> *garbage_list,
@@ -217,7 +231,7 @@ bool FieldState2::checkNextCollision(const Action &action) const {
 }
 
 Chain FieldState2::deleteChain() {
-    int chain_num = current_step_.chain_num + 1;
+    int chain_num = current_step_.chainNum() + 1;
     Chain chain(chain_num);
     FieldState2 state_tmp = *this;
     for (std::size_t y = 0; y < HEIGHT; y++) {
@@ -234,8 +248,7 @@ Chain FieldState2::deleteChain() {
     }
     if (!chain.isEmpty()) {
         int chain_score = chain.score();
-        current_step_.chain_num = chain_num;
-        current_step_.chain_score += chain_score;
+        current_step_.pushChain(chain);
         total_score_ += chain_score;
         garbage_.pushScore(chain_score);
     }
