@@ -77,7 +77,7 @@ class Pumila12Base : public Pumila {
     getInNodeSingle(const FieldState2 &field, int a,
                     const std::optional<FieldState2> &op_field) const = 0;
     virtual Eigen::MatrixXd
-    truncateInNodes(const Eigen::MatrixXd &in) const = 0;
+    transposeInNodes(const Eigen::MatrixXd &in) const = 0;
 
     virtual double
     calcReward(const FieldState2 &field,
@@ -103,8 +103,9 @@ class Pumila12Base : public Pumila {
         }
     }
 
-    PUMILA_DLL void learnStep(const FieldState2 &field, int a,
+    PUMILA_DLL void learnStep(const FieldState2 &field_before, int a,
                               const std::optional<FieldState2> &op_field_before,
+                              const FieldState2 &field_after,
                               const std::optional<FieldState2> &op_field_after);
 
     std::vector<double> diff_history = {};
@@ -137,8 +138,15 @@ struct NNModel12 {
  * pumila11ベース
  *
  * * 敵フィールド追加
- *   * q(sim.field + action, op.field) <- reward(sim.field + action, op.field +
- * action)
+ * q(sim.field(n) + action, op.field(n))
+ *   <- reward(sim.field(n+1), op.field(n+1))
+ *      + γ * max q(sim.field(n+1) + action, op_field(n+1))
+ *   ≒ reward(sim.field(n+1), op.field(n+1))
+ *      + γ * max(
+ *          reward(sim.field(n+1) + action, op.field(n+1))
+ *          + γ * max q(sim.field(n+1) + action + action, op_field(n+1))
+ *      )
+ *   2手先は不正確な気がするので一旦1手先だけ
  * * rewardは自分ゲームオーバーで-1000、敵ゲームオーバーで+1000
  */
 class Pumila12 : public Pumila12Base<NNModel12> {
@@ -146,6 +154,7 @@ class Pumila12 : public Pumila12Base<NNModel12> {
     std::string name() const override { return "pumila12"; }
     explicit Pumila12(int hidden_nodes, double gamma)
         : Pumila12Base(hidden_nodes, gamma) {}
+    Pumila12(const std::string &name) : Pumila12(1, 1) { loadFile(name); }
     std::shared_ptr<Pumila12> copy() {
         return std::make_shared<Pumila12>(*this);
     }
@@ -168,10 +177,10 @@ class Pumila12 : public Pumila12Base<NNModel12> {
     PUMILA_DLL static InFeatureSingle
     getInNodeSingleS(const FieldState2 &field, int a,
                      const std::optional<FieldState2> &op_field);
-    Eigen::MatrixXd truncateInNodes(const Eigen::MatrixXd &in) const override {
-        return Pumila12::truncateInNodesS(in);
+    Eigen::MatrixXd transposeInNodes(const Eigen::MatrixXd &in) const override {
+        return Pumila12::transposeInNodesS(in);
     }
     PUMILA_DLL static Eigen::MatrixXd
-    truncateInNodesS(const Eigen::MatrixXd &in);
+    transposeInNodesS(const Eigen::MatrixXd &in);
 };
 } // namespace PUMILA_NS

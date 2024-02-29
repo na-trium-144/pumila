@@ -66,8 +66,8 @@ class Pumila4 : public Pumila {
                                  const Eigen::VectorXd &diff);
 
         inline static Eigen::MatrixXd
-        truncateInNodes(const Eigen::MatrixXd &in) {
-            return Pumila2::NNModel::truncateInNodes(in);
+        transposeInNodes(const Eigen::MatrixXd &in) {
+            return Pumila2::NNModel::transposeInNodes(in);
         }
     };
     NNModel main, target;

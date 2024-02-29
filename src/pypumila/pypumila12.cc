@@ -13,6 +13,10 @@ void initPumila12Module(py::module_ &m) {
                  [](int n, double g) {
                      return std::make_shared<Pumila12>(n, g);
                  })
+            .def("make_shared",
+                 [](const std::string &name) {
+                     return std::make_shared<Pumila12>(name);
+                 })
             .def_readwrite("main", &Pumila12::main)
             .def_readwrite("target", &Pumila12::target)
             .def_readwrite("diff_history", &Pumila12::diff_history)

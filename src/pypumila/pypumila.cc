@@ -173,6 +173,10 @@ PYBIND11_MODULE(pypumila, m) {
                  return std::make_shared<FieldState2>(*sim->field);
              })
         .def_readwrite("model", &GameSim::model)
+        .def_readwrite("enable_garbage", &GameSim::enable_garbage)
+        .def_readwrite("is_over", &GameSim::is_over)
+        .def("stop_action", &GameSim::stopAction)
+        .def("set_opponent_sim", &GameSim::setOpponentSim)
         .def("has_model", &GameSim::hasModel)
         .def("move_pair", &GameSim::movePair)
         .def("rot_pair", &GameSim::rotPair)

@@ -45,10 +45,21 @@ void GameSim::reset(typename std::mt19937::result_type seed) {
     phase = std::make_unique<GameSim::GarbagePhase>(this); // nextが補充される
 }
 
-GameSim::~GameSim() {
+void GameSim::stopAction() {
     running.store(false);
     if (model_action_thread) {
         model_action_thread->join();
+    }
+}
+
+void GameSim::setOpponentSim(const std::shared_ptr<GameSim> &opponent_s) {
+    auto prev_opponent_s = opponent.lock();
+    if (prev_opponent_s) {
+        prev_opponent_s->opponent.reset();
+    }
+    opponent = opponent_s;
+    if (opponent_s) {
+        opponent_s->opponent = shared_from_this();
     }
 }
 

@@ -83,7 +83,7 @@ class Pumila10Base : public Pumila {
     virtual InFeatureSingle getInNodeSingle(const FieldState2 &field,
                                             int a) const = 0;
     virtual Eigen::MatrixXd
-    truncateInNodes(const Eigen::MatrixXd &in) const = 0;
+    transposeInNodes(const Eigen::MatrixXd &in) const = 0;
 
     double calcReward(std::shared_ptr<FieldState2> field) const {
         return calcReward(*field);
@@ -110,6 +110,7 @@ class Pumila10 : public Pumila10Base<Pumila8s::NNModel> {
     std::string name() const override { return "pumila10"; }
     explicit Pumila10(int hidden_nodes, double gamma)
         : Pumila10Base(hidden_nodes, gamma) {}
+    Pumila10(const std::string &name) : Pumila10(1, 1) { loadFile(name); }
     std::shared_ptr<Pumila10> copy() {
         return std::make_shared<Pumila10>(*this);
     }
@@ -121,8 +122,8 @@ class Pumila10 : public Pumila10Base<Pumila8s::NNModel> {
     }
     PUMILA_DLL static InFeatureSingle getInNodeSingleS(const FieldState2 &field,
                                                        int a);
-    Eigen::MatrixXd truncateInNodes(const Eigen::MatrixXd &in) const override {
-        return Pumila2::NNModel::truncateInNodes(in);
+    Eigen::MatrixXd transposeInNodes(const Eigen::MatrixXd &in) const override {
+        return Pumila2::NNModel::transposeInNodes(in);
     }
     double calcReward(const FieldState2 &field) const override {
         return Pumila10::calcRewardS(field);

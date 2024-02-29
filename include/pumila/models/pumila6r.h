@@ -38,6 +38,7 @@ class Pumila6r : public Pumila {
         main = other.main;
         target = main->copy();
     }
+    Pumila6r(const std::string &name) : Pumila6r(1) { loadFile(name); }
     auto &operator=(const Pumila6r &) = delete;
     std::shared_ptr<Pumila6r> copy() {
         return std::make_shared<Pumila6r>(*this);

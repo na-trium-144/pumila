@@ -23,6 +23,7 @@ class Pumila6 : public Pumila {
   public:
     std::string name() const override { return "pumila6"; }
     PUMILA_DLL explicit Pumila6(int hidden_nodes);
+    Pumila6(const std::string &name) : Pumila6(1) { loadFile(name); }
     std::shared_ptr<Pumila6> copy() {
         auto copied = std::make_shared<Pumila6>(main.hidden_nodes);
         copied->main = main;

@@ -31,7 +31,7 @@ void initPumila4Module(py::module_ &m) {
              [](const Pumila4::NNModel &model) { return *model.matrix_ih; })
         .def("get_matrix_hq",
              [](const Pumila4::NNModel &model) { return *model.matrix_hq; })
-        .def("truncate_in_nodes", &Pumila4::NNModel::truncateInNodes)
+        .def("transpose_in_nodes", &Pumila4::NNModel::transposeInNodes)
         .def("forward", &Pumila4::NNModel::forward)
         .def("backward", &Pumila4::NNModel::backward);
 }

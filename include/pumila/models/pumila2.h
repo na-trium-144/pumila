@@ -90,7 +90,7 @@ class Pumila2 : public Pumila {
          *
          */
         PUMILA_DLL static Eigen::MatrixXd
-        truncateInNodes(const Eigen::MatrixXd &in);
+        transposeInNodes(const Eigen::MatrixXd &in);
     };
     /*!
      * getAction時はmainを使う

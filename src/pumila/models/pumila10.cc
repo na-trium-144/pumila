@@ -232,7 +232,7 @@ void Pumila10Base<NNModel>::learnStep(const FieldState2 &field) {
     }
     pool.detach_task([this, pumila, next, next2 = std::move(next2),
                       next3 = std::move(next3)] {
-        auto in_t = truncateInNodes(next.get().in);
+        auto in_t = transposeInNodes(next.get().in);
         NNResult fw_result;
         fw_result = forward(in_t);
         Eigen::VectorXd delta_2(fw_result.q.rows());

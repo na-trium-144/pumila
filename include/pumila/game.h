@@ -20,7 +20,7 @@ struct FieldState;
  * 時間の単位はフレーム (1/60s)
  *
  */
-class GameSim {
+class GameSim : public std::enable_shared_from_this<GameSim> {
     std::optional<std::thread> model_action_thread;
     std::atomic<bool> running;
     std::optional<Action> soft_put_target = std::nullopt;
@@ -39,6 +39,10 @@ class GameSim {
      * \brief おじゃまぷよを送る相手をセットしてね
      */
     std::weak_ptr<GameSim> opponent;
+    /*!
+     * \brief 相手simを相互にセットする
+     */
+    PUMILA_DLL void setOpponentSim(const std::shared_ptr<GameSim> &opponent_s);
 
     std::optional<FieldState2> field;
     PUMILA_DLL std::shared_ptr<FieldState> field1();
@@ -59,15 +63,19 @@ class GameSim {
     PUMILA_DLL explicit GameSim(
         std::shared_ptr<Pumila> model, const std::string &name = "",
         typename std::mt19937::result_type seed = std::random_device()(),
-        bool enable_garbage = false);
+        bool enable_garbage = true);
     explicit GameSim(
         typename std::mt19937::result_type seed = std::random_device()(),
-        bool enable_garbage = false)
+        bool enable_garbage = true)
         : GameSim(nullptr, "", seed, enable_garbage) {}
-    GameSim(const GameSim &sim) = delete;
-    GameSim(GameSim &&sim) = delete;
 
-    PUMILA_DLL ~GameSim();
+    GameSim(const GameSim &sim) = delete;
+    GameSim &operator=(const GameSim &) = delete;
+    GameSim(GameSim &&sim) = delete;
+    GameSim &operator=(GameSim &&sim) = delete;
+
+    ~GameSim() { stopAction(); }
+    PUMILA_DLL void stopAction();
 
     bool hasModel() { return model != nullptr; }
 

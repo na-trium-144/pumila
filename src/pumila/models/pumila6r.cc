@@ -140,7 +140,7 @@ void Pumila6r::learnStep(std::shared_ptr<FieldState> field) {
         next2[a] = Pumila2::getInNodes(next, a).share();
     }
     pool.detach_task([this, pumila, next, next2 = std::move(next2)] {
-        auto in_t = Pumila2::NNModel::truncateInNodes(next.get().in);
+        auto in_t = Pumila2::NNModel::transposeInNodes(next.get().in);
         NNResult fw_result;
         std::shared_ptr<NNModel> mmain;
         {

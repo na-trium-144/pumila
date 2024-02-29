@@ -11,6 +11,10 @@ void initPumila6Module(py::module_ &m) {
         py::class_<Pumila6, Pumila, std::shared_ptr<Pumila6>>(m, "Pumila6")
             .def("make_shared",
                  [](int n) { return std::make_shared<Pumila6>(n); })
+            .def("make_shared",
+                 [](const std::string &name) {
+                     return std::make_shared<Pumila6>(name);
+                 })
             .def_readwrite("main", &Pumila6::main)
             .def_readwrite("target", &Pumila6::target)
             .def("get_action_rnd",

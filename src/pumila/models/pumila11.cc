@@ -55,9 +55,9 @@ Pumila11::getInNodeSingleS(const FieldState2 &field_copy, int a) {
     }
     return feat;
 }
-Eigen::MatrixXd Pumila11::truncateInNodesS(const Eigen::MatrixXd &in) {
+Eigen::MatrixXd Pumila11::transposeInNodesS(const Eigen::MatrixXd &in) {
     if (in.cols() != NNModel::IN_NODES) {
-        throw std::invalid_argument("invalid size in truncate: in -> " +
+        throw std::invalid_argument("invalid size in transpose: in -> " +
                                     std::to_string(in.cols()) + ", expected " +
                                     std::to_string(NNModel::IN_NODES));
     }

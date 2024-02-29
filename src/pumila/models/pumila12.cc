@@ -167,8 +167,9 @@ int Pumila12Base<NNModel>::getActionRnd(
 
 template <typename NNModel>
 void Pumila12Base<NNModel>::learnStep(
-    const FieldState2 &field, int a,
+    const FieldState2 &field_before, int a,
     const std::optional<FieldState2> &op_field_before,
+    const FieldState2 &field_after,
     const std::optional<FieldState2> &op_field_after) {
     if (!op_field_before || !op_field_after) {
         throw std::invalid_argument("op_field is nullopt");
@@ -179,41 +180,47 @@ void Pumila12Base<NNModel>::learnStep(
         step_started++;
     }
     auto pumila = shared_from_this();
-    auto next = getInNodeSingle(field, a, op_field_before);
+    auto next = getInNodeSingle(field_before, a, op_field_before);
     std::shared_future<InFeatures> next2 =
-        getInNodes(next.field_next, op_field_after);
-    std::array<std::shared_future<InFeatures>, ACTIONS_NUM> next3;
-    for (std::size_t a2 = 0; a2 < ACTIONS_NUM; a2++) {
-        next3[a2] = getInNodes(next2, a2, op_field_after).share();
-    }
+        getInNodes(field_after, op_field_after);
+    // std::array<std::shared_future<InFeatures>, ACTIONS_NUM> next3;
+    // for (std::size_t a2 = 0; a2 < ACTIONS_NUM; a2++) {
+    //     next3[a2] = getInNodes(next2, a2, op_field_after).share();
+    // }
     pool.detach_task([this, pumila, next = std::move(next),
-                      next2 = std::move(next2), next3 = std::move(next3),
-                      op_field_after] {
-        auto in_t = truncateInNodes(next.in);
+                      next2 = std::move(next2), /*next3 = std::move(next3),*/
+                      field_after, op_field_after] {
+        auto in_t = transposeInNodes(next.in.transpose());
         NNResult fw_result;
         fw_result = forward(in_t);
         Eigen::VectorXd delta_2(fw_result.q.rows());
-        Eigen::MatrixXd fw_next3_q(ACTIONS_NUM, ACTIONS_NUM);
+        Eigen::VectorXd fw_next2_q = gamma * forward(next2.get().in).q;
         for (std::size_t a2 = 0; a2 < ACTIONS_NUM; a2++) {
-            fw_next3_q.middleCols<1>(a2) =
-                gamma * gamma * forward(next3[a2].get().in).q;
-            fw_next3_q.middleCols<1>(a2).array() +=
-                gamma * calcReward(next2.get().each[a2].get().field_next,
-                                   op_field_after);
-        }
-        for (std::size_t a2 = 0; a2 < ACTIONS_NUM; a2++) {
-            for (std::size_t a3 = 0; a3 < ACTIONS_NUM; a3++) {
-                if (/*!next3[a][a2].get().each[a3].get().field_next.is_valid
-                       || */
-                    next3[a2].get().each[a3].get().field_next.isGameOver()) {
-                    fw_next3_q(a3, a2) = fw_next3_q.minCoeff();
-                }
+            if (next2.get().each[a2].get().field_next.isGameOver()) {
+                fw_next2_q(0, a2) = fw_next2_q.minCoeff();
             }
         }
+        // Eigen::MatrixXd fw_next3_q(ACTIONS_NUM, ACTIONS_NUM);
+        // for (std::size_t a2 = 0; a2 < ACTIONS_NUM; a2++) {
+        //     fw_next3_q.middleCols<1>(a2) =
+        //         gamma * gamma * forward(next3[a2].get().in).q;
+        //     fw_next3_q.middleCols<1>(a2).array() +=
+        //         gamma * calcReward(next2.get().each[a2].get().field_next,
+        //                            op_field_after);
+        // }
+        // for (std::size_t a2 = 0; a2 < ACTIONS_NUM; a2++) {
+        //     for (std::size_t a3 = 0; a3 < ACTIONS_NUM; a3++) {
+        //         if (/*!next3[a][a2].get().each[a3].get().field_next.is_valid
+        //                || */
+        //             next3[a2].get().each[a3].get().field_next.isGameOver()) {
+        //             fw_next3_q(a3, a2) = fw_next3_q.minCoeff();
+        //         }
+        //     }
+        // }
         double max_diff = 0;
         for (int r = 0; r < delta_2.rows(); r++) {
-            double diff = (calcReward(next.field_next, op_field_after) +
-                           fw_next3_q.maxCoeff()) -
+            double diff = (calcReward(field_after, op_field_after) +
+                           fw_next2_q.maxCoeff()) -
                           fw_result.q(r, 0);
             delta_2(r, 0) = diff;
             if (std::abs(diff) > std::abs(max_diff)) {
@@ -355,9 +362,9 @@ Pumila12::getInNodeSingleS(const FieldState2 &field_copy, int a,
 
     return feat;
 }
-Eigen::MatrixXd Pumila12::truncateInNodesS(const Eigen::MatrixXd &in) {
+Eigen::MatrixXd Pumila12::transposeInNodesS(const Eigen::MatrixXd &in) {
     if (in.cols() != NNModel::IN_NODES) {
-        throw std::invalid_argument("invalid size in truncate: in -> " +
+        throw std::invalid_argument("invalid size in transpose: in -> " +
                                     std::to_string(in.cols()) + ", expected " +
                                     std::to_string(NNModel::IN_NODES));
     }

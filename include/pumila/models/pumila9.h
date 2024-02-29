@@ -12,6 +12,7 @@ class Pumila9 : public Pumila8s {
   public:
     std::string name() const override { return "pumila9"; }
     PUMILA_DLL explicit Pumila9(int hidden_nodes);
+    Pumila9(const std::string &name) : Pumila9(1) { loadFile(name); }
     Pumila9(const Pumila9 &other) : Pumila9(1) {
         std::lock_guard lock_main(other.main_m);
         main = target = other.main;
