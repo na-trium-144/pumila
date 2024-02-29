@@ -238,7 +238,7 @@ pybind11_add_module(pypumila
     src/pypumila/pypumila9.cc
     src/pypumila/pypumila10.cc
     src/pypumila/pypumila11.cc
-    # src/pypumila/pypumila12.cc
+    src/pypumila/pypumila12.cc
 )
 target_link_libraries(pypumila PUBLIC pumila)
 

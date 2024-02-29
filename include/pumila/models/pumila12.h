@@ -139,6 +139,7 @@ struct NNModel12 {
  * * 敵フィールド追加
  *   * q(sim.field + action, op.field) <- reward(sim.field + action, op.field +
  * action)
+ * * rewardは自分ゲームオーバーで-1000、敵ゲームオーバーで+1000
  */
 class Pumila12 : public Pumila12Base<NNModel12> {
   public:

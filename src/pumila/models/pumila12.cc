@@ -170,6 +170,9 @@ void Pumila12Base<NNModel>::learnStep(
     const FieldState2 &field, int a,
     const std::optional<FieldState2> &op_field_before,
     const std::optional<FieldState2> &op_field_after) {
+    if (!op_field_before || !op_field_after) {
+        throw std::invalid_argument("op_field is nullopt");
+    }
     {
         std::unique_lock lock(learning_m);
         learning_cond.wait(lock, [&] { return step_started < BATCH_SIZE; });
@@ -253,6 +256,9 @@ NNModel12::NNModel12(int hidden_nodes)
 Pumila12::InFeatureSingle
 Pumila12::getInNodeSingleS(const FieldState2 &field_copy, int a,
                            const std::optional<FieldState2> &op_field_copy) {
+    if (!op_field_copy) {
+        throw std::invalid_argument("op_field is nullopt");
+    }
     InFeatureSingle feat;
     feat.field_next = field_copy;
     feat.field_next.putNext(actions[a]);
@@ -390,4 +396,17 @@ Eigen::MatrixXd Pumila12::truncateInNodesS(const Eigen::MatrixXd &in) {
     return ret;
 }
 
+double Pumila12::calcRewardS(const FieldState2 &field,
+                             const std::optional<FieldState2> &op_field_after) {
+    if (!op_field_after) {
+        throw std::invalid_argument("op_field is nullopt");
+    }
+    if (field.isGameOver()) {
+        return -1000;
+    }
+    if (op_field_after->isGameOver()) {
+        return 1000;
+    }
+    return 0;
+}
 } // namespace PUMILA_NS
