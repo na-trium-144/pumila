@@ -113,7 +113,8 @@ class Pumila8s : public Pumila {
     }
     PUMILA_DLL static double calcRewardS(const FieldState &field);
 
-    int getAction(const FieldState2 &field) override {
+    int getAction(const FieldState2 &field,
+                  const std::optional<FieldState2> &) override {
         return getAction(std::make_shared<FieldState>(field));
     }
     int getAction(std::shared_ptr<FieldState> field) {

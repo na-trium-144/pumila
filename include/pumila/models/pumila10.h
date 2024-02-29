@@ -90,7 +90,8 @@ class Pumila10Base : public Pumila {
     }
     virtual double calcReward(const FieldState2 &field) const = 0;
 
-    int getAction(const FieldState2 &field) override {
+    int getAction(const FieldState2 &field,
+                  const std::optional<FieldState2> &) override {
         return getActionRnd(field, 0);
     }
     PUMILA_DLL int getActionRnd(const FieldState2 &field, double rnd_p);
