@@ -136,9 +136,9 @@ Pumila2::getInNodes(std::shared_future<InFeatures> feature, int feat_a) {
     });
 }
 
-Eigen::MatrixXd Pumila2::NNModel::truncateInNodes(const Eigen::MatrixXd &in) {
+Eigen::MatrixXd Pumila2::NNModel::transposeInNodes(const Eigen::MatrixXd &in) {
     if (in.cols() != IN_NODES) {
-        throw std::invalid_argument("invalid size in truncate: in -> " +
+        throw std::invalid_argument("invalid size in transpose: in -> " +
                                     std::to_string(in.cols()) + ", expected " +
                                     std::to_string(IN_NODES));
     }
@@ -266,7 +266,7 @@ void Pumila2::learnStep(std::shared_ptr<FieldState> field) {
     auto next = getInNodes(field).share();
     auto fw_result = pool.submit_task([this, pumila, next] {
                              auto in_t =
-                                 NNModel::truncateInNodes(next.get().in);
+                                 NNModel::transposeInNodes(next.get().in);
                              {
                                  std::shared_lock lock(target_m);
                                  return target.forward(in_t);

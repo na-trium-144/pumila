@@ -9,6 +9,10 @@ void initPumila7Module(py::module_ &m) {
         py::class_<Pumila7, Pumila6, std::shared_ptr<Pumila7>>(m, "Pumila7")
             .def("make_shared",
                  [](double l) { return std::make_shared<Pumila7>(l); })
+            .def("make_shared",
+                 [](const std::string &name) {
+                     return std::make_shared<Pumila7>(name);
+                 })
             .def("calc_reward", &Pumila7::calcReward)
             .def("calc_reward", &Pumila7::calcRewardS);
 }

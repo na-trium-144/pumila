@@ -17,8 +17,9 @@ class Pumila1N : public Pumila {
         : Pumila(), target_chain(target_chain) {}
 
     PUMILA_DLL int getAction(std::shared_ptr<FieldState> field);
-    int getAction(std::shared_ptr<FieldState2> field) override {
-        return getAction(std::make_shared<FieldState>(*field));
+    int getAction(const FieldState2 &field,
+                  const std::optional<FieldState2> &) override {
+        return getAction(std::make_shared<FieldState>(field));
     }
 };
 } // namespace PUMILA_NS

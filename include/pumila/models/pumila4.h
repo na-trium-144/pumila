@@ -66,8 +66,8 @@ class Pumila4 : public Pumila {
                                  const Eigen::VectorXd &diff);
 
         inline static Eigen::MatrixXd
-        truncateInNodes(const Eigen::MatrixXd &in) {
-            return Pumila2::NNModel::truncateInNodes(in);
+        transposeInNodes(const Eigen::MatrixXd &in) {
+            return Pumila2::NNModel::transposeInNodes(in);
         }
     };
     NNModel main, target;
@@ -100,8 +100,9 @@ class Pumila4 : public Pumila {
         return Pumila2::calcRewardS(field);
     }
 
-    int getAction(std::shared_ptr<FieldState2> field) override {
-        return getAction(std::make_shared<FieldState>(*field));
+    int getAction(const FieldState2 &field,
+                  const std::optional<FieldState2> &) override {
+        return getAction(std::make_shared<FieldState>(field));
     }
     int getAction(std::shared_ptr<FieldState> field) {
         return getActionRnd(field, 0);

@@ -47,7 +47,7 @@ void Pumila3::learnStep(std::shared_ptr<FieldState> field) {
         for (std::size_t a = 0; a < ACTIONS_NUM; a++) {
             next2[a] = getInNodes(next, a).share();
         }
-        auto in_t = NNModel::truncateInNodes(next.get().in);
+        auto in_t = NNModel::transposeInNodes(next.get().in);
         NNResult fw_result;
         {
             std::shared_lock lock(target_m);

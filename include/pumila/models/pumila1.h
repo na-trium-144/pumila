@@ -89,8 +89,9 @@ class Pumila1 : public Pumila {
     PUMILA_DLL double calcReward(std::shared_ptr<GameSim> sim_after) const;
 
     PUMILA_DLL int getAction(std::shared_ptr<FieldState> field);
-    int getAction(std::shared_ptr<FieldState2> field) override {
-        return getAction(std::make_shared<FieldState>(*field));
+    int getAction(const FieldState2 &field,
+                  const std::optional<FieldState2> &) override {
+        return getAction(std::make_shared<FieldState>(field));
     }
     PUMILA_DLL std::pair<int, int> getLearnAction(std::shared_ptr<GameSim> sim);
     PUMILA_DLL double learnResult(int id, std::shared_ptr<GameSim> sim_after);

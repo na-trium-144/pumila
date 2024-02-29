@@ -11,7 +11,7 @@ namespace PUMILA_NS {
  * \brief 1プレイヤーの盤面の情報
  */
 class FieldState2 {
-    inline static std::mt19937 rnd{std::random_device()()};
+    inline static std::mt19937 rnd_general{std::random_device()()};
 
   public:
     static constexpr std::size_t WIDTH = 6;
@@ -46,6 +46,9 @@ class FieldState2 {
         PUMILA_DLL bool getUpdated(std::size_t x, std::size_t y) const;
         void clearUpdated() { updated = {}; }
         int puyoNum() const { return puyo_num; }
+        bool operator==(const Field &other) const {
+            return field == other.field;
+        }
     };
     class NextList {
         /*!
@@ -53,21 +56,42 @@ class FieldState2 {
          * * freePhase中は操作中のぷよ+next2つで合計3組になり、それ以外の場合2組
          */
         std::array<PuyoPair, 3> next = {};
-        std::size_t next_num = 0;
+        std::mt19937 rnd_next;
+        PUMILA_DLL Puyo nextColor();
 
       public:
         friend struct FieldState;
+        PUMILA_DLL explicit NextList(typename std::mt19937::result_type seed);
 
         PUMILA_DLL PuyoPair get() const;
         PUMILA_DLL void update(const PuyoPair &pp);
         PUMILA_DLL void pop();
-        PUMILA_DLL void push(const PuyoPair &pp);
-        std::size_t size() const { return next_num; }
         const PuyoPair &operator[](int i) const { return next.at(i); }
+        bool operator==(const NextList &other) const {
+            return next == other.next && rnd_next == other.rnd_next;
+        }
     };
-    struct StepInfo {
-        int num = 0;
-        int chain_num = 0, chain_score = 0;
+    class StepInfo {
+        int num_;
+        std::vector<Chain> chains_;
+        int chain_score_;
+
+      public:
+        explicit StepInfo(int num) : num_(num), chains_(), chain_score_(0) {}
+        PUMILA_DLL void pushChain(const Chain &chain);
+        std::size_t chainNum() const { return chains_.size(); }
+        int num() const { return num_; }
+        const std::vector<Chain> &chains() const { return chains_; }
+        int chainScore() const { return chain_score_; }
+        /*!
+         * \brief wait_timeを1減らし、現在waitしている連鎖の情報を返す
+         */
+        PUMILA_DLL const Chain *step();
+
+        bool operator==(const StepInfo &other) const {
+            return num_ == other.num_ && chains_ == other.chains_ &&
+                   chain_score_ == other.chain_score_;
+        }
     };
     class GarbageInfo {
         static constexpr int rate = 70;
@@ -95,6 +119,10 @@ class FieldState2 {
         PUMILA_DLL int send();
         int getReady() const { return garbage_ready; }
         int getCurrent() const { return garbage_current; }
+        bool operator==(const GarbageInfo &other) const {
+            return garbage_current == other.garbage_current &&
+                   garbage_score == other.garbage_score;
+        }
     };
 
   private:
@@ -102,6 +130,9 @@ class FieldState2 {
     NextList next_;
     /*!
      * \brief 現在、1手前、最後に連鎖したときの手数と連鎖の情報
+     *
+     * * putNextでcurrentをprevに移動し初期化、
+     * * deleteChainでcurrentを更新
      */
     StepInfo current_step_, prev_step_, last_chain_step_;
     /*!
@@ -128,11 +159,28 @@ class FieldState2 {
     PUMILA_DLL PuyoConnection deleteConnection(std::size_t x, std::size_t y);
 
   public:
-    FieldState2() = default;
+    bool operator==(const FieldState2 &other) const {
+        return field_ == other.field_ && next_ == other.next_ &&
+               current_step_ == other.current_step_ &&
+               prev_step_ == other.prev_step_ &&
+               last_chain_step_ == other.last_chain_step_ &&
+               prev_puyo_num_ == other.prev_puyo_num_ &&
+               total_score_ == other.total_score_ && garbage_ == other.garbage_;
+    }
+    bool operator!=(const FieldState2 &other) const {
+        return !(*this == other);
+    }
+
+    FieldState2(
+        typename std::mt19937::result_type seed = std::random_device()())
+        : field_(), next_(seed), current_step_(0), prev_step_(0),
+          last_chain_step_(0), garbage_() {}
+
     const Field &field() const { return field_; }
     NextList &next() { return next_; }
     const NextList &next() const { return next_; }
     const StepInfo &currentStep() const { return current_step_; }
+    StepInfo &currentStep() { return current_step_; }
     const StepInfo &prevStep() const { return prev_step_; }
     const StepInfo &lastChainStep() const { return last_chain_step_; }
     int prevPuyoNum() const { return prev_puyo_num_; }
@@ -151,9 +199,14 @@ class FieldState2 {
     void putNext() { putNext(next_.get()); }
     /*!
      * \brief garbageを降らせる
+     *
      * garbage.readyを0にする or 30減らす
+     *
+     * \param garbage_list おじゃまが降った位置が返る
      */
-    PUMILA_DLL void putGarbage();
+    PUMILA_DLL void putGarbage(std::array<std::pair<std::size_t, std::size_t>,
+                                          30> *garbage_list = nullptr,
+                               std::size_t *garbage_num = nullptr);
 
     /*!
      * \brief 落下中のぷよが既存のぷよに重なっているまたは画面外か調べる

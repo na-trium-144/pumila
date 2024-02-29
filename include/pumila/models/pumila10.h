@@ -12,6 +12,9 @@ namespace PUMILA_NS {
  */
 template <typename NNModel>
 class Pumila10Base : public Pumila {
+    void load(std::istream &is) override;
+    void save(std::ostream &os) override;
+
   public:
     using NNResult = Pumila8s::NNResult;
 
@@ -80,36 +83,34 @@ class Pumila10Base : public Pumila {
     virtual InFeatureSingle getInNodeSingle(const FieldState2 &field,
                                             int a) const = 0;
     virtual Eigen::MatrixXd
-    truncateInNodes(const Eigen::MatrixXd &in) const = 0;
+    transposeInNodes(const Eigen::MatrixXd &in) const = 0;
 
     double calcReward(std::shared_ptr<FieldState2> field) const {
         return calcReward(*field);
     }
     virtual double calcReward(const FieldState2 &field) const = 0;
 
-    int getAction(std::shared_ptr<FieldState2> field) override {
+    int getAction(const FieldState2 &field,
+                  const std::optional<FieldState2> &) override {
         return getActionRnd(field, 0);
     }
-    PUMILA_DLL int getActionRnd(std::shared_ptr<FieldState2> field,
-                                double rnd_p);
+    PUMILA_DLL int getActionRnd(const FieldState2 &field, double rnd_p);
 
     int getActionRnd(const std::shared_ptr<GameSim> &sim, double rnd_p) {
-        return getActionRnd(sim->field, rnd_p);
+        return getActionRnd(*sim->field, rnd_p);
     }
 
-    PUMILA_DLL void learnStep(std::shared_ptr<FieldState2> field);
+    PUMILA_DLL void learnStep(const FieldState2 &field);
 
     std::vector<double> diff_history = {};
 };
 
 class Pumila10 : public Pumila10Base<Pumila8s::NNModel> {
-    void load(std::istream &is) override;
-    void save(std::ostream &os) override;
-
   public:
     std::string name() const override { return "pumila10"; }
     explicit Pumila10(int hidden_nodes, double gamma)
         : Pumila10Base(hidden_nodes, gamma) {}
+    Pumila10(const std::string &name) : Pumila10(1, 1) { loadFile(name); }
     std::shared_ptr<Pumila10> copy() {
         return std::make_shared<Pumila10>(*this);
     }
@@ -120,9 +121,9 @@ class Pumila10 : public Pumila10Base<Pumila8s::NNModel> {
         return Pumila10::getInNodeSingleS(field, a);
     }
     PUMILA_DLL static InFeatureSingle getInNodeSingleS(const FieldState2 &field,
-                                                      int a);
-    Eigen::MatrixXd truncateInNodes(const Eigen::MatrixXd &in) const override {
-        return Pumila2::NNModel::truncateInNodes(in);
+                                                       int a);
+    Eigen::MatrixXd transposeInNodes(const Eigen::MatrixXd &in) const override {
+        return Pumila2::NNModel::transposeInNodes(in);
     }
     double calcReward(const FieldState2 &field) const override {
         return Pumila10::calcRewardS(field);

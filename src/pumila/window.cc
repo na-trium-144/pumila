@@ -38,7 +38,7 @@ Window::Window(const std::vector<std::shared_ptr<GameSim>> &sim)
     TTF_Init();
     TTF_Font *ttf_font = TTF_OpenFont("Roboto-Regular.ttf", 24);
     ttf_font_p = static_cast<void *>(ttf_font);
-    TTF_Font *ttf_font_sm = TTF_OpenFont("Roboto-Regular.ttf", 12);
+    TTF_Font *ttf_font_sm = TTF_OpenFont("Roboto-Regular.ttf", 16);
     ttf_font_sm_p = static_cast<void *>(ttf_font_sm);
     if (!ttf_font) {
         std::cerr << "Font not found" << std::endl;
@@ -112,38 +112,39 @@ void Window::draw() {
     SDL_RenderClear(sdl_renderer);
 
     for (std::size_t i = 0; i < sim.size(); i++) {
-        std::shared_lock lock(sim[i]->field_m);
+        std::shared_lock lock_f(sim[i]->field_m);
+        std::lock_guard lock_s(sim[i]->step_m);
         // 枠
         SDL_SetRenderDrawColor(sdl_renderer, 0, 0, 0, 255);
         SDL_Rect field_rect = {FIELD_X[i], FIELD_Y - PUYO_SIZE * 12,
                                PUYO_SIZE * 6, PUYO_SIZE * 12};
         SDL_RenderDrawRect(sdl_renderer, &field_rect);
 
+        FieldState2 *field = &*sim[i]->field;
+        auto fall_phase =
+            dynamic_cast<GameSim::FallPhase *>(sim[i]->phase.get());
+        if (fall_phase) {
+            field = &fall_phase->display_field;
+        }
         if (sim[i]->isFreePhase()) {
-            auto current_pair = sim[i]->field->next().get();
+            auto current_pair = field->next().get();
             drawPuyo(current_pair.bottom, current_pair.bottomX(),
-                     sim[i]->field->getNextHeight(current_pair).first, i,
-                     false);
+                     field->getNextHeight(current_pair).first, i, false);
             drawPuyo(current_pair.top, current_pair.topX(),
-                     sim[i]->field->getNextHeight(current_pair).second, i,
-                     false);
+                     field->getNextHeight(current_pair).second, i, false);
             drawPuyo(current_pair.bottom, current_pair.bottomX(),
                      current_pair.bottomY(), i, true);
             drawPuyo(current_pair.top, current_pair.topX(), current_pair.topY(),
                      i, true);
         }
         std::size_t next_p = sim[i]->isFreePhase() ? 1 : 0;
-        if (sim[i]->field->next().size() > next_p) {
-            drawPuyo(sim[i]->field->next()[next_p].bottom, 6.5, 10.5, i, true);
-            drawPuyo(sim[i]->field->next()[next_p].top, 6.5, 11.5, i, true);
-        }
-        if (sim[i]->field->next().size() > next_p + 1) {
-            drawPuyo(sim[i]->field->next()[next_p + 1].bottom, 8, 9.5, i, true);
-            drawPuyo(sim[i]->field->next()[next_p + 1].top, 8, 10.5, i, true);
-        }
+        drawPuyo(field->next()[next_p].bottom, 6.5, 10.5, i, true);
+        drawPuyo(field->next()[next_p].top, 6.5, 11.5, i, true);
+        drawPuyo(field->next()[next_p + 1].bottom, 8, 9.5, i, true);
+        drawPuyo(field->next()[next_p + 1].top, 8, 10.5, i, true);
         for (std::size_t y = 0; y < FieldState2::HEIGHT; y++) {
             for (std::size_t x = 0; x < FieldState2::WIDTH; x++) {
-                drawPuyo(sim[i]->field->field().get(x, y), x, y, i, true);
+                drawPuyo(field->field().get(x, y), x, y, i, true);
             }
         }
 
@@ -161,7 +162,7 @@ void Window::draw() {
             SDL_RenderCopy(sdl_renderer, text, NULL, &rect);
             SDL_DestroyTexture(text);
 
-            ss << sim[i]->field->totalScore();
+            ss << field->totalScore();
             text = drawText(sdl_renderer, ss.str(), ttf_font, {0, 0, 0, 255},
                             &text_w, &text_h);
             rect = {FIELD_X[i] + PUYO_SIZE * 6 - text_w - 10, FIELD_Y + 35,
@@ -170,12 +171,20 @@ void Window::draw() {
             SDL_DestroyTexture(text);
             ss.str("");
 
-            if (sim[i]->field->garbage().getReady() > 0) {
+
+            int ready = field->garbage().getReady();
+            bool red = ready >= 30;
+            auto garbage_gauge = [](int garbage) {
+                return static_cast<int>(
+                    PUYO_SIZE * 3 *
+                    std::log1p(static_cast<double>(garbage > 0 ? garbage : 0)) /
+                    std::log(30.0));
+            };
+            if (ready > 0) {
                 drawPuyo(Puyo::garbage, 0.5, 13.5, i, true);
-                ss << "x " << sim[i]->field->garbage().getReady();
+                ss << "x " << ready;
                 text = drawText(sdl_renderer, ss.str(), ttf_font,
-                                sim[i]->field->garbage().getReady() >= 30
-                                    ? SDL_Color{255, 0, 0, 255}
+                                red ? SDL_Color{255, 0, 0, 255}
                                     : SDL_Color{0, 0, 0, 255},
                                 &text_w, &text_h);
                 rect = {FIELD_X[i] + static_cast<int>(PUYO_SIZE * 1.5) + 5,
@@ -183,10 +192,17 @@ void Window::draw() {
                 SDL_RenderCopy(sdl_renderer, text, NULL, &rect);
                 SDL_DestroyTexture(text);
                 ss.str("");
+
+                SDL_SetRenderDrawColor(sdl_renderer, (red ? 255 : 0), 0, 0,
+                                       255);
+                rect = {FIELD_X[i], FIELD_Y - PUYO_SIZE * 13 - 10,
+                        garbage_gauge(ready), 3};
+                SDL_RenderFillRect(sdl_renderer, &rect);
             }
 
-            if (sim[i]->field->garbage().getCurrent() > 0) {
-                ss << "- " << sim[i]->field->garbage().getCurrent();
+            int current = field->garbage().getCurrent();
+            if (current > 0) {
+                ss << "- " << current;
                 text = drawText(sdl_renderer, ss.str(), ttf_font,
                                 SDL_Color{0, 190, 0, 255}, &text_w, &text_h);
                 rect = {FIELD_X[i] + PUYO_SIZE * 6 - text_w - 10,
@@ -194,11 +210,45 @@ void Window::draw() {
                 SDL_RenderCopy(sdl_renderer, text, NULL, &rect);
                 SDL_DestroyTexture(text);
                 ss.str("");
+
+                SDL_SetRenderDrawColor(sdl_renderer, 0, 190, 0, 255);
+                if (ready > 0) {
+                    rect = {FIELD_X[i] + garbage_gauge(ready - current),
+                            FIELD_Y - PUYO_SIZE * 13 - 10, garbage_gauge(ready),
+                            3};
+                    SDL_RenderFillRect(sdl_renderer, &rect);
+                }
+                if (current - ready > 0) {
+                    rect = {FIELD_X[i] + PUYO_SIZE * 6 -
+                                garbage_gauge(current - ready),
+                            FIELD_Y - PUYO_SIZE * 13 - 10,
+                            garbage_gauge(current - ready), 3};
+                    SDL_RenderFillRect(sdl_renderer, &rect);
+                }
             }
 
-            if (sim[i]->current_chain) {
-                ss << sim[i]->current_chain->scoreA() << " x "
-                   << sim[i]->current_chain->scoreB();
+            if (sim[i]->model) {
+                ss << "ActionCoeff";
+                text = drawText(sdl_renderer, ss.str(), ttf_font_sm,
+                                {0, 0, 0, 255}, &text_w, &text_h);
+                rect = {FIELD_X[i] + PUYO_SIZE * 6 + 10,
+                        FIELD_Y - PUYO_SIZE * 1 - 20, text_w, text_h};
+                SDL_RenderCopy(sdl_renderer, text, NULL, &rect);
+                SDL_DestroyTexture(text);
+                ss.str("");
+
+                ss << sim[i]->model->actionCoeff();
+                text = drawText(sdl_renderer, ss.str(), ttf_font_sm,
+                                {0, 0, 0, 255}, &text_w, &text_h);
+                rect = {FIELD_X[i] + PUYO_SIZE * 9 - text_w,
+                        FIELD_Y - PUYO_SIZE * 1, text_w, text_h};
+                SDL_RenderCopy(sdl_renderer, text, NULL, &rect);
+                SDL_DestroyTexture(text);
+                ss.str("");
+            }
+            if (fall_phase && fall_phase->current_chain) {
+                ss << fall_phase->current_chain->scoreA() << " x "
+                   << fall_phase->current_chain->scoreB();
                 text = drawText(sdl_renderer, ss.str(), ttf_font,
                                 {0, 0, 0, 255}, &text_w, &text_h);
                 rect = {FIELD_X[i] + PUYO_SIZE * 6 - text_w - 10, FIELD_Y + 60,
@@ -207,37 +257,29 @@ void Window::draw() {
                 SDL_DestroyTexture(text);
                 ss.str("");
 
-                ss << sim[i]->field->currentStep().chain_num;
+                ss << fall_phase->current_chain->chain_num;
                 text = drawText(sdl_renderer, ss.str(), ttf_font,
                                 {0, 0, 0, 255}, &text_w, &text_h);
-                rect = {FIELD_X[i] + PUYO_SIZE * 7 - text_w / 2, FIELD_Y - 60,
-                        text_w, text_h};
+                rect = {FIELD_X[i] + static_cast<int>(PUYO_SIZE * 7.5) -
+                            text_w / 2,
+                        FIELD_Y - PUYO_SIZE * 3 - 30, text_w, text_h};
                 SDL_RenderCopy(sdl_renderer, text, NULL, &rect);
                 SDL_DestroyTexture(text);
                 ss.str("");
 
                 ss << "chain";
-                if (sim[i]->field->currentStep().chain_num >= 2) {
+                if (fall_phase->current_chain->chain_num >= 2) {
                     ss << "s";
                 }
                 ss << "!";
                 text = drawText(sdl_renderer, ss.str(), ttf_font_sm,
                                 {0, 0, 0, 255}, &text_w, &text_h);
-                rect = {FIELD_X[i] + PUYO_SIZE * 7 - text_w / 2, FIELD_Y - 30,
-                        text_w, text_h};
+                rect = {FIELD_X[i] + static_cast<int>(PUYO_SIZE * 7.5) -
+                            text_w / 2,
+                        FIELD_Y - PUYO_SIZE * 3, text_w, text_h};
                 SDL_RenderCopy(sdl_renderer, text, NULL, &rect);
                 SDL_DestroyTexture(text);
-
-            } else {
-                // ss << "(" << sim->field->prev_chain_num << ", "
-                //    << sim->field->prev_chain_score << ")";
-                // score_t = drawText(sdl_renderer, ss.str(), ttf_font, {0, 0,
-                // 0, 255},
-                //                    &text_w, &text_h);
-                // rect = {FIELD_X + 10, FIELD_Y + 40, text_w, text_h};
-                // SDL_RenderCopy(sdl_renderer, score_t, NULL, &rect);
-                // SDL_DestroyTexture(score_t);
-                // ss.str("");
+                ss.str("");
             }
 
             switch (state) {

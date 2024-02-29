@@ -20,6 +20,7 @@ void initPumila8sModule(py::module_ &m);
 void initPumila9Module(py::module_ &m);
 void initPumila10Module(py::module_ &m);
 void initPumila11Module(py::module_ &m);
+void initPumila12Module(py::module_ &m);
 
 PYBIND11_MODULE(pypumila, m) {
     py::enum_<Puyo>(m, "Puyo")
@@ -76,7 +77,8 @@ PYBIND11_MODULE(pypumila, m) {
             .def(py::init<>())
             .def("field", &FieldState2::field)
             .def("next", py::overload_cast<>(&FieldState2::next, py::const_))
-            .def("current_step", &FieldState2::currentStep)
+            .def("current_step",
+                 py::overload_cast<>(&FieldState2::currentStep, py::const_))
             .def("prev_step", &FieldState2::prevStep)
             .def("last_chain_step", &FieldState2::lastChainStep)
             .def("prev_puyo_num", &FieldState2::prevPuyoNum)
@@ -111,13 +113,12 @@ PYBIND11_MODULE(pypumila, m) {
     py::class_<FieldState2::NextList>(fs2, "NextList")
         .def("get", &FieldState2::NextList::get)
         .def("update", &FieldState2::NextList::update)
-        .def("pop", &FieldState2::NextList::pop)
-        .def("push", &FieldState2::NextList::push)
-        .def("size", &FieldState2::NextList::size);
+        .def("pop", &FieldState2::NextList::pop);
     py::class_<FieldState2::StepInfo>(fs2, "StepInfo")
-        .def_readwrite("num", &FieldState2::StepInfo::num)
-        .def_readwrite("chain_num", &FieldState2::StepInfo::chain_num)
-        .def_readwrite("chain_score", &FieldState2::StepInfo::chain_score);
+        .def("num", &FieldState2::StepInfo::num)
+        .def("chains", &FieldState2::StepInfo::chains)
+        .def("chain_num", &FieldState2::StepInfo::chainNum)
+        .def("chain_score", &FieldState2::StepInfo::chainScore);
     py::class_<FieldState2::GarbageInfo>(fs2, "GarbageInfo")
         .def("push_score", &FieldState2::GarbageInfo::pushScore)
         .def("add_garbage", &FieldState2::GarbageInfo::addGarbage)
@@ -171,8 +172,11 @@ PYBIND11_MODULE(pypumila, m) {
                  std::shared_lock lock(sim->field_m);
                  return std::make_shared<FieldState2>(*sim->field);
              })
-        .def_readwrite("current_chain", &GameSim::current_chain)
         .def_readwrite("model", &GameSim::model)
+        .def_readwrite("enable_garbage", &GameSim::enable_garbage)
+        .def_readwrite("is_over", &GameSim::is_over)
+        .def("stop_action", &GameSim::stopAction)
+        .def("set_opponent_sim", &GameSim::setOpponentSim)
         .def("has_model", &GameSim::hasModel)
         .def("move_pair", &GameSim::movePair)
         .def("rot_pair", &GameSim::rotPair)
@@ -189,8 +193,10 @@ PYBIND11_MODULE(pypumila, m) {
         .def("quit", &Window::quit)
         .def("is_running", &Window::isRunning);
     py::class_<Pumila, std::shared_ptr<Pumila>>(m, "Pumila")
-        .def("get_action", py::overload_cast<std::shared_ptr<FieldState2>>(
-                               &Pumila::getAction))
+        .def("get_action",
+             py::overload_cast<const FieldState2 &,
+                               const std::optional<FieldState2> &>(
+                 &Pumila::getAction))
         .def("get_action", py::overload_cast<const std::shared_ptr<GameSim> &>(
                                &Pumila::getAction))
         .def("action_coeff", &Pumila::actionCoeff)
@@ -214,4 +220,5 @@ PYBIND11_MODULE(pypumila, m) {
     initPumila9Module(m);
     initPumila10Module(m);
     initPumila11Module(m);
+    initPumila12Module(m);
 }

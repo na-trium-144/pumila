@@ -23,6 +23,7 @@ class Pumila6 : public Pumila {
   public:
     std::string name() const override { return "pumila6"; }
     PUMILA_DLL explicit Pumila6(int hidden_nodes);
+    Pumila6(const std::string &name) : Pumila6(1) { loadFile(name); }
     std::shared_ptr<Pumila6> copy() {
         auto copied = std::make_shared<Pumila6>(main.hidden_nodes);
         copied->main = main;
@@ -91,8 +92,9 @@ class Pumila6 : public Pumila {
     virtual double calcReward(std::shared_ptr<FieldState> field) const {
         return Pumila5::calcRewardS(field);
     }
-    int getAction(std::shared_ptr<FieldState2> field) override {
-        return getAction(std::make_shared<FieldState>(*field));
+    int getAction(const FieldState2 &field,
+                  const std::optional<FieldState2> &) override {
+        return getAction(std::make_shared<FieldState>(field));
     }
     int getAction(std::shared_ptr<FieldState> field) {
         return getActionRnd(field, 0);

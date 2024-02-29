@@ -35,7 +35,7 @@ void initPumila2Module(py::module_ &m) {
              [](const Pumila2::NNModel &model) { return *model.matrix_ih; })
         .def("get_matrix_hq",
              [](const Pumila2::NNModel &model) { return *model.matrix_hq; })
-        .def("truncate_in_nodes", &Pumila2::NNModel::truncateInNodes)
+        .def("transpose_in_nodes", &Pumila2::NNModel::transposeInNodes)
         .def("forward", &Pumila2::NNModel::forward)
         .def("backward", &Pumila2::NNModel::backward);
     py::class_<Pumila2::NNResult>(pumila2, "NNResult")

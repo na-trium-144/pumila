@@ -38,6 +38,7 @@ class Pumila6r : public Pumila {
         main = other.main;
         target = main->copy();
     }
+    Pumila6r(const std::string &name) : Pumila6r(1) { loadFile(name); }
     auto &operator=(const Pumila6r &) = delete;
     std::shared_ptr<Pumila6r> copy() {
         return std::make_shared<Pumila6r>(*this);
@@ -106,8 +107,9 @@ class Pumila6r : public Pumila {
     virtual double calcReward(std::shared_ptr<FieldState> field) const {
         return Pumila5::calcRewardS(field);
     }
-    int getAction(std::shared_ptr<FieldState2> field) override {
-        return getAction(std::make_shared<FieldState>(*field));
+    int getAction(const FieldState2 &field,
+                  const std::optional<FieldState2> &) override {
+        return getAction(std::make_shared<FieldState>(field));
     }
     int getAction(std::shared_ptr<FieldState> field) {
         return getActionRnd(field, 0);
