@@ -49,6 +49,7 @@ void GameSim::stopAction() {
     running.store(false);
     if (model_action_thread) {
         model_action_thread->join();
+        model_action_thread = std::nullopt;
     }
 }
 

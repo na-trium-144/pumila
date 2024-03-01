@@ -197,7 +197,7 @@ void Pumila12Base<NNModel>::learnStep(
         Eigen::VectorXd fw_next2_q = gamma * forward(next2.get().in).q;
         for (std::size_t a2 = 0; a2 < ACTIONS_NUM; a2++) {
             if (next2.get().each[a2].get().field_next.isGameOver()) {
-                fw_next2_q(0, a2) = fw_next2_q.minCoeff();
+                fw_next2_q(a2, 0) = fw_next2_q.minCoeff();
             }
         }
         // Eigen::MatrixXd fw_next3_q(ACTIONS_NUM, ACTIONS_NUM);

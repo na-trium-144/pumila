@@ -170,6 +170,7 @@ if(MSVC)
     add_compile_options(/W4 /utf-8)
 else()
     add_compile_options(-Wall -Wpedantic -Wextra)
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -UNDEBUG")
 endif()
 
 set(PUMILA_SRC
