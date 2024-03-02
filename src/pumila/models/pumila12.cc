@@ -219,9 +219,15 @@ void Pumila12Base<NNModel>::learnStep(
         // }
         double max_diff = 0;
         for (int r = 0; r < delta_2.rows(); r++) {
-            double diff = (calcReward(field_after, op_field_after) +
-                           fw_next2_q.maxCoeff()) -
-                          fw_result.q(r, 0);
+            double reward;
+            if (field_after.isGameOver()) {
+                reward = -1000;
+            } else if (op_field_after->isGameOver()) {
+                reward = 1000;
+            } else {
+                reward = fw_next2_q.maxCoeff();
+            }
+            double diff = reward - fw_result.q(r, 0);
             delta_2(r, 0) = diff;
             if (std::abs(diff) > std::abs(max_diff)) {
                 max_diff = diff;
