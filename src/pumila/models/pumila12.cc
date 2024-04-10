@@ -1,4 +1,5 @@
 #include <pumila/models/pumila12.h>
+#include <pumila/models/pumila13.h>
 
 namespace PUMILA_NS {
 
@@ -219,14 +220,10 @@ void Pumila12Base<NNModel>::learnStep(
         // }
         double max_diff = 0;
         for (int r = 0; r < delta_2.rows(); r++) {
-            double reward;
-            if (field_after.isGameOver()) {
-                reward = -1000;
-            } else if (op_field_after->isGameOver()) {
-                reward = 1000;
-            } else {
-                reward = fw_next2_q.maxCoeff();
-            }
+            auto [reward_now, is_absolute] =
+                calcReward(field_after, op_field_after);
+            double reward =
+                reward_now + (is_absolute ? 0 : fw_next2_q.maxCoeff());
             double diff = reward - fw_result.q(r, 0);
             delta_2(r, 0) = diff;
             if (std::abs(diff) > std::abs(max_diff)) {
@@ -260,6 +257,7 @@ void Pumila12Base<NNModel>::learnStep(
 }
 
 template class Pumila12Base<Pumila12::NNModel>;
+template class Pumila12Base<Pumila13::NNModel>;
 
 NNModel12::NNModel12(int hidden_nodes)
     : hidden_nodes(hidden_nodes),
@@ -409,17 +407,18 @@ Eigen::MatrixXd Pumila12::transposeInNodesS(const Eigen::MatrixXd &in) {
     return ret;
 }
 
-double Pumila12::calcRewardS(const FieldState2 &field,
-                             const std::optional<FieldState2> &op_field_after) {
+std::pair<double, bool>
+Pumila12::calcRewardS(const FieldState2 &field,
+                      const std::optional<FieldState2> &op_field_after) {
     if (!op_field_after) {
         throw std::invalid_argument("op_field is nullopt");
     }
     if (field.isGameOver()) {
-        return -1000;
+        return {-1000, true};
     }
     if (op_field_after->isGameOver()) {
-        return 1000;
+        return {1000, true};
     }
-    return 0;
+    return {0, false};
 }
 } // namespace PUMILA_NS

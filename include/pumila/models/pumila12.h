@@ -79,7 +79,11 @@ class Pumila12Base : public Pumila {
     virtual Eigen::MatrixXd
     transposeInNodes(const Eigen::MatrixXd &in) const = 0;
 
-    virtual double
+    /*!
+     * \return [reward, is_absolute]
+     * is_absoluteがtrueなら次の手の評価結果は使わない
+     */
+    virtual std::pair<double, bool>
     calcReward(const FieldState2 &field,
                const std::optional<FieldState2> &op_field) const = 0;
 
@@ -161,12 +165,12 @@ class Pumila12 : public Pumila12Base<NNModel12> {
 
     using NNModel = NNModel12;
 
-    double calcReward(
+    std::pair<double, bool> calcReward(
         const FieldState2 &field,
         const std::optional<FieldState2> &op_field_after) const override {
         return Pumila12::calcRewardS(field, op_field_after);
     }
-    PUMILA_DLL static double
+    PUMILA_DLL static std::pair<double, bool>
     calcRewardS(const FieldState2 &field,
                 const std::optional<FieldState2> &op_field_after);
     InFeatureSingle
