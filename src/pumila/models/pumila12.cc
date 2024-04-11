@@ -237,6 +237,7 @@ void Pumila12Base<NNModel>::learnStep(
         delta_2.array() /= BATCH_SIZE;
         backward(fw_result, delta_2);
         {
+            std::unique_lock lock(learning_m);
             step_finished++;
             if (step_finished >= BATCH_SIZE) {
                 pool.detach_task([this, pumila] {
