@@ -46,7 +46,7 @@ class Window {
         ready, //!< 開始前、READY_T経過でgameに移行
         game,  //!< ゲーム中、simがゲームオーバーでfinishに移行
         finish, //!< 終了
-    } state;
+    } state = WindowState::ready;
 
     static constexpr int READY_T = 60;
     static constexpr int GO_T = 60;

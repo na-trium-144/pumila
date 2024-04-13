@@ -104,6 +104,10 @@ void Window::draw() {
     SDL_Renderer *sdl_renderer = static_cast<SDL_Renderer *>(sdl_renderer_p);
     TTF_Font *ttf_font = static_cast<TTF_Font *>(ttf_font_p);
     TTF_Font *ttf_font_sm = static_cast<TTF_Font *>(ttf_font_sm_p);
+    std::ostringstream ss;
+    int text_w, text_h;
+    SDL_Texture *text;
+    SDL_Rect rect;
 
     SDL_SetRenderDrawBlendMode(sdl_renderer, SDL_BLENDMODE_BLEND);
 
@@ -149,11 +153,6 @@ void Window::draw() {
         }
 
         if (ttf_font) {
-            std::ostringstream ss;
-            int text_w, text_h;
-            SDL_Texture *text;
-            SDL_Rect rect;
-
             text = drawText(sdl_renderer,
                             sim[i]->name.empty() ? "player" : sim[i]->name,
                             ttf_font, {0, 0, 0, 255}, &text_w, &text_h);
@@ -281,36 +280,42 @@ void Window::draw() {
                 SDL_DestroyTexture(text);
                 ss.str("");
             }
+        }
+    }
+    if (ttf_font) {
 
-            switch (state) {
-            case WindowState::ready:
-                text = drawText(sdl_renderer, "Ready?", ttf_font,
-                                {0, 0, 0, 255}, &text_w, &text_h);
+        switch (state) {
+        case WindowState::ready:
+            text = drawText(sdl_renderer, "Ready?", ttf_font, {0, 0, 0, 255},
+                            &text_w, &text_h);
+            rect = {WIDTH / 2 - text_w / 2, HEIGHT / 2 - text_h / 2, text_w,
+                    text_h};
+            SDL_RenderCopy(sdl_renderer, text, NULL, &rect);
+            SDL_DestroyTexture(text);
+            break;
+        case WindowState::game:
+            if (phase_t < GO_T) {
+                text = drawText(sdl_renderer, "Go!", ttf_font, {0, 0, 0, 255},
+                                &text_w, &text_h);
                 rect = {WIDTH / 2 - text_w / 2, HEIGHT / 2 - text_h / 2, text_w,
                         text_h};
                 SDL_RenderCopy(sdl_renderer, text, NULL, &rect);
                 SDL_DestroyTexture(text);
-                break;
-            case WindowState::game:
-                if (phase_t < GO_T) {
-                    text = drawText(sdl_renderer, "Go!", ttf_font,
-                                    {0, 0, 0, 255}, &text_w, &text_h);
-                    rect = {WIDTH / 2 - text_w / 2, HEIGHT / 2 - text_h / 2,
-                            text_w, text_h};
-                    SDL_RenderCopy(sdl_renderer, text, NULL, &rect);
-                    SDL_DestroyTexture(text);
-                }
-                break;
-            case WindowState::finish:
-                text = drawText(sdl_renderer, "Finish", ttf_font,
-                                {0, 0, 0, 255}, &text_w, &text_h);
-                rect = {WIDTH / 2 - text_w / 2, HEIGHT / 2 - text_h / 2, text_w,
-                        text_h};
-                SDL_RenderCopy(sdl_renderer, text, NULL, &rect);
-                SDL_DestroyTexture(text);
-            default:
-                break;
             }
+            break;
+        case WindowState::finish:
+            text = drawText(sdl_renderer, "Finish", ttf_font, {0, 0, 0, 255},
+                            &text_w, &text_h);
+            rect = {WIDTH / 2 - text_w / 2, HEIGHT / 2 - text_h / 2, text_w,
+                    text_h};
+            SDL_RenderCopy(sdl_renderer, text, NULL, &rect);
+            SDL_DestroyTexture(text);
+            break;
+        default:
+            std::cerr << "invalid state " << static_cast<int>(state)
+                      << std::endl;
+            state = WindowState::ready;
+            break;
         }
     }
 
