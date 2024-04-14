@@ -40,5 +40,5 @@ void initPumila10Module(py::module_ &m) {
     py::class_<Pumila10::InFeatures>(pumila10, "InFeatures")
         .def("field", [](const Pumila10::InFeatures &feat,
                          int a) { return feat.each[a].get().field_next; })
-        .def_readwrite("in", &Pumila10::InFeatures::in);
+        .def_readwrite("in_nodes", &Pumila10::InFeatures::in);
 }
