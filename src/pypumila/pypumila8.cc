@@ -8,5 +8,8 @@ void initPumila8Module(py::module_ &m) {
     auto pumila8 =
         py::class_<Pumila8, Pumila7, std::shared_ptr<Pumila8>>(m, "Pumila8")
             .def("make_shared",
-                 [](double l) { return std::make_shared<Pumila8>(l); });
+                 [](double l) { return std::make_shared<Pumila8>(l); })
+            .def("make_shared", [](const std::string &name) {
+                return std::make_shared<Pumila8>(name);
+            });
 }

@@ -13,6 +13,10 @@ void initPumila11Module(py::module_ &m) {
                  [](int n, double g) {
                      return std::make_shared<Pumila11>(n, g);
                  })
+            .def("make_shared",
+                 [](const std::string &name) {
+                     return std::make_shared<Pumila11>(name);
+                 })
             .def_readwrite("main", &Pumila11::main)
             .def_readwrite("target", &Pumila11::target)
             .def_readwrite("diff_history", &Pumila11::diff_history)
@@ -22,7 +26,7 @@ void initPumila11Module(py::module_ &m) {
                     return pumila->getInNodes(field).get();
                 })
             .def("get_action_rnd",
-                 py::overload_cast<std::shared_ptr<FieldState2>, double>(
+                 py::overload_cast<const FieldState2 &, double>(
                      &Pumila11::getActionRnd))
             .def("get_action_rnd",
                  py::overload_cast<const std::shared_ptr<GameSim> &, double>(

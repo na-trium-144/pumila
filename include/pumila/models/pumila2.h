@@ -80,7 +80,8 @@ class Pumila2 : public Pumila {
          * \param delta それぞれqの誤差 (行数はq.rows()と同じでなければならない)
          *
          */
-        PUMILA_DLL void backward(const NNResult &result, const Eigen::VectorXd &diff);
+        PUMILA_DLL void backward(const NNResult &result,
+                                 const Eigen::VectorXd &diff);
 
         /*!
          * \brief 色を並べ替えた特徴量(4!=24通り)を計算し、
@@ -88,7 +89,8 @@ class Pumila2 : public Pumila {
          * \return in.rows() * 24, IN_NODES の行列
          *
          */
-        PUMILA_DLL static Eigen::MatrixXd truncateInNodes(const Eigen::MatrixXd &in);
+        PUMILA_DLL static Eigen::MatrixXd
+        transposeInNodes(const Eigen::MatrixXd &in);
     };
     /*!
      * getAction時はmainを使う
@@ -102,7 +104,8 @@ class Pumila2 : public Pumila {
 
     using NNResult = NNModel::NNResult;
 
-    PUMILA_DLL explicit Pumila2(double alpha, double gamma, double learning_rate);
+    PUMILA_DLL explicit Pumila2(double alpha, double gamma,
+                                double learning_rate);
     std::shared_ptr<Pumila2> copy() {
         auto copied =
             std::make_shared<Pumila2>(main.alpha, gamma, main.learning_rate);
@@ -126,13 +129,15 @@ class Pumila2 : public Pumila {
      * (Pumila::poolで実行され完了するまで待機)
      * \return 22 * IN_NODES の行列
      */
-    PUMILA_DLL static std::future<InFeatures> getInNodes(std::shared_ptr<FieldState> field);
+    PUMILA_DLL static std::future<InFeatures>
+    getInNodes(std::shared_ptr<FieldState> field);
     PUMILA_DLL static std::future<InFeatures>
     getInNodes(std::shared_future<InFeatures> feature, int feat_a);
     /*!
      * \brief フィールドにaのアクションをしたあとの特徴量を計算
      */
-    PUMILA_DLL static InFeatureSingle getInNodeSingle(std::shared_ptr<FieldState> field, int a);
+    PUMILA_DLL static InFeatureSingle
+    getInNodeSingle(std::shared_ptr<FieldState> field, int a);
 
     /*!
      * \brief 報酬を計算
@@ -143,8 +148,9 @@ class Pumila2 : public Pumila {
     }
     PUMILA_DLL static double calcRewardS(std::shared_ptr<FieldState> field);
 
-    int getAction(std::shared_ptr<FieldState2> field) override {
-        return getAction(std::make_shared<FieldState>(*field));
+    int getAction(const FieldState2 &field,
+                  const std::optional<FieldState2> &) override {
+        return getAction(std::make_shared<FieldState>(field));
     }
     int getAction(std::shared_ptr<FieldState> field) {
         return getActionRnd(field, 0);
@@ -155,7 +161,8 @@ class Pumila2 : public Pumila {
      * \param rnd_p ランダムな手を返す割合 0〜1
      *
      */
-    PUMILA_DLL virtual int getActionRnd(std::shared_ptr<FieldState> field, double rnd_p);
+    PUMILA_DLL virtual int getActionRnd(std::shared_ptr<FieldState> field,
+                                        double rnd_p);
     int getActionRnd(const std::shared_ptr<GameSim> &sim, double rnd_p) {
         return getActionRnd(sim->field1(), rnd_p);
     }

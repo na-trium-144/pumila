@@ -53,4 +53,15 @@ int Chain::scoreB() const {
     return b ? b : 1;
 }
 
+bool Chain::operator==(const Chain &other) const {
+    if (connection_num != other.connection_num) {
+        return false;
+    }
+    for (std::size_t i = 0; i < connection_num; i++) {
+        if (connections.at(i) != other.connections.at(i)) {
+            return false;
+        }
+    }
+    return true;
+}
 } // namespace PUMILA_NS

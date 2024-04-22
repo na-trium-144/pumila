@@ -6,7 +6,8 @@ template <typename NNModel>
 Pumila10Base<NNModel>::Pumila10Base(int hidden_nodes, double gamma)
     : Pumila(), gamma(gamma), main(hidden_nodes), target(main) {}
 
-void Pumila10::load(std::istream &is) {
+template <typename NNModel>
+void Pumila10Base<NNModel>::load(std::istream &is) {
     std::lock_guard lock_main(main_m);
     std::lock_guard lock_target(target_m);
     {
@@ -22,7 +23,8 @@ void Pumila10::load(std::istream &is) {
         target = main;
     }
 }
-void Pumila10::save(std::ostream &os) {
+template <typename NNModel>
+void Pumila10Base<NNModel>::save(std::ostream &os) {
     std::shared_lock lock_main(main_m);
     os.write(reinterpret_cast<char *>(&gamma), sizeof(gamma));
     os.write(reinterpret_cast<char *>(&main.hidden_nodes),
@@ -72,7 +74,7 @@ Pumila10::getInNodeSingleS(const FieldState2 &field_copy, int a) {
             }
         }
     }
-    in_nodes.score_diff = feat.field_next.currentStep().chain_score;
+    in_nodes.score_diff = feat.field_next.currentStep().chainScore();
     return feat;
 }
 
@@ -173,10 +175,10 @@ void Pumila10Base<NNModel>::backward(const NNResult &result,
 }
 
 template <typename NNModel>
-int Pumila10Base<NNModel>::getActionRnd(std::shared_ptr<FieldState2> field,
+int Pumila10Base<NNModel>::getActionRnd(const FieldState2 &field,
                                         double rnd_p) {
     NNResult fw_result;
-    auto in_feat = getInNodes(*field).get();
+    auto in_feat = getInNodes(field).get();
     fw_result = forward(in_feat.in);
     for (int a2 = 0; a2 < ACTIONS_NUM; a2++) {
         if (/*!in_feat.each[a2].get().field_next.is_valid ||*/
@@ -204,18 +206,18 @@ int Pumila10Base<NNModel>::getActionRnd(std::shared_ptr<FieldState2> field,
 
 // pumila5より
 double Pumila10::calcRewardS(const FieldState2 &field) {
-    return field.currentStep().chain_score;
+    return field.currentStep().chainScore();
 }
 
 template <typename NNModel>
-void Pumila10Base<NNModel>::learnStep(std::shared_ptr<FieldState2> field) {
+void Pumila10Base<NNModel>::learnStep(const FieldState2 &field) {
     {
         std::unique_lock lock(learning_m);
         learning_cond.wait(lock, [&] { return step_started < BATCH_SIZE; });
         step_started++;
     }
     auto pumila = shared_from_this();
-    auto next = getInNodes(*field).share();
+    auto next = getInNodes(field).share();
     std::array<std::shared_future<InFeatures>, ACTIONS_NUM> next2;
     std::array<std::array<std::shared_future<InFeatures>, ACTIONS_NUM>,
                ACTIONS_NUM>
@@ -230,7 +232,7 @@ void Pumila10Base<NNModel>::learnStep(std::shared_ptr<FieldState2> field) {
     }
     pool.detach_task([this, pumila, next, next2 = std::move(next2),
                       next3 = std::move(next3)] {
-        auto in_t = truncateInNodes(next.get().in);
+        auto in_t = transposeInNodes(next.get().in);
         NNResult fw_result;
         fw_result = forward(in_t);
         Eigen::VectorXd delta_2(fw_result.q.rows());

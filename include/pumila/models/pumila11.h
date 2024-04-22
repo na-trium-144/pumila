@@ -25,13 +25,11 @@ struct NNModel11 {
  * * 入力にスコアをそのままではなく連鎖1回ごとにわけて与えるようにする
  */
 class Pumila11 : public Pumila10Base<NNModel11> {
-    void load(std::istream &is) override;
-    void save(std::ostream &os) override;
-
   public:
     std::string name() const override { return "pumila11"; }
     explicit Pumila11(int hidden_nodes, double gamma)
         : Pumila10Base(hidden_nodes, gamma) {}
+    Pumila11(const std::string &name) : Pumila11(1, 1) { loadFile(name); }
     std::shared_ptr<Pumila11> copy() {
         return std::make_shared<Pumila11>(*this);
     }
@@ -48,10 +46,10 @@ class Pumila11 : public Pumila10Base<NNModel11> {
     }
     PUMILA_DLL static InFeatureSingle getInNodeSingleS(const FieldState2 &field,
                                                        int a);
-    Eigen::MatrixXd truncateInNodes(const Eigen::MatrixXd &in) const override {
-        return truncateInNodesS(in);
+    Eigen::MatrixXd transposeInNodes(const Eigen::MatrixXd &in) const override {
+        return transposeInNodesS(in);
     }
     PUMILA_DLL static Eigen::MatrixXd
-    truncateInNodesS(const Eigen::MatrixXd &in);
+    transposeInNodesS(const Eigen::MatrixXd &in);
 };
 } // namespace PUMILA_NS

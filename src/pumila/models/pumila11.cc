@@ -7,33 +7,6 @@ NNModel11::NNModel11(int hidden_nodes)
       matrix_ih(Eigen::MatrixXd::Random(IN_NODES, hidden_nodes)),
       matrix_hq(Eigen::VectorXd::Random(hidden_nodes)) {}
 
-void Pumila11::load(std::istream &is) {
-    std::lock_guard lock_main(main_m);
-    std::lock_guard lock_target(target_m);
-    {
-        is.read(reinterpret_cast<char *>(&gamma), sizeof(gamma));
-        is.read(reinterpret_cast<char *>(&main.hidden_nodes),
-                sizeof(main.hidden_nodes));
-        main.matrix_ih = Eigen::MatrixXd(NNModel::IN_NODES, main.hidden_nodes);
-        main.matrix_hq = Eigen::VectorXd(main.hidden_nodes);
-        is.read(reinterpret_cast<char *>(main.matrix_ih.data()),
-                main.matrix_ih.rows() * main.matrix_ih.cols() * sizeof(double));
-        is.read(reinterpret_cast<char *>(main.matrix_hq.data()),
-                main.matrix_hq.rows() * main.matrix_hq.cols() * sizeof(double));
-        target = main;
-    }
-}
-void Pumila11::save(std::ostream &os) {
-    std::shared_lock lock_main(main_m);
-    os.write(reinterpret_cast<char *>(&gamma), sizeof(gamma));
-    os.write(reinterpret_cast<char *>(&main.hidden_nodes),
-             sizeof(main.hidden_nodes));
-    os.write(reinterpret_cast<char *>(main.matrix_ih.data()),
-             main.matrix_ih.rows() * main.matrix_ih.cols() * sizeof(double));
-    os.write(reinterpret_cast<char *>(main.matrix_hq.data()),
-             main.matrix_hq.rows() * main.matrix_hq.cols() * sizeof(double));
-}
-
 Pumila11::InFeatureSingle
 Pumila11::getInNodeSingleS(const FieldState2 &field_copy, int a) {
     InFeatureSingle feat;
@@ -82,9 +55,9 @@ Pumila11::getInNodeSingleS(const FieldState2 &field_copy, int a) {
     }
     return feat;
 }
-Eigen::MatrixXd Pumila11::truncateInNodesS(const Eigen::MatrixXd &in) {
+Eigen::MatrixXd Pumila11::transposeInNodesS(const Eigen::MatrixXd &in) {
     if (in.cols() != NNModel::IN_NODES) {
-        throw std::invalid_argument("invalid size in truncate: in -> " +
+        throw std::invalid_argument("invalid size in transpose: in -> " +
                                     std::to_string(in.cols()) + ", expected " +
                                     std::to_string(NNModel::IN_NODES));
     }

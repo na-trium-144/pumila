@@ -9,6 +9,7 @@
 #include <thread>
 #include <mutex>
 #include <shared_mutex>
+#include <deque>
 
 namespace PUMILA_NS {
 class Pumila;
@@ -19,21 +20,10 @@ struct FieldState;
  * 時間の単位はフレーム (1/60s)
  *
  */
-class GameSim {
-    std::mt19937 rnd;
-    double getRndD() {
-        return static_cast<double>(rnd() - rnd.min()) / (rnd.max() - rnd.min());
-    }
-    int getRndRange(int num) {
-        return static_cast<int>(static_cast<double>(rnd() - rnd.min()) /
-                                (rnd.max() - rnd.min()) * num);
-    }
-    Puyo randomPuyo();
-
+class GameSim : public std::enable_shared_from_this<GameSim> {
     std::optional<std::thread> model_action_thread;
     std::atomic<bool> running;
     std::optional<Action> soft_put_target = std::nullopt;
-    std::recursive_mutex step_m;
     /*!
      * \brief rotPairして失敗した場合その回転方向が入る
      * 回転できた場合0
@@ -49,22 +39,18 @@ class GameSim {
      * \brief おじゃまぷよを送る相手をセットしてね
      */
     std::weak_ptr<GameSim> opponent;
+    /*!
+     * \brief 相手simを相互にセットする
+     */
+    PUMILA_DLL void setOpponentSim(const std::shared_ptr<GameSim> &opponent_s);
 
-    std::shared_ptr<FieldState2> field;
+    std::optional<FieldState2> field;
     PUMILA_DLL std::shared_ptr<FieldState> field1();
     /*!
      * \brief fieldにアクセスするときはmutexつかってね
      *
      */
     std::shared_mutex field_m;
-
-    /*!
-     * \brief 現在の連鎖情報
-     *
-     * ChainPhaseを抜けるとリセット
-     *
-     */
-    std::optional<Chain> current_chain;
 
     std::shared_ptr<Pumila> model;
     std::string name;
@@ -77,19 +63,26 @@ class GameSim {
     PUMILA_DLL explicit GameSim(
         std::shared_ptr<Pumila> model, const std::string &name = "",
         typename std::mt19937::result_type seed = std::random_device()(),
-        bool enable_garbage = false);
+        bool enable_garbage = true);
     explicit GameSim(
         typename std::mt19937::result_type seed = std::random_device()(),
-        bool enable_garbage = false)
+        bool enable_garbage = true)
         : GameSim(nullptr, "", seed, enable_garbage) {}
-    GameSim(const GameSim &sim) = delete;
-    GameSim(GameSim &&sim) = delete;
 
-    PUMILA_DLL ~GameSim();
+    GameSim(const GameSim &sim) = delete;
+    GameSim &operator=(const GameSim &) = delete;
+    GameSim(GameSim &&sim) = delete;
+    GameSim &operator=(GameSim &&sim) = delete;
+
+    ~GameSim() { stopAction(); }
+    PUMILA_DLL void stopAction();
 
     bool hasModel() { return model != nullptr; }
 
-    PUMILA_DLL void reset();
+    PUMILA_DLL void
+    reset(typename std::mt19937::result_type seed = std::random_device()());
+
+    std::recursive_mutex step_m;
 
     /*!
      * \brief freePhase時のみぷよを操作する
@@ -136,7 +129,6 @@ class GameSim {
         enum PhaseEnum {
             free,
             fall,
-            chain,
             garbage,
         };
         virtual PhaseEnum get() const = 0;
@@ -151,7 +143,9 @@ class GameSim {
         PUMILA_DLL std::unique_ptr<Phase> step() override;
         static constexpr int WAIT_T = 20;
         int wait_t;
-        inline static std::mt19937 rnd{std::random_device()()};
+        std::array<std::pair<std::size_t, std::size_t>, 30> garbage;
+        std::size_t garbage_num;
+        FieldState2 field_prev;
     };
     struct FreePhase final : Phase {
         PUMILA_DLL explicit FreePhase(GameSim *sim);
@@ -160,22 +154,15 @@ class GameSim {
         static constexpr int PUT_T = 100;
         static constexpr double FALL_SPEED = 1.0;
         static constexpr double SOFT_SPEED = 25.0;
-        PuyoPair current_pair;
         int put_t;
     };
     struct FallPhase final : Phase {
         PUMILA_DLL explicit FallPhase(GameSim *sim);
         PhaseEnum get() const override { return PhaseEnum::fall; }
         PUMILA_DLL std::unique_ptr<Phase> step() override;
-        static constexpr int WAIT_T = 20;
-        int wait_t;
-    };
-    struct ChainPhase final : Phase {
-        PUMILA_DLL explicit ChainPhase(GameSim *sim);
-        PhaseEnum get() const override { return PhaseEnum::chain; }
-        PUMILA_DLL std::unique_ptr<Phase> step() override;
-        static constexpr int WAIT_T = 30;
-        int wait_t;
+        const Chain *current_chain;
+        int fall_wait_t;
+        FieldState2 display_field;
     };
 };
 
