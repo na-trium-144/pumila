@@ -177,6 +177,7 @@ set(PUMILA_SRC
     src/pumila/action.cc
     src/pumila/field.cc
     src/pumila/field2.cc
+    src/pumila/field3.cc
     src/pumila/chain.cc
     src/pumila/window.cc
     src/pumila/game.cc

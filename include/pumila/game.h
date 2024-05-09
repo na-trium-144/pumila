@@ -1,6 +1,7 @@
 #pragma once
 #include "def.h"
 #include "field2.h"
+#include "field3.h"
 #include "chain.h"
 #include <random>
 #include <memory>
@@ -44,7 +45,8 @@ class GameSim : public std::enable_shared_from_this<GameSim> {
      */
     PUMILA_DLL void setOpponentSim(const std::shared_ptr<GameSim> &opponent_s);
 
-    std::optional<FieldState2> field;
+    std::optional<FieldState3> field;
+    PUMILA_DLL std::shared_ptr<FieldState2> field2();
     PUMILA_DLL std::shared_ptr<FieldState> field1();
     /*!
      * \brief fieldにアクセスするときはmutexつかってね
@@ -145,7 +147,7 @@ class GameSim : public std::enable_shared_from_this<GameSim> {
         int wait_t;
         std::array<std::pair<std::size_t, std::size_t>, 30> garbage;
         std::size_t garbage_num;
-        FieldState2 field_prev;
+        FieldState3 field_prev;
     };
     struct FreePhase final : Phase {
         PUMILA_DLL explicit FreePhase(GameSim *sim);
@@ -160,9 +162,10 @@ class GameSim : public std::enable_shared_from_this<GameSim> {
         PUMILA_DLL explicit FallPhase(GameSim *sim);
         PhaseEnum get() const override { return PhaseEnum::fall; }
         PUMILA_DLL std::unique_ptr<Phase> step() override;
+        std::vector<Chain> chains;
         const Chain *current_chain;
         int fall_wait_t;
-        FieldState2 display_field;
+        FieldState3 display_field;
     };
 };
 

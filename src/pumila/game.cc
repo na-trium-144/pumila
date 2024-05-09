@@ -21,7 +21,7 @@ GameSim::GameSim(std::shared_ptr<Pumila> model, const std::string &name,
                 {
                     std::shared_lock lock(field_m);
                     if (field) {
-                        field_copy = *field;
+                        field_copy = *field2();
                     }
                 }
                 if (field_copy) {
@@ -40,9 +40,9 @@ void GameSim::reset(typename std::mt19937::result_type seed) {
     std::lock_guard lock(step_m);
     {
         std::lock_guard lock2(field_m);
-        field = std::make_optional<FieldState2>(seed);
+        field = std::make_optional<FieldState3>(seed);
     }
-    phase = std::make_unique<GameSim::GarbagePhase>(this); // nextが補充される
+    phase = std::make_unique<GameSim::GarbagePhase>(this);
 }
 
 void GameSim::stopAction() {
@@ -73,16 +73,16 @@ void GameSim::movePair(int dx) {
     std::lock_guard lock(step_m);
     if (isFreePhase()) {
         std::lock_guard lock(field_m);
-        auto pp = field->next().get();
+        auto pp = field->getNext(0);
         if (FieldState2::inRange(pp.bottomX() + dx) &&
             FieldState2::inRange(pp.topX() + dx) &&
             (pp.bottomY() > 12 ||
-             field->field().get(pp.bottomX() + dx, pp.bottomY()) ==
+             field->get(pp.bottomX() + dx, pp.bottomY()) ==
                  Puyo::none) &&
             (pp.topY() > 12 ||
-             field->field().get(pp.topX() + dx, pp.topY()) == Puyo::none)) {
+             field->get(pp.topX() + dx, pp.topY()) == Puyo::none)) {
             pp.x += dx;
-            field->next().update(pp);
+            field->updateNext(pp);
         }
     }
 }
@@ -90,33 +90,33 @@ void GameSim::rotPair(int r) {
     std::lock_guard lock(step_m);
     if (isFreePhase() && rot_fail_count < ROT_FAIL_COUNT) {
         std::lock_guard lock(field_m);
-        PuyoPair new_pp = field->next().get();
+        PuyoPair new_pp = field->getNext(0);
         if (r == rot_fail) {
             r *= 2;
         }
         rot_fail = 0;
         new_pp.rotate(r);
         if (!field->checkNextCollision(new_pp)) {
-            field->next().update(new_pp);
+            field->updateNext(new_pp);
             return;
         }
         PuyoPair new_pp2 = new_pp;
         rot_fail_count++;
         new_pp2.y = new_pp.y + 1;
         if (!field->checkNextCollision(new_pp2)) {
-            field->next().update(new_pp2);
+            field->updateNext(new_pp2);
             return;
         }
         new_pp2.y = new_pp.y;
         new_pp2.x = new_pp.x + 1;
         if (!field->checkNextCollision(new_pp2)) {
-            field->next().update(new_pp2);
+            field->updateNext(new_pp2);
             return;
         }
         new_pp2.y = new_pp.y;
         new_pp2.x = new_pp.x - 1;
         if (!field->checkNextCollision(new_pp2)) {
-            field->next().update(new_pp2);
+            field->updateNext(new_pp2);
             return;
         }
         rot_fail = r;
@@ -126,9 +126,9 @@ void GameSim::quickDrop() {
     std::lock_guard lock(step_m);
     if (isFreePhase()) {
         std::lock_guard lock(field_m);
-        PuyoPair pp = field->next().get();
+        PuyoPair pp = field->getNext(0);
         pp.y = -1;
-        field->next().update(pp);
+        field->updateNext(pp);
         auto f_phase = dynamic_cast<FreePhase *>(phase.get());
         f_phase->put_t = 0;
     }
@@ -137,9 +137,9 @@ void GameSim::softDrop() {
     std::lock_guard lock(step_m);
     if (isFreePhase()) {
         std::lock_guard lock(field_m);
-        PuyoPair pp = field->next().get();
+        PuyoPair pp = field->getNext(0);
         pp.y -= FreePhase::SOFT_SPEED / 60;
-        field->next().update(pp);
+        field->updateNext(pp);
         auto f_phase = dynamic_cast<FreePhase *>(phase.get());
         f_phase->put_t -= 10;
     }
@@ -151,7 +151,7 @@ void GameSim::step() {
         PuyoPair pp;
         {
             std::shared_lock lock(field_m);
-            pp = field->next().get();
+            pp = field->getNext(0);
         }
         if (static_cast<Action>(pp) == soft_put_target) {
             softDrop();
@@ -185,8 +185,8 @@ void GameSim::put(const Action &action) {
     if (isFreePhase()) {
         {
             std::lock_guard lock(field_m);
-            PuyoPair pp = field->next().get();
-            field->next().update({pp, action});
+            PuyoPair pp = field->getNext(0);
+            field->updateNext({pp, action});
         }
         quickDrop();
         step();
@@ -205,10 +205,10 @@ bool GameSim::isFreePhase() {
 GameSim::GarbagePhase::GarbagePhase(GameSim *sim)
     : Phase(sim), wait_t(WAIT_T), garbage(), garbage_num(0),
       field_prev(*sim->field) {
-    int garbage_send;
+    std::size_t garbage_send;
     {
         std::lock_guard lock(sim->field_m);
-        garbage_send = sim->field->garbage().send();
+        garbage_send = sim->field->calcGarbage();
     }
     auto opponent_sim = sim->opponent.lock();
     if (opponent_sim && sim->enable_garbage) {
@@ -276,7 +276,7 @@ GameSim::FallPhase::FallPhase(GameSim *sim)
     if (sim->field->fall()) {
         fall_wait_t = Chain::FALL_T;
     }
-    sim->field->deleteChainRecurse();
+    chains = sim->field->deleteChainRecurse();
 }
 std::unique_ptr<GameSim::Phase> GameSim::FallPhase::step() {
     if (fall_wait_t > 0) {

@@ -22,12 +22,27 @@ class FieldState3 {
     std::array<std::array<Puyo, WIDTH>, HEIGHT> field;
 
     /*!
+     * \brief x, y とつながっているぷよの数を数え、フィールドから消す
+     */
+    PUMILA_DLL void deleteConnectionImpl(std::size_t x, std::size_t y,
+                                         PuyoConnection &deleted);
+    /*!
+     * \brief x, y とつながっているぷよの数を数え、フィールドから消す
+     * \return 削除したぷよ
+     */
+    PUMILA_DLL PuyoConnection deleteConnection(std::size_t x, std::size_t y);
+
+    /*!
      * \brief 盤面が変化したかどうか
      * * set時にtrue
      * * deleteChainでchanged=trueのみチェック
      * * putNext時にクリア
      */
     std::array<std::array<bool, WIDTH>, HEIGHT> updated;
+    /*!
+     * \brief updatedをクリア
+     */
+    PUMILA_DLL void clearUpdated();
 
     static constexpr std::size_t NextNum = 3;
     std::mt19937 rnd_next;
@@ -49,6 +64,10 @@ class FieldState3 {
      * \brief 自フィールドに降るおじゃま
      */
     std::vector<GarbageGroup> garbage_ready;
+    /*!
+     * \brief おじゃま計算用スコア
+     */
+    int garbage_score;
     /*!
      * \brief スコア
      */
@@ -116,10 +135,6 @@ class FieldState3 {
      * \brief フィールドを上書き
      */
     PUMILA_DLL void set(std::size_t x, std::size_t y, Puyo p);
-    /*!
-     * \brief updatedをクリア
-     */
-    PUMILA_DLL void clearUpdated();
 
     /*!
      * \brief i番目のnextを取得
@@ -166,6 +181,17 @@ class FieldState3 {
     PUMILA_DLL void putGarbage(std::array<std::pair<std::size_t, std::size_t>,
                                           30> *garbage_list = nullptr,
                                std::size_t *garbage_num = nullptr);
+    static constexpr int GARBAGE_RATE = 70;
+    /*!
+     * \brief 生成されるおじゃま数を計算, garbage_scoreに加算
+     * \return おじゃま数
+     */
+    PUMILA_DLL std::size_t calcGarbage(int score_add);
+    /*!
+     * \brief おじゃまを相殺する
+     * \return 相殺した数
+     */
+    PUMILA_DLL std::size_t cancelGarbage(std::size_t garbage_num);
 
     /*!
      * \brief 落下中のぷよが既存のぷよに重なっているまたは画面外か調べる
@@ -178,9 +204,10 @@ class FieldState3 {
      * \brief 4連結を探し、消す
      * * total_scoreに追加
      * * 盤面に4連結が無かった場合何もせず消したぷよの数は0として返る
+     * \param chain_num 連鎖数(1連鎖目→1)
      * \return 消したぷよの情報
      */
-    PUMILA_DLL Chain deleteChain();
+    PUMILA_DLL Chain deleteChain(std::size_t chain_num);
     /*!
      * \brief 空中に浮いているぷよを落とす
      * \return 落ちたぷよがあったらtrue
@@ -196,17 +223,6 @@ class FieldState3 {
      * \brief 盤面の各マスについて消したら何連鎖が起きるかを計算する
      */
     PUMILA_DLL std::array<std::array<std::size_t, WIDTH>, HEIGHT> calcChainAll() const;
-
-    /*!
-     * \brief 生成されるおじゃま数を計算, garbage_scoreに加算
-     * \return おじゃま吸う
-     */
-    PUMILA_DLL std::size_t calcGarbage(std::size_t score_add);
-    /*!
-     * \brief おじゃまを相殺する
-     * \return 相殺した数
-     */
-    PUMILA_DLL std::size_t cancelGarbage(std::size_t garbage_num);
 
     /*!
      * \brief 11,2を調べ埋まっているかどうか返す

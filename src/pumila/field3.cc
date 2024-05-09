@@ -58,11 +58,11 @@ void FieldState3::addGarbage(const GarbageGroup &garbage) {
 }
 std::size_t FieldState3::getGarbageNumTotal() const {
     std::lock_guard lock(mtx);
-    return std::accumulate(
-        garbage_ready.cbegin(), garbage_ready.cend(),
-        static_cast<std::size_t>(0), [](std::size_t acc, const auto &g) {
-            return acc + (g.ready() ? g.fellNum() : g.garbageNum());
-        });
+    return std::accumulate(garbage_ready.cbegin(), garbage_ready.cend(),
+                           static_cast<std::size_t>(0),
+                           [](std::size_t acc, const auto &g) {
+                               return acc + g.restGarbageNum();
+                           });
 }
 
 void FieldState3::putNext(const Action &action) {
@@ -142,6 +142,26 @@ void FieldState3::putGarbage(
     }
 }
 
+std::size_t FieldState3::calcGarbage(int score_add) {
+    std::lock_guard lock(mtx);
+    garbage_score += score_add;
+    std::size_t g = garbage_score / GARBAGE_RATE;
+    garbage_score %= GARBAGE_RATE;
+    return g;
+}
+std::size_t FieldState3::cancelGarbage(std::size_t garbage_num) {
+    std::lock_guard lock(mtx);
+    std::size_t cancelled = 0;
+    while (cancelled < garbage_num && !garbage_ready.empty()) {
+        auto &gg = garbage_ready.front();
+        cancelled += gg.cancel(garbage_num - cancelled);
+        if (gg.done()) {
+            garbage_ready.erase(garbage_ready.begin());
+        }
+    }
+    return cancelled;
+}
+
 bool FieldState3::checkNextCollision(const Action &action) const {
     std::lock_guard lock(mtx);
     PuyoPair pp{getNext(0), action};
@@ -158,39 +178,66 @@ bool FieldState3::checkNextCollision(const Action &action) const {
           get(pp.topX(), std::ceil(pp.topY())) != Puyo::none)));
 }
 
-Chain FieldState3::deleteChain() {
-    int chain_num = current_step_.chainNum() + 1;
+PuyoConnection FieldState3::deleteConnection(std::size_t x, std::size_t y) {
+    std::lock_guard lock(mtx);
+    PuyoConnection deleted;
+    deleteConnectionImpl(x, y, deleted);
+    return deleted;
+}
+void FieldState3::deleteConnectionImpl(std::size_t x, std::size_t y,
+                                       PuyoConnection &deleted) {
+    std::lock_guard lock(mtx);
+    Puyo here = get(x, y);
+    if (here == Puyo::none) {
+        return;
+    }
+    set(x, y, Puyo::none);
+    if (here == Puyo::garbage) {
+        deleted.garbage.emplace_back(x, y);
+    } else {
+        deleted.colored.emplace_back(x, y);
+        const std::array<std::pair<std::size_t, std::size_t>, 4> near{{
+            {x + 1, y},
+            {x - 1, y},
+            {x, y + 1},
+            {x, y - 1},
+        }};
+        for (const auto &[nx, ny] : near) {
+            if (inRange(nx, ny) &&
+                (get(nx, ny) == here || get(nx, ny) == Puyo::garbage)) {
+                deleteConnectionImpl(nx, ny, deleted);
+            }
+        }
+    }
+}
+
+Chain FieldState3::deleteChain(std::size_t chain_num) {
+    std::lock_guard lock(mtx);
     Chain chain(chain_num);
-    FieldState2 state_tmp = *this;
+    FieldState3 state_tmp = *this;
     for (std::size_t y = 0; y < HEIGHT; y++) {
         for (std::size_t x = 0; x < WIDTH; x++) {
-            if (field_.getUpdated(x, y)) {
+            if (updated.at(y).at(x)) {
                 auto connection = state_tmp.deleteConnection(x, y);
                 if (connection.colored.size() >= 4) {
-                    chain.push_connection(field_.get(x, y),
-                                          connection.colored.size());
+                    chain.push_connection(get(x, y), connection.colored.size());
                     deleteConnection(x, y); // thisの盤面にも反映
                 }
             }
         }
     }
-    if (!chain.isEmpty()) {
-        int chain_score = chain.score();
-        current_step_.pushChain(chain);
-        total_score_ += chain_score;
-        garbage_.pushScore(chain_score);
-    }
     return chain;
 }
-bool FieldState2::fall() {
+bool FieldState3::fall() {
+    std::lock_guard lock(mtx);
     bool has_fall = false;
     for (std::size_t x = 0; x < WIDTH; x++) {
         for (std::size_t y = 0; y < HEIGHT; y++) {
-            if (field_.get(x, y) == Puyo::none) {
+            if (get(x, y) == Puyo::none) {
                 for (std::size_t dy = 1; y + dy < HEIGHT; dy++) {
-                    if (field_.get(x, y + dy) != Puyo::none) {
-                        field_.set(x, y, field_.get(x, y + dy));
-                        field_.set(x, y + dy, Puyo::none);
+                    if (get(x, y + dy) != Puyo::none) {
+                        set(x, y, get(x, y + dy));
+                        set(x, y + dy, Puyo::none);
                         has_fall = true;
                         break;
                     }
@@ -201,31 +248,33 @@ bool FieldState2::fall() {
     return has_fall;
 }
 
-std::array<std::array<int, FieldState2::WIDTH>, FieldState2::HEIGHT>
-FieldState2::calcChainAll() const {
-    std::array<std::array<int, WIDTH>, HEIGHT> chain_map = {};
+std::array<std::array<std::size_t, FieldState3::WIDTH>, FieldState3::HEIGHT>
+FieldState3::calcChainAll() const {
+    std::lock_guard lock(mtx);
+    std::array<std::array<std::size_t, WIDTH>, HEIGHT> chain_map = {};
     for (std::size_t y = 0; y < HEIGHT; y++) {
         for (std::size_t x = 0; x < WIDTH; x++) {
-            if (field_.get(x, y) == Puyo::none ||
-                field_.get(x, y) == Puyo::garbage || chain_map[y][x] != 0) {
+            if (get(x, y) == Puyo::none || get(x, y) == Puyo::garbage ||
+                chain_map.at(y).at(x) != 0) {
                 continue;
             }
-            FieldState2 state = *this;
+            FieldState3 state = *this;
             auto first_connection = state.deleteConnection(x, y);
             auto chains = state.deleteChainRecurse();
             for (const auto &pos : first_connection.colored) {
-                chain_map[pos.second][pos.first] = chains.size();
+                chain_map.at(pos.second).at(pos.first) = chains.size();
             }
         }
     }
     return chain_map;
 }
 
-std::vector<Chain> FieldState2::deleteChainRecurse() {
+std::vector<Chain> FieldState3::deleteChainRecurse() {
+    std::lock_guard lock(mtx);
     std::vector<Chain> chains;
     while (true) {
         fall();
-        Chain chain = deleteChain();
+        Chain chain = deleteChain(chains.size() + 1);
         if (chain.isEmpty()) {
             break;
         }
@@ -233,7 +282,5 @@ std::vector<Chain> FieldState2::deleteChainRecurse() {
     }
     return chains;
 }
-
-
 
 } // namespace PUMILA_NS
