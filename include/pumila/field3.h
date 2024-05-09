@@ -31,12 +31,18 @@ class FieldState3 {
 
     static constexpr std::size_t NextNum = 3;
     std::mt19937 rnd_next;
+    /*!
+     * \brief 乱数を1進める
+     */
     PUMILA_DLL Puyo nextColor();
 
     /*!
      * \brief nextのぷよ(操作中の位置情報を含む)
      */
     std::array<PuyoPair, NextNum> next;
+    /*!
+     * \brief nextを1つすすめて補充
+     */
     PUMILA_DLL void shiftNext();
 
     /*!
@@ -102,12 +108,109 @@ class FieldState3 {
     static bool inRange(std::size_t x, std::size_t y = 0) {
         return x < WIDTH && y < HEIGHT;
     }
+    /*!
+     * \brief フィールドを取得
+     */
     PUMILA_DLL Puyo get(std::size_t x, std::size_t y) const;
+    /*!
+     * \brief フィールドを上書き
+     */
     PUMILA_DLL void set(std::size_t x, std::size_t y, Puyo p);
+    /*!
+     * \brief updatedをクリア
+     */
     PUMILA_DLL void clearUpdated();
 
-    PUMILA_DLL PuyoPair getNext(std::size_t i = 0) const;
+    /*!
+     * \brief i番目のnextを取得
+     */
+    PUMILA_DLL PuyoPair getNext(std::size_t i) const;
+    /*!
+     * \brief next[0]を上書き
+     */
     PUMILA_DLL void updateNext(const PuyoPair &pp);
 
+    /*!
+     * \brief 相手からのおじゃまを追加
+     */
+    PUMILA_DLL void addGarbage(const GarbageGroup &garbage);
+    /*!
+     * \brief 現在のおじゃまを取得
+     */
+    PUMILA_DLL std::size_t getGarbageNumTotal() const;
+
+    /*!
+     * \brief nextを落とした場合のy座標を調べる
+     * \return bottom, topのそれぞれのy座標
+     */
+    PUMILA_DLL std::pair<std::size_t, std::size_t>
+    getNextHeight(const Action &action) const;
+    std::pair<std::size_t, std::size_t> getNextHeight() const {
+        return getNextHeight(getNext(0));
+    }
+    PUMILA_DLL std::size_t getHeight(std::size_t x) const;
+
+    /*!
+     * \brief nextを指定した位置に落とす
+     * * field.updatedをクリア
+     * * nextを削除する
+     */
+    PUMILA_DLL void putNext(const Action &action);
+    void putNext() { putNext(getNext(0)); }
+
+    /*!
+     * \brief garbageを降らせる:
+     * garbageReadyを0にする or 30減らす
+     * \param garbage_list おじゃまが降った位置が返る
+     */
+    PUMILA_DLL void putGarbage(std::array<std::pair<std::size_t, std::size_t>,
+                                          30> *garbage_list = nullptr,
+                               std::size_t *garbage_num = nullptr);
+
+    /*!
+     * \brief 落下中のぷよが既存のぷよに重なっているまたは画面外か調べる
+     * \return フィールド上のぷよと重なるor画面外ならtrue
+     */
+    PUMILA_DLL bool checkNextCollision(const Action &action) const;
+    bool checkNextCollision() const { return checkNextCollision(getNext(0)); }
+
+    /*!
+     * \brief 4連結を探し、消す
+     * * total_scoreに追加
+     * * 盤面に4連結が無かった場合何もせず消したぷよの数は0として返る
+     * \return 消したぷよの情報
+     */
+    PUMILA_DLL Chain deleteChain();
+    /*!
+     * \brief 空中に浮いているぷよを落とす
+     * \return 落ちたぷよがあったらtrue
+     */
+    PUMILA_DLL bool fall();
+
+    /*!
+     * \brief 連鎖が止まるまでdeleteChain,fallをする
+     */
+    PUMILA_DLL std::vector<Chain> deleteChainRecurse();
+
+    /*!
+     * \brief 盤面の各マスについて消したら何連鎖が起きるかを計算する
+     */
+    PUMILA_DLL std::array<std::array<std::size_t, WIDTH>, HEIGHT> calcChainAll() const;
+
+    /*!
+     * \brief 生成されるおじゃま数を計算, garbage_scoreに加算
+     * \return おじゃま吸う
+     */
+    PUMILA_DLL std::size_t calcGarbage(std::size_t score_add);
+    /*!
+     * \brief おじゃまを相殺する
+     * \return 相殺した数
+     */
+    PUMILA_DLL std::size_t cancelGarbage(std::size_t garbage_num);
+
+    /*!
+     * \brief 11,2を調べ埋まっているかどうか返す
+     */
+    bool isGameOver() const { return get(2, 11) != Puyo::none; }
 };
 } // namespace PUMILA_NS

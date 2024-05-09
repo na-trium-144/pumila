@@ -1,60 +1,64 @@
 #pragma once
 #include "def.h"
 #include <chrono>
-#include <future>
 #include <memory>
+#include <cassert>
 
 namespace PUMILA_NS {
 /*!
  * \brief 1回の連鎖で送るおじゃまのまとまり
  */
 class GarbageGroup {
-    int garbage_num;
-    std::shared_ptr<std::promise<int>> cancelled_p;
-    std::shared_future<int> cancelled_num;
+    std::size_t garbage_num;
+    std::shared_ptr<std::size_t> cancelled_num;
+    std::shared_ptr<std::size_t> fell_num;
 
   public:
     GarbageGroup() : garbage_num(0), cancelled_num() {}
-    explicit GarbageGroup(int garbage_num)
+    explicit GarbageGroup(std::size_t garbage_num)
         : garbage_num(garbage_num),
-          cancelled_p(std::make_shared<std::promise<int>>()),
-          cancelled_num(cancelled_p->get_future().share()) {}
+          cancelled_num(std::make_shared<std::size_t>(0)),
+          fell_num(std::make_shared<std::size_t>(0)) {}
 
     /*!
      * \brief もとのおじゃまの数
      */
-    int garbageNum() const { return garbage_num; }
+    std::size_t garbageNum() const { return garbage_num; }
+    /*!
+     * \brief まだ未確定のおじゃまの数
+     */
+    std::size_t restGarbageNum() const {
+        assert(garbageNum() >= (cancelledNum() + fellNum()));
+        return garbageNum() - cancelledNum() - fellNum();
+    }
     /*!
      * \brief 相殺する
-     * \return 相殺量がgarbageNumより多い場合余りをreturnする
-     *
-     * 足りない場合fellNum()で取得
+     * \return 相殺量
      */
-    int setCancelled(int cancel) {
-        if (cancelled_p) {
-            cancelled_p->set_value(cancel > garbageNum() ? garbageNum()
-                                                         : cancel);
-        }
-        return cancel - cancelledNum();
+    std::size_t cancel(std::size_t cancel) {
+        std::size_t cancel_actual =
+            cancel > restGarbageNum() ? restGarbageNum() : cancel;
+        assert(cancelled_num);
+        *cancelled_num += cancel_actual;
+        return cancel_actual;
     }
     /*!
-     * \brief 落下する量を返す
-     * setCancelledを呼んでいない場合自動的に0をセットする
+     * \brief ぷよを降らせる
+     * \return 降らせるぷよの量
      */
-    int fall() {
-        setCancelled(0);
-        return fellNum();
+    std::size_t fall(std::size_t fall_max) {
+        std::size_t fall_actual =
+            fall_max > restGarbageNum() ? restGarbageNum() : fall_max;
+        assert(fell_num);
+        *fell_num += fall_actual;
+        return fall_actual;
     }
 
-    bool ready() const {
-        return cancelled_num.valid() &&
-               cancelled_num.wait_for(std::chrono::milliseconds(0)) ==
-                   std::future_status::ready;
+    bool done() const { return restGarbageNum() == 0; }
+    std::size_t cancelledNum() const {
+        return cancelled_num ? *cancelled_num : 0;
     }
-    int cancelledNum() const {
-        return cancelled_num.valid() ? cancelled_num.get() : 0;
-    }
-    int fellNum() const { return garbageNum() - cancelledNum(); }
+    std::size_t fellNum() const { return fell_num ? *fell_num : 0; }
 };
 
 } // namespace PUMILA_NS
