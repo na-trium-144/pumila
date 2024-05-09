@@ -2,6 +2,7 @@
 #include "def.h"
 #include <cstddef>
 #include <array>
+#include <memory>
 #include <random>
 #include <vector>
 #include <mutex>
@@ -63,7 +64,7 @@ class FieldState3 {
     /*!
      * \brief 自フィールドに降るおじゃま
      */
-    std::vector<GarbageGroup> garbage_ready;
+    std::vector<std::shared_ptr<GarbageGroup>> garbage_ready;
     /*!
      * \brief おじゃま計算用スコア
      */
@@ -148,7 +149,7 @@ class FieldState3 {
     /*!
      * \brief 相手からのおじゃまを追加
      */
-    PUMILA_DLL void addGarbage(const GarbageGroup &garbage);
+    PUMILA_DLL void addGarbage(const std::shared_ptr<GarbageGroup> &garbage);
     /*!
      * \brief 現在のおじゃまを取得
      */
@@ -222,7 +223,8 @@ class FieldState3 {
     /*!
      * \brief 盤面の各マスについて消したら何連鎖が起きるかを計算する
      */
-    PUMILA_DLL std::array<std::array<std::size_t, WIDTH>, HEIGHT> calcChainAll() const;
+    PUMILA_DLL std::array<std::array<std::size_t, WIDTH>, HEIGHT>
+    calcChainAll() const;
 
     /*!
      * \brief 11,2を調べ埋まっているかどうか返す

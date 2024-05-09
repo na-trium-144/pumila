@@ -1,6 +1,7 @@
 #include <pumila/chain.h>
 #include <numeric>
 #include <algorithm>
+#include <stdexcept>
 
 namespace PUMILA_NS {
 void Chain::push_connection(Puyo p, int n) {

@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <numeric>
 #include <pumila/field3.h>
+
 namespace PUMILA_NS {
 void FieldState3::set(std::size_t x, std::size_t y, Puyo p) {
     std::lock_guard lock(mtx);
@@ -52,17 +53,18 @@ void FieldState3::shiftNext() {
     next.at(NextNum - 1) = PuyoPair(nextColor(), nextColor());
 }
 
-void FieldState3::addGarbage(const GarbageGroup &garbage) {
+void FieldState3::addGarbage(const std::shared_ptr<GarbageGroup> &garbage) {
     std::lock_guard lock(mtx);
     garbage_ready.push_back(garbage);
 }
 std::size_t FieldState3::getGarbageNumTotal() const {
     std::lock_guard lock(mtx);
-    return std::accumulate(garbage_ready.cbegin(), garbage_ready.cend(),
-                           static_cast<std::size_t>(0),
-                           [](std::size_t acc, const auto &g) {
-                               return acc + g.restGarbageNum();
-                           });
+    return std::accumulate(
+        garbage_ready.cbegin(), garbage_ready.cend(),
+        static_cast<std::size_t>(0),
+        [](std::size_t acc, const std::shared_ptr<GarbageGroup> &g) {
+            return acc + g->restGarbageNum();
+        });
 }
 
 void FieldState3::putNext(const Action &action) {
@@ -135,8 +137,8 @@ void FieldState3::putGarbage(
     }
     while (garbage_num_actual > 0) {
         auto &gg = garbage_ready.front();
-        garbage_num_actual -= gg.fall(garbage_num_actual);
-        if (gg.done()) {
+        garbage_num_actual -= gg->fall(garbage_num_actual);
+        if (gg->done()) {
             garbage_ready.erase(garbage_ready.begin());
         }
     }
@@ -154,8 +156,8 @@ std::size_t FieldState3::cancelGarbage(std::size_t garbage_num) {
     std::size_t cancelled = 0;
     while (cancelled < garbage_num && !garbage_ready.empty()) {
         auto &gg = garbage_ready.front();
-        cancelled += gg.cancel(garbage_num - cancelled);
-        if (gg.done()) {
+        cancelled += gg->cancel(garbage_num - cancelled);
+        if (gg->done()) {
             garbage_ready.erase(garbage_ready.begin());
         }
     }
