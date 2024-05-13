@@ -1,18 +1,13 @@
 #include "pumila/garbage.h"
 #include <memory>
 #include <pumila/game.h>
-#include <pumila/model_base.h>
-#include <pumila/field.h>
 #include <cassert>
 
 namespace PUMILA_NS {
-GameSim::GameSim(std::shared_ptr<Pumila> model, const std::string &name,
-                 typename std::mt19937::result_type seed, bool enable_garbage)
-    : model_action_thread(std::nullopt), running(true),
-      enable_garbage(enable_garbage), opponent(), field(std::nullopt),
-      model(model), name(model && name.empty() ? model->name() : name),
+GameSim::GameSim(typename std::mt19937::result_type seed, bool enable_garbage)
+    : enable_garbage(enable_garbage), opponent(), field(std::nullopt),
       phase(nullptr) {
-    if (model) {
+    /*if (model) {
         model_action_thread = std::make_optional<std::thread>([this] {
             while (running.load()) {
                 while (running.load() && !isFreePhase()) {
@@ -33,7 +28,7 @@ GameSim::GameSim(std::shared_ptr<Pumila> model, const std::string &name,
                 }
             }
         });
-    }
+    }*/
     reset(seed);
 }
 
@@ -46,13 +41,13 @@ void GameSim::reset(typename std::mt19937::result_type seed) {
     phase = std::make_unique<GameSim::GarbagePhase>(this);
 }
 
-void GameSim::stopAction() {
-    running.store(false);
-    if (model_action_thread) {
-        model_action_thread->join();
-        model_action_thread = std::nullopt;
-    }
-}
+// void GameSim::stopAction() {
+//     running.store(false);
+//     if (model_action_thread) {
+//         model_action_thread->join();
+//         model_action_thread = std::nullopt;
+//     }
+// }
 
 void GameSim::setOpponentSim(const std::shared_ptr<GameSim> &opponent_s) {
     auto prev_opponent_s = opponent.lock();
@@ -65,18 +60,18 @@ void GameSim::setOpponentSim(const std::shared_ptr<GameSim> &opponent_s) {
     }
 }
 
-std::shared_ptr<FieldState> GameSim::field1() {
-    std::shared_lock lock(field_m);
-    return std::make_shared<FieldState>(*field2());
-}
+// std::shared_ptr<FieldState> GameSim::field1() {
+//     std::shared_lock lock(field_m);
+//     return std::make_shared<FieldState>(*field2());
+// }
 
 void GameSim::movePair(int dx) {
     std::lock_guard lock(step_m);
     if (isFreePhase()) {
-        std::lock_guard lock(field_m);
+        std::lock_guard lock_f(field_m);
         auto pp = field->getNext(0);
-        if (FieldState2::inRange(pp.bottomX() + dx) &&
-            FieldState2::inRange(pp.topX() + dx) &&
+        if (FieldState3::inRange(pp.bottomX() + dx) &&
+            FieldState3::inRange(pp.topX() + dx) &&
             (pp.bottomY() > 12 ||
              field->get(pp.bottomX() + dx, pp.bottomY()) == Puyo::none) &&
             (pp.topY() > 12 ||
@@ -89,7 +84,7 @@ void GameSim::movePair(int dx) {
 void GameSim::rotPair(int r) {
     std::lock_guard lock(step_m);
     if (isFreePhase() && rot_fail_count < ROT_FAIL_COUNT) {
-        std::lock_guard lock(field_m);
+        std::lock_guard lock_f(field_m);
         PuyoPair new_pp = field->getNext(0);
         if (r == rot_fail) {
             r *= 2;
@@ -125,7 +120,7 @@ void GameSim::rotPair(int r) {
 void GameSim::quickDrop() {
     std::lock_guard lock(step_m);
     if (isFreePhase()) {
-        std::lock_guard lock(field_m);
+        std::lock_guard lock_f(field_m);
         PuyoPair pp = field->getNext(0);
         pp.y = -1;
         field->updateNext(pp);
@@ -136,7 +131,7 @@ void GameSim::quickDrop() {
 void GameSim::softDrop() {
     std::lock_guard lock(step_m);
     if (isFreePhase()) {
-        std::lock_guard lock(field_m);
+        std::lock_guard lock_f(field_m);
         PuyoPair pp = field->getNext(0);
         pp.y -= FreePhase::SOFT_SPEED / 60;
         field->updateNext(pp);
@@ -150,7 +145,7 @@ void GameSim::step() {
     if (soft_put_target) {
         PuyoPair pp;
         {
-            std::shared_lock lock(field_m);
+            std::shared_lock lock_f(field_m);
             pp = field->getNext(0);
         }
         if (static_cast<Action>(pp) == soft_put_target) {

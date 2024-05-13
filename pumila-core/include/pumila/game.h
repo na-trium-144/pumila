@@ -1,20 +1,18 @@
 #pragma once
 #include "def.h"
-#include "field2.h"
 #include "field3.h"
 #include "chain.h"
 #include <random>
 #include <memory>
 #include <optional>
-#include <atomic>
-#include <thread>
 #include <mutex>
 #include <shared_mutex>
 #include <vector>
 
 namespace PUMILA_NS {
-class Pumila;
-struct FieldState;
+// class Pumila;
+// struct FieldState;
+
 /*!
  * \brief fieldに加えてネクスト、落下時間、スコアなども管理する(1プレイヤー分)
  *
@@ -22,9 +20,10 @@ struct FieldState;
  *
  */
 class GameSim : public std::enable_shared_from_this<GameSim> {
-    std::optional<std::thread> model_action_thread;
-    std::atomic<bool> running;
+    // std::optional<std::thread> model_action_thread;
+    // std::atomic<bool> running;
     std::optional<Action> soft_put_target = std::nullopt;
+
     /*!
      * \brief rotPairして失敗した場合その回転方向が入る
      * 回転できた場合0
@@ -46,40 +45,40 @@ class GameSim : public std::enable_shared_from_this<GameSim> {
     PUMILA_DLL void setOpponentSim(const std::shared_ptr<GameSim> &opponent_s);
 
     std::optional<FieldState3> field;
-    PUMILA_DLL std::optional<FieldState2> field2();
-    PUMILA_DLL std::shared_ptr<FieldState> field1();
+    // PUMILA_DLL std::optional<FieldState2> field2();
+    // PUMILA_DLL std::shared_ptr<FieldState> field1();
+
     /*!
      * \brief fieldにアクセスするときはmutexつかってね
      *
      */
     std::shared_mutex field_m;
 
-    std::shared_ptr<Pumila> model;
-    std::string name;
+    // std::shared_ptr<Pumila> model;
+    // std::string name;
 
     int soft_put_interval = 6;
     int soft_put_cnt = 0;
 
     bool is_over = false;
 
+    // PUMILA_DLL explicit GameSim(
+    //     std::shared_ptr<Pumila> model, const std::string &name = "",
+    //     typename std::mt19937::result_type seed = std::random_device()(),
+    //     bool enable_garbage = true);
     PUMILA_DLL explicit GameSim(
-        std::shared_ptr<Pumila> model, const std::string &name = "",
         typename std::mt19937::result_type seed = std::random_device()(),
         bool enable_garbage = true);
-    explicit GameSim(
-        typename std::mt19937::result_type seed = std::random_device()(),
-        bool enable_garbage = true)
-        : GameSim(nullptr, "", seed, enable_garbage) {}
 
     GameSim(const GameSim &sim) = delete;
     GameSim &operator=(const GameSim &) = delete;
     GameSim(GameSim &&sim) = delete;
     GameSim &operator=(GameSim &&sim) = delete;
 
-    ~GameSim() { stopAction(); }
-    PUMILA_DLL void stopAction();
+    // ~GameSim() { stopAction(); }
+    // PUMILA_DLL void stopAction();
 
-    bool hasModel() { return model != nullptr; }
+    // bool hasModel() { return model != nullptr; }
 
     PUMILA_DLL void
     reset(typename std::mt19937::result_type seed = std::random_device()());
