@@ -148,6 +148,7 @@ class FieldState3 {
 
     /*!
      * \brief 相手からのおじゃまを追加
+     * \param garbage 送られてきたおじゃま nullptrも可
      */
     PUMILA_DLL void addGarbage(const std::shared_ptr<GarbageGroup> &garbage);
     /*!

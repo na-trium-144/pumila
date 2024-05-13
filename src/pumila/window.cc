@@ -124,11 +124,11 @@ void Window::draw() {
                                PUYO_SIZE * 6, PUYO_SIZE * 12};
         SDL_RenderDrawRect(sdl_renderer, &field_rect);
 
-        FieldState2 *field = &*sim[i]->field;
+        auto field = sim[i]->field2();
         auto fall_phase =
             dynamic_cast<GameSim::FallPhase *>(sim[i]->phase.get());
         if (fall_phase) {
-            field = &fall_phase->display_field;
+            field = fall_phase->display_field;
         }
         if (sim[i]->isFreePhase()) {
             auto current_pair = field->next().get();

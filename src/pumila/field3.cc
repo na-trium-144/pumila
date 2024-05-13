@@ -54,8 +54,10 @@ void FieldState3::shiftNext() {
 }
 
 void FieldState3::addGarbage(const std::shared_ptr<GarbageGroup> &garbage) {
-    std::lock_guard lock(mtx);
-    garbage_ready.push_back(garbage);
+    if (garbage) {
+        std::lock_guard lock(mtx);
+        garbage_ready.push_back(garbage);
+    }
 }
 std::size_t FieldState3::getGarbageNumTotal() const {
     std::lock_guard lock(mtx);

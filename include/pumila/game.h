@@ -10,7 +10,7 @@
 #include <thread>
 #include <mutex>
 #include <shared_mutex>
-#include <deque>
+#include <vector>
 
 namespace PUMILA_NS {
 class Pumila;
@@ -46,7 +46,7 @@ class GameSim : public std::enable_shared_from_this<GameSim> {
     PUMILA_DLL void setOpponentSim(const std::shared_ptr<GameSim> &opponent_s);
 
     std::optional<FieldState3> field;
-    PUMILA_DLL std::shared_ptr<FieldState2> field2();
+    PUMILA_DLL std::optional<FieldState2> field2();
     PUMILA_DLL std::shared_ptr<FieldState> field1();
     /*!
      * \brief fieldにアクセスするときはmutexつかってね
@@ -140,11 +140,15 @@ class GameSim : public std::enable_shared_from_this<GameSim> {
     PUMILA_DLL bool isFreePhase();
 
     struct GarbagePhase final : Phase {
-        PUMILA_DLL explicit GarbagePhase(GameSim *sim);
+        explicit GarbagePhase(GameSim *sim)
+            : GarbagePhase(sim, std::vector<Chain>()) {}
+        PUMILA_DLL explicit GarbagePhase(GameSim *sim,
+                                         std::vector<Chain> &&chains);
         PhaseEnum get() const override { return PhaseEnum::garbage; }
         PUMILA_DLL std::unique_ptr<Phase> step() override;
         static constexpr int WAIT_T = 20;
         int wait_t;
+        std::vector<Chain> chains;
         std::array<std::pair<std::size_t, std::size_t>, 30> garbage;
         std::size_t garbage_num;
         FieldState3 field_prev;
@@ -163,7 +167,7 @@ class GameSim : public std::enable_shared_from_this<GameSim> {
         PhaseEnum get() const override { return PhaseEnum::fall; }
         PUMILA_DLL std::unique_ptr<Phase> step() override;
         std::vector<Chain> chains;
-        const Chain *current_chain;
+        std::size_t current_chain;
         int fall_wait_t;
         FieldState3 display_field;
     };
