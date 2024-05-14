@@ -50,8 +50,21 @@ configure_file(
     COPYONLY
 )
 
+message(STATUS "Fetching googletest Source...")
+FetchContent_Declare(googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG v1.14.0
+)
+set(gtest_force_shared_crt on CACHE INTERNAL "" FORCE)
+set(INSTALL_GTEST off CACHE INTERNAL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+
 if(MSVC)
     add_compile_options(/W4 /utf-8)
+    add_compile_definitions(
+        _CRT_SECURE_NO_WARNINGS
+        _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING
+    )
 else()
     add_compile_options(-Wall -Wpedantic -Wextra)
     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -UNDEBUG")
@@ -64,9 +77,13 @@ list(APPEND PUMILA_CORE_SRC
     pumila-core/lib/game.cc
     pumila-core/lib/models/pumila14.cc
 )
+list(APPEND PUMILA_TEST_SRC
+    pumila-core/test/field_test.cc
+)
 if(WIN32)
     list(APPEND PUMILA_CORE_SRC pumila-core/lib/version.rc)
 endif()
+
 add_library(pumila-core SHARED ${PUMILA_CORE_SRC})
 target_include_directories(pumila-core PUBLIC pumila-core/include)
 target_compile_features(pumila-core PUBLIC cxx_std_20)
@@ -77,3 +94,9 @@ endif()
 
 pybind11_add_module(pypumila pumila-core/pypumila.cc)
 target_link_libraries(pypumila PUBLIC pumila-core)
+
+enable_testing()
+add_executable(pumila-test ${PUMILA_TEST_SRC})
+target_link_libraries(pumila-test PRIVATE pumila-core GTest::gtest_main)
+include(GoogleTest)
+gtest_discover_tests(pumila-test DISCOVERY_TIMEOUT 600)
