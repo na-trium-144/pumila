@@ -62,6 +62,7 @@ list(APPEND PUMILA_CORE_SRC
     pumila-core/lib/field3.cc
     pumila-core/lib/chain.cc
     pumila-core/lib/game.cc
+    pumila-core/lib/models/pumila14.cc
 )
 if(WIN32)
     list(APPEND PUMILA_CORE_SRC pumila-core/lib/version.rc)

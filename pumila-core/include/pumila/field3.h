@@ -18,8 +18,11 @@ namespace PUMILA_NS {
 class FieldState3 {
     mutable std::recursive_mutex mtx;
 
+  public:
     static constexpr std::size_t WIDTH = 6;
     static constexpr std::size_t HEIGHT = 13;
+
+  private:
     std::array<std::array<Puyo, WIDTH>, HEIGHT> field;
 
     /*!
