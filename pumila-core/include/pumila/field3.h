@@ -72,24 +72,13 @@ class FieldState3 {
      * \brief おじゃま計算用スコア
      */
     int garbage_score;
-    /*!
-     * \brief スコア
-     */
-    int total_score;
-    /*!
-     * \brief 現在進行中の連鎖
-     */
-    std::vector<Chain> current_chain;
-    /*!
-     * \brief current_chainの開始時刻, 終了時刻
-     */
-    int chain_begin_t, chain_end_t;
 
   public:
-    FieldState3() = default;
-    explicit FieldState3(std::uint_fast32_t seed)
-        : field(), updated(), rnd_next(seed), garbage_ready(), total_score(),
-          current_chain(), chain_begin_t(), chain_end_t() {
+    FieldState3()
+        : field(), updated(), rnd_next(), next(), garbage_ready(),
+          garbage_score() {}
+    explicit FieldState3(std::uint_fast32_t seed) : FieldState3() {
+        rnd_next.seed(seed);
         for (std::size_t i = 0; i < NextNum; i++) {
             shiftNext();
         }
@@ -102,25 +91,19 @@ class FieldState3 {
     FieldState3 &operator=(const FieldState3 &other) {
         std::lock_guard lock(other.mtx);
         field = other.field;
-        // updated
+        clearUpdated();
         rnd_next = other.rnd_next;
+        next = other.next;
         garbage_ready = other.garbage_ready;
-        total_score = other.total_score;
-        current_chain = other.current_chain;
-        chain_begin_t = other.chain_begin_t;
-        chain_end_t = other.chain_end_t;
         return *this;
     }
     FieldState3 &operator=(FieldState3 &&other) {
         std::lock_guard lock(other.mtx);
         field = std::move(other.field);
-        // updated
+        clearUpdated();
         rnd_next = std::move(other.rnd_next);
+        next = std::move(other.next);
         garbage_ready = std::move(other.garbage_ready);
-        total_score = std::move(other.total_score);
-        current_chain = std::move(other.current_chain);
-        chain_begin_t = std::move(other.chain_begin_t);
-        chain_end_t = std::move(other.chain_end_t);
         return *this;
     }
 

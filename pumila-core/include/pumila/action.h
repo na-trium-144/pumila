@@ -34,11 +34,10 @@ struct Action {
      *
      */
     PUMILA_DLL void rotate(int right);
-    
-    bool operator==(const Action &rhs) const {
-        return x == rhs.x && rot == rhs.rot;
+
+    bool operator==(const Action &other) const {
+        return x == other.x && rot == other.rot;
     }
-    bool operator!=(const Action &rhs) const { return !(*this == rhs); }
 };
 
 constexpr int ACTIONS_NUM = 22;
@@ -80,6 +79,10 @@ struct PuyoPair : Action {
     PuyoPair(const PuyoPair &pp, const Action &action)
         : Action(action), y(pp.y), bottom(pp.bottom), top(pp.top) {}
 
+    bool operator==(const PuyoPair &other) const {
+        return x == other.x && rot == other.rot && bottom == other.bottom &&
+               top == other.top;
+    }
 };
 
 } // namespace PUMILA_NS
