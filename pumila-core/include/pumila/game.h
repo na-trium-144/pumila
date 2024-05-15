@@ -162,7 +162,10 @@ class GameSim : public std::enable_shared_from_this<GameSim> {
         PUMILA_DLL explicit FallPhase(GameSim *sim);
         PhaseEnum get() const override { return PhaseEnum::fall; }
         PUMILA_DLL std::unique_ptr<Phase> step() override;
+        static constexpr int FALL_T = 20;
+        static constexpr int CHAIN_T = 30;
         std::vector<Chain> chains;
+        std::vector<int> chain_t;
         std::size_t current_chain;
         int fall_wait_t;
         FieldState3 display_field;

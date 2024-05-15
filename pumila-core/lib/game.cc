@@ -264,9 +264,10 @@ GameSim::FallPhase::FallPhase(GameSim *sim)
     : Phase(sim), current_chain(0), fall_wait_t(0), display_field(*sim->field) {
     // std::shared_lock lock(sim->field_m);
     if (sim->field->fall()) {
-        fall_wait_t = Chain::FALL_T;
+        fall_wait_t = FALL_T;
     }
     chains = sim->field->deleteChainRecurse();
+    chain_t.assign(chains.size(), CHAIN_T + FALL_T);
 }
 std::unique_ptr<GameSim::Phase> GameSim::FallPhase::step() {
     if (fall_wait_t > 0) {
@@ -275,11 +276,11 @@ std::unique_ptr<GameSim::Phase> GameSim::FallPhase::step() {
         if (current_chain >= chains.size()) {
             return std::make_unique<GameSim::GarbagePhase>(sim,
                                                            std::move(chains));
-        } else if (--chains.at(current_chain).wait_time <= 0) {
+        } else if (--chain_t.at(current_chain) <= 0) {
             current_chain++;
             display_field.deleteChain(current_chain + 1);
         }
-        if (chains.at(current_chain).wait_time == Chain::FALL_T) {
+        if (chain_t.at(current_chain) == FALL_T) {
             display_field.fall();
         }
     }

@@ -19,20 +19,13 @@ struct Chain {
      *
      * 例えば赤4連結+青5連結の9個なら{{red, 4}, {blue, 5}}で、
      * connectionNum() = 9
-     *
-     * 6*13/4=19
      */
-    std::array<std::pair<Puyo, int>, 20> connections;
-    std::size_t connection_num;
+    std::vector<std::pair<Puyo, int>> connections;
     int chain_num;
-    static constexpr int FALL_T = 20;
-    static constexpr int CHAIN_T = 30;
-    int wait_time;
     explicit Chain(int chain_num)
-        : connections(), connection_num(0), chain_num(chain_num),
-          wait_time(CHAIN_T + FALL_T) {}
+        : connections(), chain_num(chain_num){}
     void push_connection(Puyo p, int n);
-    bool isEmpty() const { return connection_num == 0; }
+    bool isEmpty() const { return connections.empty(); }
     PUMILA_DLL int connectionNum() const;
     int chainBonus() const { return chainBonus(chain_num); }
     PUMILA_DLL static int chainBonus(int chain_num);

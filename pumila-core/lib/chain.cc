@@ -4,16 +4,11 @@
 #include <stdexcept>
 
 namespace PUMILA_NS {
-void Chain::push_connection(Puyo p, int n) {
-    if (connection_num >= connections.size()) {
-        throw std::out_of_range("number of connections overflow");
-    }
-    connections[connection_num++] = std::make_pair(p, n);
-}
+void Chain::push_connection(Puyo p, int n) { connections.emplace_back(p, n); }
 
 int Chain::connectionNum() const {
     return std::accumulate(
-        connections.begin(), connections.begin() + connection_num, 0,
+        connections.begin(), connections.end(), 0,
         [](int acc, const auto &con) { return acc + con.second; });
 }
 int Chain::chainBonus(int chain_num) {
@@ -25,8 +20,8 @@ int Chain::chainBonus(int chain_num) {
 }
 int Chain::connectionBonus() const {
     int b = 0;
-    for (std::size_t i = 0; i < connection_num; i++) {
-        int c = connections[i].second;
+    for (const auto &cn : connections) {
+        int c = cn.second;
         if (c >= 5 && c <= 10) {
             b += c - 3;
         } else if (c > 10) {
@@ -37,8 +32,8 @@ int Chain::connectionBonus() const {
 }
 int Chain::colorBonus() const {
     std::array<bool, 6> colors = {};
-    for (std::size_t i = 0; i < connection_num; i++) {
-        colors[static_cast<int>(connections[i].first)] = true;
+    for (const auto &cn : connections) {
+        colors[static_cast<int>(cn.first)] = true;
     }
     int cn =
         std::count_if(colors.begin(), colors.end(), [](auto c) { return c; });
@@ -55,14 +50,6 @@ int Chain::scoreB() const {
 }
 
 bool Chain::operator==(const Chain &other) const {
-    if (connection_num != other.connection_num) {
-        return false;
-    }
-    for (std::size_t i = 0; i < connection_num; i++) {
-        if (connections.at(i) != other.connections.at(i)) {
-            return false;
-        }
-    }
-    return true;
+    return connections == other.connections;
 }
 } // namespace PUMILA_NS
