@@ -16,10 +16,6 @@ TEST(FieldTest, get) {
     }
     EXPECT_THROW(field.get(7, 0), std::out_of_range);
     EXPECT_THROW(field.get(0, 14), std::out_of_range);
-
-    for (int x = 0; x < 6; x++) {
-        EXPECT_EQ(field.getHeight(x), 0);
-    }
 }
 TEST(FieldTest, set) {
     FieldState3 field;
@@ -84,4 +80,115 @@ TEST(FieldTest, garbage) {
     EXPECT_EQ(garbage2->cancelledNum(), 0);
     EXPECT_EQ(garbage2->fellNum(), 11);
     EXPECT_FALSE(garbage2->done());
+}
+TEST(FieldTest, height) {
+    FieldState3 field;
+    for (int x = 0; x < 6; x++) {
+        EXPECT_EQ(field.getHeight(x), 0);
+    }
+    field.updateNext({Puyo::red, Puyo::red, {2, Action::Rotation::vertical}});
+    EXPECT_EQ(field.getNextHeight(),
+              (std::make_pair<std::size_t, std::size_t>(0, 1)));
+    field.updateNext(
+        {Puyo::red, Puyo::red, {2, Action::Rotation::vertical_inverse}});
+    EXPECT_EQ(field.getNextHeight(),
+              (std::make_pair<std::size_t, std::size_t>(1, 0)));
+    field.updateNext(
+        {Puyo::red, Puyo::red, {2, Action::Rotation::horizontal_left}});
+    EXPECT_EQ(field.getNextHeight(),
+              (std::make_pair<std::size_t, std::size_t>(0, 0)));
+    field.updateNext(
+        {Puyo::red, Puyo::red, {2, Action::Rotation::horizontal_right}});
+    EXPECT_EQ(field.getNextHeight(),
+              (std::make_pair<std::size_t, std::size_t>(0, 0)));
+
+    field.set(1, 0, Puyo::red);
+    field.set(1, 1, Puyo::red);
+    field.set(2, 0, Puyo::red);
+    field.updateNext({Puyo::red, Puyo::red, {1, Action::Rotation::vertical}});
+    EXPECT_EQ(field.getNextHeight(),
+              (std::make_pair<std::size_t, std::size_t>(2, 3)));
+    field.updateNext(
+        {Puyo::red, Puyo::red, {1, Action::Rotation::vertical_inverse}});
+    EXPECT_EQ(field.getNextHeight(),
+              (std::make_pair<std::size_t, std::size_t>(3, 2)));
+    field.updateNext(
+        {Puyo::red, Puyo::red, {1, Action::Rotation::horizontal_left}});
+    EXPECT_EQ(field.getNextHeight(),
+              (std::make_pair<std::size_t, std::size_t>(2, 0)));
+    field.updateNext(
+        {Puyo::red, Puyo::red, {1, Action::Rotation::horizontal_right}});
+    EXPECT_EQ(field.getNextHeight(),
+              (std::make_pair<std::size_t, std::size_t>(2, 1)));
+}
+TEST(FieldTest, put) {
+    FieldState3 field;
+    field.updateNext({Puyo::red, Puyo::green, {0, Action::Rotation::vertical}});
+    field.putNext();
+    EXPECT_EQ(field.get(0, 0), Puyo::red);
+    EXPECT_EQ(field.get(0, 1), Puyo::green);
+    field.updateNext(
+        {Puyo::blue, Puyo::yellow, {1, Action::Rotation::horizontal_left}});
+    field.putNext();
+    EXPECT_EQ(field.get(1, 0), Puyo::blue);
+    EXPECT_EQ(field.get(0, 2), Puyo::yellow);
+}
+TEST(FieldTest, chain) {
+    FieldState3 field;
+    Chain chain = field.deleteChain(1);
+    EXPECT_TRUE(chain.isEmpty());
+    std::vector<Chain> chains = field.deleteChainRecurse();
+    EXPECT_TRUE(chains.empty());
+
+    field.updateNext({Puyo::red, Puyo::red, {0, Action::Rotation::vertical}});
+    field.putNext();
+    field.updateNext(
+        {Puyo::green, Puyo::green, {1, Action::Rotation::vertical}});
+    field.putNext();
+    field.updateNext({Puyo::blue, Puyo::blue, {2, Action::Rotation::vertical}});
+    field.putNext();
+    field.updateNext({Puyo::red, Puyo::red, {1, Action::Rotation::vertical}});
+    field.putNext();
+    field.updateNext(
+        {Puyo::green, Puyo::green, {2, Action::Rotation::vertical}});
+    field.putNext();
+    field.updateNext({Puyo::blue, Puyo::blue, {3, Action::Rotation::vertical}});
+    field.putNext();
+    chains = field.deleteChainRecurse();
+    ASSERT_EQ(chains.size(), 3);
+    EXPECT_EQ(chains[0].connectionNum(), 4);
+    EXPECT_EQ(chains[0].score(), 40);
+    EXPECT_EQ(chains[1].connectionNum(), 4);
+    EXPECT_EQ(chains[1].score(), 320);
+    EXPECT_EQ(chains[2].connectionNum(), 4);
+    EXPECT_EQ(chains[2].score(), 640);
+}
+TEST(FieldTest, chainAll) {
+    FieldState3 field;
+    auto a = field.calcChainAll();
+    EXPECT_EQ(a.at(0).at(0), 0);
+
+    field.updateNext({Puyo::red, Puyo::red, {0, Action::Rotation::vertical}});
+    field.putNext();
+    field.updateNext(
+        {Puyo::green, Puyo::green, {1, Action::Rotation::vertical}});
+    field.putNext();
+    field.updateNext({Puyo::blue, Puyo::blue, {2, Action::Rotation::vertical}});
+    field.putNext();
+    field.updateNext({Puyo::red, Puyo::red, {1, Action::Rotation::vertical}});
+    field.putNext();
+    field.updateNext(
+        {Puyo::green, Puyo::green, {2, Action::Rotation::vertical}});
+    field.putNext();
+    a = field.calcChainAll();
+    EXPECT_EQ(a.at(0).at(0), 0);
+    EXPECT_EQ(a.at(1).at(0), 0);
+    EXPECT_EQ(a.at(0).at(1), 1);
+    EXPECT_EQ(a.at(1).at(1), 1);
+    EXPECT_EQ(a.at(2).at(1), 0);
+    EXPECT_EQ(a.at(3).at(1), 0);
+    EXPECT_EQ(a.at(0).at(2), 2);
+    EXPECT_EQ(a.at(1).at(2), 2);
+    EXPECT_EQ(a.at(2).at(2), 0);
+    EXPECT_EQ(a.at(3).at(2), 0);
 }

@@ -260,7 +260,7 @@ std::unique_ptr<GameSim::Phase> GameSim::FreePhase::step() {
             sim->field->updateNext(current_pair);
             if (put_t < 0) {
                 sim->soft_put_target = std::nullopt;
-                sim->field->putNext(current_pair);
+                sim->field->putNext();
                 go_fall = true;
             }
         }

@@ -69,13 +69,13 @@ std::size_t FieldState3::getGarbageNumTotal() const {
         });
 }
 
-void FieldState3::putNext(const Action &action) {
+void FieldState3::putNext() {
     std::lock_guard lock(mtx);
-    PuyoPair pp{getNext(0), action};
-    auto [yb, yt] = getNextHeight(action);
+    auto [yb, yt] = getNextHeight();
     clearUpdated();
-    set(pp.topX(), yt, pp.top);
-    set(pp.bottomX(), yb, pp.bottom);
+    PuyoPair action = getNext(0);
+    set(action.topX(), yt, action.top);
+    set(action.bottomX(), yb, action.bottom);
     shiftNext();
 }
 

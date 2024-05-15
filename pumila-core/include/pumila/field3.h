@@ -141,26 +141,6 @@ class FieldState3 {
      * \brief 現在のおじゃまを取得
      */
     PUMILA_DLL std::size_t getGarbageNumTotal() const;
-
-    /*!
-     * \brief nextを落とした場合のy座標を調べる
-     * \return bottom, topのそれぞれのy座標
-     */
-    PUMILA_DLL std::pair<std::size_t, std::size_t>
-    getNextHeight(const Action &action) const;
-    std::pair<std::size_t, std::size_t> getNextHeight() const {
-        return getNextHeight(getNext(0));
-    }
-    PUMILA_DLL std::size_t getHeight(std::size_t x) const;
-
-    /*!
-     * \brief nextを指定した位置に落とす
-     * * field.updatedをクリア
-     * * nextを削除する
-     */
-    PUMILA_DLL void putNext(const Action &action);
-    void putNext() { putNext(getNext(0)); }
-
     /*!
      * \brief garbageを降らせる:
      * garbageReadyを0にする or 30減らす
@@ -182,11 +162,28 @@ class FieldState3 {
     PUMILA_DLL std::size_t cancelGarbage(std::size_t garbage_num);
 
     /*!
+     * \brief nextを落とした場合のy座標を調べる
+     * \return bottom, topのそれぞれのy座標
+     */
+    PUMILA_DLL std::pair<std::size_t, std::size_t>
+    getNextHeight(const Action &action) const;
+    std::pair<std::size_t, std::size_t> getNextHeight() const {
+        return getNextHeight(getNext(0));
+    }
+    PUMILA_DLL std::size_t getHeight(std::size_t x) const;
+    /*!
      * \brief 落下中のぷよが既存のぷよに重なっているまたは画面外か調べる
      * \return フィールド上のぷよと重なるor画面外ならtrue
      */
     PUMILA_DLL bool checkNextCollision(const Action &action) const;
     bool checkNextCollision() const { return checkNextCollision(getNext(0)); }
+
+    /*!
+     * \brief nextを指定した位置に落とす
+     * * field.updatedをクリア
+     * * nextを削除する
+     */
+    PUMILA_DLL void putNext();
 
     /*!
      * \brief 4連結を探し、消す

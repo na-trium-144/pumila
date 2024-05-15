@@ -5,7 +5,8 @@
 
 namespace PUMILA_NS {
 void calcActionEach(Pumila14::InFeature *feat, FieldState3 field_copy, int a) {
-    field_copy.putNext(actions[a]);
+    field_copy.updateNext({field_copy.getNext(0), actions[a]});
+    field_copy.putNext();
     auto chains = field_copy.deleteChainRecurse();
 
     feat->bias = 1;
