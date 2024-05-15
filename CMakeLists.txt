@@ -79,6 +79,7 @@ list(APPEND PUMILA_CORE_SRC
 )
 list(APPEND PUMILA_TEST_SRC
     pumila-core/test/field_test.cc
+    pumila-core/test/game_test.cc
 )
 if(WIN32)
     list(APPEND PUMILA_CORE_SRC pumila-core/lib/version.rc)

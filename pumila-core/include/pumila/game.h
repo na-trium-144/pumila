@@ -5,8 +5,6 @@
 #include <random>
 #include <memory>
 #include <optional>
-#include <mutex>
-#include <shared_mutex>
 #include <vector>
 
 namespace PUMILA_NS {
@@ -39,20 +37,10 @@ class GameSim : public std::enable_shared_from_this<GameSim> {
      * \brief おじゃまぷよを送る相手をセットしてね
      */
     std::weak_ptr<GameSim> opponent;
-    /*!
-     * \brief 相手simを相互にセットする
-     */
-    PUMILA_DLL void setOpponentSim(const std::shared_ptr<GameSim> &opponent_s);
 
     std::optional<FieldState3> field;
     // PUMILA_DLL std::optional<FieldState2> field2();
     // PUMILA_DLL std::shared_ptr<FieldState> field1();
-
-    /*!
-     * \brief fieldにアクセスするときはmutexつかってね
-     *
-     */
-    std::shared_mutex field_m;
 
     // std::shared_ptr<Pumila> model;
     // std::string name;
@@ -61,59 +49,6 @@ class GameSim : public std::enable_shared_from_this<GameSim> {
     int soft_put_cnt = 0;
 
     bool is_over = false;
-
-    // PUMILA_DLL explicit GameSim(
-    //     std::shared_ptr<Pumila> model, const std::string &name = "",
-    //     typename std::mt19937::result_type seed = std::random_device()(),
-    //     bool enable_garbage = true);
-    PUMILA_DLL explicit GameSim(
-        typename std::mt19937::result_type seed = std::random_device()(),
-        bool enable_garbage = true);
-
-    GameSim(const GameSim &sim) = delete;
-    GameSim &operator=(const GameSim &) = delete;
-    GameSim(GameSim &&sim) = delete;
-    GameSim &operator=(GameSim &&sim) = delete;
-
-    // ~GameSim() { stopAction(); }
-    // PUMILA_DLL void stopAction();
-
-    // bool hasModel() { return model != nullptr; }
-
-    PUMILA_DLL void
-    reset(typename std::mt19937::result_type seed = std::random_device()());
-
-    std::recursive_mutex step_m;
-
-    /*!
-     * \brief freePhase時のみぷよを操作する
-     *
-     * 時間は進まないので適宜step()を呼ぶこと
-     *
-     */
-    PUMILA_DLL void movePair(int dx);
-    PUMILA_DLL void rotPair(int r);
-    PUMILA_DLL void quickDrop();
-    PUMILA_DLL void softDrop();
-
-    /*!
-     * \brief 1フレーム時間を進める
-     * コンストラクタでmodelをセットしていればそれの返すアクションにしたがってsoftPut()する
-     *
-     */
-    PUMILA_DLL void step();
-
-    /*!
-     * \brief ぷよを瞬間移動で置く
-     *
-     * 時間は進まないので適宜step()を呼ぶこと
-     *
-     */
-    PUMILA_DLL void put(const Action &action);
-    /*!
-     * \brief ぷよを目標位置まで動かして置くときはここにセットしてstep()を呼ぶ
-     */
-    PUMILA_DLL void softPut(const Action &action);
 
     struct Phase {
         GameSim *sim;
@@ -135,6 +70,68 @@ class GameSim : public std::enable_shared_from_this<GameSim> {
         virtual PhaseEnum get() const = 0;
     };
     std::unique_ptr<Phase> phase;
+
+  private:
+    // PUMILA_DLL explicit GameSim(
+    //     std::shared_ptr<Pumila> model, const std::string &name = "",
+    //     typename std::mt19937::result_type seed = std::random_device()(),
+    //     bool enable_garbage = true);
+    PUMILA_DLL explicit GameSim(typename std::mt19937::result_type seed,
+                                bool enable_garbage);
+
+  public:
+    static std::shared_ptr<GameSim>
+    makeNew(typename std::mt19937::result_type seed = std::random_device()(),
+            bool enable_garbage = true) {
+        return std::shared_ptr<GameSim>(new GameSim(seed, enable_garbage));
+    }
+
+    GameSim(const GameSim &sim) = delete;
+    GameSim &operator=(const GameSim &) = delete;
+    GameSim(GameSim &&sim) = delete;
+    GameSim &operator=(GameSim &&sim) = delete;
+
+    // ~GameSim() { stopAction(); }
+    // PUMILA_DLL void stopAction();
+
+    // bool hasModel() { return model != nullptr; }
+
+    PUMILA_DLL void
+    reset(typename std::mt19937::result_type seed = std::random_device()());
+
+    /*!
+     * \brief 相手simを相互にセットする
+     */
+    PUMILA_DLL void setOpponentSim(const std::shared_ptr<GameSim> &opponent_s);
+
+    /*!
+     * \brief freePhase時のみぷよを操作する
+     *
+     * 時間は進まないので適宜step()を呼ぶこと
+     *
+     */
+    PUMILA_DLL void movePair(int dx);
+    PUMILA_DLL void rotPair(int r);
+    PUMILA_DLL void quickDrop();
+    PUMILA_DLL void softDrop();
+
+    /*!
+     * \brief 1フレーム時間を進める
+     *
+     */
+    PUMILA_DLL void step();
+
+    /*!
+     * \brief ぷよを瞬間移動で置く
+     *
+     * 時間は進まないので適宜step()を呼ぶこと
+     *
+     */
+    PUMILA_DLL void put(const Action &action);
+    /*!
+     * \brief ぷよを目標位置まで動かして置くときはここにセットしてstep()を呼ぶ
+     */
+    PUMILA_DLL void softPut(const Action &action);
 
     PUMILA_DLL bool isFreePhase();
 

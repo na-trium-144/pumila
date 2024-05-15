@@ -1,5 +1,3 @@
-#include "pumila/action.h"
-#include "pumila/garbage.h"
 #include <gtest/gtest.h>
 #include <memory>
 #include <pumila/pumila.h>

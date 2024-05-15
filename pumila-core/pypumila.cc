@@ -1,3 +1,4 @@
+#include "pumila/game.h"
 #include <pumila/pumila.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -64,7 +65,7 @@ PYBIND11_MODULE(pypumila_core, m) {
         .def("connection_num", &Chain::connectionNum)
         .def("score", &Chain::score);
     py::class_<GameSim, std::shared_ptr<GameSim>>(m, "GameSim")
-        .def(py::init<>())
+        .def("make_new", &GameSim::makeNew)
         .def_readonly("field_copy", &GameSim::field)
         .def_readwrite("enable_garbage", &GameSim::enable_garbage)
         .def_readwrite("is_over", &GameSim::is_over)

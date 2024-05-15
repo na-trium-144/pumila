@@ -33,11 +33,9 @@ GameSim::GameSim(typename std::mt19937::result_type seed, bool enable_garbage)
 }
 
 void GameSim::reset(typename std::mt19937::result_type seed) {
-    std::lock_guard lock(step_m);
-    {
-        std::lock_guard lock2(field_m);
-        field = std::make_optional<FieldState3>(seed);
-    }
+    // std::lock_guard lock(step_m);
+    // std::lock_guard lock2(field_m);
+    field.emplace(seed);
     phase = std::make_unique<GameSim::GarbagePhase>(this);
 }
 
@@ -66,9 +64,9 @@ void GameSim::setOpponentSim(const std::shared_ptr<GameSim> &opponent_s) {
 // }
 
 void GameSim::movePair(int dx) {
-    std::lock_guard lock(step_m);
+    // std::lock_guard lock(step_m);
     if (isFreePhase()) {
-        std::lock_guard lock_f(field_m);
+        // std::lock_guard lock_f(field_m);
         auto pp = field->getNext(0);
         if (FieldState3::inRange(pp.bottomX() + dx) &&
             FieldState3::inRange(pp.topX() + dx) &&
@@ -82,9 +80,9 @@ void GameSim::movePair(int dx) {
     }
 }
 void GameSim::rotPair(int r) {
-    std::lock_guard lock(step_m);
+    // std::lock_guard lock(step_m);
     if (isFreePhase() && rot_fail_count < ROT_FAIL_COUNT) {
-        std::lock_guard lock_f(field_m);
+        // std::lock_guard lock_f(field_m);
         PuyoPair new_pp = field->getNext(0);
         if (r == rot_fail) {
             r *= 2;
@@ -118,9 +116,9 @@ void GameSim::rotPair(int r) {
     }
 }
 void GameSim::quickDrop() {
-    std::lock_guard lock(step_m);
+    // std::lock_guard lock(step_m);
     if (isFreePhase()) {
-        std::lock_guard lock_f(field_m);
+        // std::lock_guard lock_f(field_m);
         PuyoPair pp = field->getNext(0);
         pp.y = -1;
         field->updateNext(pp);
@@ -129,9 +127,9 @@ void GameSim::quickDrop() {
     }
 }
 void GameSim::softDrop() {
-    std::lock_guard lock(step_m);
+    // std::lock_guard lock(step_m);
     if (isFreePhase()) {
-        std::lock_guard lock_f(field_m);
+        // std::lock_guard lock_f(field_m);
         PuyoPair pp = field->getNext(0);
         pp.y -= FreePhase::SOFT_SPEED / 60;
         field->updateNext(pp);
@@ -141,13 +139,11 @@ void GameSim::softDrop() {
 }
 
 void GameSim::step() {
-    std::lock_guard lock(step_m);
+    // std::lock_guard lock(step_m);
     if (soft_put_target) {
         PuyoPair pp;
-        {
-            std::shared_lock lock_f(field_m);
-            pp = field->getNext(0);
-        }
+        // std::shared_lock lock_f(field_m);
+        pp = field->getNext(0);
         if (static_cast<Action>(pp) == soft_put_target) {
             softDrop();
         } else {
@@ -176,24 +172,22 @@ void GameSim::step() {
     }
 }
 void GameSim::put(const Action &action) {
-    std::lock_guard lock(step_m);
+    // std::lock_guard lock(step_m);
     if (isFreePhase()) {
-        {
-            std::lock_guard lock_f(field_m);
-            PuyoPair pp = field->getNext(0);
-            field->updateNext({pp, action});
-        }
+        // std::lock_guard lock_f(field_m);
+        PuyoPair pp = field->getNext(0);
+        field->updateNext({pp, action});
         quickDrop();
-        step();
+        // step();
     }
 }
 void GameSim::softPut(const Action &action) {
-    std::lock_guard lock(step_m);
+    // std::lock_guard lock(step_m);
     soft_put_target = action;
 }
 
 bool GameSim::isFreePhase() {
-    std::lock_guard lock(step_m);
+    // std::lock_guard lock(step_m);
     return phase && phase->get() == Phase::free;
 }
 
@@ -201,13 +195,11 @@ GameSim::GarbagePhase::GarbagePhase(GameSim *sim, std::vector<Chain> &&chains)
     : Phase(sim), wait_t(WAIT_T), chains(std::move(chains)), garbage(),
       garbage_num(0), field_prev(*sim->field) {
     std::size_t garbage_send;
-    {
-        std::lock_guard lock(sim->field_m);
-        garbage_send = sim->field->calcGarbage(std::accumulate(
-            this->chains.cbegin(), this->chains.cend(), 0,
-            [](int acc, const Chain &chain) { return acc + chain.score(); }));
-        garbage_send -= sim->field->cancelGarbage(garbage_send);
-    }
+    // std::lock_guard lock(sim->field_m);
+    garbage_send = sim->field->calcGarbage(std::accumulate(
+        this->chains.cbegin(), this->chains.cend(), 0,
+        [](int acc, const Chain &chain) { return acc + chain.score(); }));
+    garbage_send -= sim->field->cancelGarbage(garbage_send);
     // todo: これをsimに返す
     std::shared_ptr<GarbageGroup> garbage_send_g = nullptr;
     if (garbage_send > 0) {
@@ -215,16 +207,14 @@ GameSim::GarbagePhase::GarbagePhase(GameSim *sim, std::vector<Chain> &&chains)
     }
     auto opponent_sim = sim->opponent.lock();
     if (opponent_sim && sim->enable_garbage) {
-        std::lock_guard lock(opponent_sim->field_m);
+        // std::lock_guard lock(opponent_sim->field_m);
         opponent_sim->field->addGarbage(garbage_send_g);
     }
-    {
-        std::lock_guard lock(sim->field_m);
-        if (sim->field->getGarbageNumTotal() == 0) {
-            wait_t = 0;
-        } else {
-            sim->field->putGarbage(&garbage, &garbage_num);
-        }
+    // std::lock_guard lock(sim->field_m);
+    if (sim->field->getGarbageNumTotal() == 0) {
+        wait_t = 0;
+    } else {
+        sim->field->putGarbage(&garbage, &garbage_num);
     }
 }
 std::unique_ptr<GameSim::Phase> GameSim::GarbagePhase::step() {
@@ -236,33 +226,31 @@ std::unique_ptr<GameSim::Phase> GameSim::GarbagePhase::step() {
 }
 
 GameSim::FreePhase::FreePhase(GameSim *sim) : Phase(sim), put_t(PUT_T) {
-    std::lock_guard lock(sim->field_m);
+    // std::lock_guard lock(sim->field_m);
     sim->rot_fail_count = 0;
     sim->is_over = sim->field->isGameOver();
 }
 
 std::unique_ptr<GameSim::Phase> GameSim::FreePhase::step() {
     bool go_fall = false;
-    {
-        std::lock_guard lock(sim->field_m);
-        auto current_pair = sim->field->getNext(0);
-        current_pair.y -= FALL_SPEED / 60;
-        auto [yb, yt] = sim->field->getNextHeight(current_pair);
-        if (yb < current_pair.bottomY() && yt < current_pair.topY()) {
-            put_t = PUT_T;
-            sim->field->updateNext(current_pair);
-        } else {
-            put_t--;
-            current_pair.y = yb;
-            if (yt > current_pair.topY()) {
-                current_pair.y += yt - current_pair.topY();
-            }
-            sim->field->updateNext(current_pair);
-            if (put_t < 0) {
-                sim->soft_put_target = std::nullopt;
-                sim->field->putNext();
-                go_fall = true;
-            }
+    // std::lock_guard lock(sim->field_m);
+    auto current_pair = sim->field->getNext(0);
+    current_pair.y -= FALL_SPEED / 60;
+    auto [yb, yt] = sim->field->getNextHeight(current_pair);
+    if (yb < current_pair.bottomY() && yt < current_pair.topY()) {
+        put_t = PUT_T;
+        sim->field->updateNext(current_pair);
+    } else {
+        put_t--;
+        current_pair.y = yb;
+        if (yt > current_pair.topY()) {
+            current_pair.y += yt - current_pair.topY();
+        }
+        sim->field->updateNext(current_pair);
+        if (put_t < 0) {
+            sim->soft_put_target = std::nullopt;
+            sim->field->putNext();
+            go_fall = true;
         }
     }
     if (go_fall) {
@@ -274,7 +262,7 @@ std::unique_ptr<GameSim::Phase> GameSim::FreePhase::step() {
 
 GameSim::FallPhase::FallPhase(GameSim *sim)
     : Phase(sim), current_chain(0), fall_wait_t(0), display_field(*sim->field) {
-    std::shared_lock lock(sim->field_m);
+    // std::shared_lock lock(sim->field_m);
     if (sim->field->fall()) {
         fall_wait_t = Chain::FALL_T;
     }
