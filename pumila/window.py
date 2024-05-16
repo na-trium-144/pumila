@@ -2,7 +2,7 @@ import pygame
 from pygame.locals import *
 from enum import Enum
 import pypumila
-from typing import List
+from typing import List, Tuple
 import math
 
 WIDTH = 700
@@ -71,6 +71,11 @@ class Window:
         self.phase = Phase.READY
         self.sim = []
         self.is_player = []
+
+    def set_sim(self, sim: List[Tuple[pypumila.GameSim, bool]]) -> None:
+        assert len(sim) <= 2
+        self.sim = [s[0] for s in sim]
+        self.is_player = [s[1] for s in sim]
 
     def step(self) -> None:
         self.handle_event()
@@ -154,8 +159,8 @@ class Window:
     def draw(self) -> None:
         self.screen.fill(pygame.Color(255, 255, 255))
 
+        black = pygame.Color(0, 0, 0)
         for i, s in enumerate(self.sim):
-            black = pygame.Color(0, 0, 0)
             pygame.draw.rect(
                 self.screen,
                 black,
@@ -301,6 +306,8 @@ class Window:
             )
 
         pygame.display.flip()
+
+        self.phase_t += 1
 
     def draw_puyo(self, p: pypumila.Puyo, x: float, y: float, i: int, not_ghost: bool):
         if p == pypumila.Puyo.none:

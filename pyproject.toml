@@ -10,8 +10,11 @@ python = "^3.9"
 jupyter = "^1.0.0"
 tqdm = "^4.66.1"
 matplotlib = "^3.8.2"
-torch = {version = "^2.3.0+cpu", source = "pytorch-cpu"}
 pygame = "^2.5.2"
+torch = [
+    {platform = "linux", version = "^2.3.0+cpu", source = "pytorch-cpu"},
+    {platform = "darwin", version = "^2.3.0", source = "pypi"},
+]
 
 [[tool.poetry.source]]
 name = "pytorch-cpu"
