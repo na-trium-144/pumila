@@ -1,4 +1,6 @@
+#include "pumila/game.h"
 #include "pumila/garbage.h"
+#include "pumila/step.h"
 #include <pumila/pumila.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/pybind11.h>
@@ -84,25 +86,69 @@ PYBIND11_MODULE(pypumila, m) {
         .def("calc_chain_all", &FieldState3::calcChainAll)
         .def("is_game_over", &FieldState3::isGameOver);
     py::class_<Chain>(m, "Chain")
-        .def_readwrite("connections", &Chain::connections)
-        .def_readwrite("chain_num", &Chain::chain_num)
+        .def_readonly("connections", &Chain::connections)
+        .def_readonly("chain_num", &Chain::chain_num)
         .def("is_empty", &Chain::isEmpty)
         .def("connection_num", &Chain::connectionNum)
-        .def("score", &Chain::score);
-    py::class_<GameSim, std::shared_ptr<GameSim>>(m, "GameSim")
-        .def("make_new", &GameSim::makeNew)
-        .def("field_copy", [](const GameSim &sim) { return sim.field; })
-        .def_readwrite("enable_garbage", &GameSim::enable_garbage)
-        .def_readwrite("is_over", &GameSim::is_over)
-        .def("set_opponent_sim", &GameSim::setOpponentSim)
-        .def("move_pair", &GameSim::movePair)
-        .def("rot_pair", &GameSim::rotPair)
-        .def("quick_drop", &GameSim::quickDrop)
-        .def("soft_drop", &GameSim::softDrop)
-        .def("step", &GameSim::step)
-        .def("put", &GameSim::put)
-        .def("soft_put", &GameSim::softPut)
-        .def("is_free_phase", &GameSim::isFreePhase);
+        .def("score", &Chain::score)
+        .def("score_a", &Chain::scoreA)
+        .def("score_b", &Chain::scoreB);
+    py::class_<StepResult, std::shared_ptr<StepResult>>(m, "StepResult")
+        .def_readonly("field_before", &StepResult::field_before)
+        .def_readonly("field_after", &StepResult::field_after)
+        .def_readonly("chains", &StepResult::chains)
+        .def_readonly("garbage_send", &StepResult::garbage_send)
+        .def_readonly("op_field_before", &StepResult::op_field_before)
+        .def_readonly("op_field_after", &StepResult::op_field_after)
+        .def_readonly("op_chains", &StepResult::op_chains)
+        .def_readonly("garbage_recv", &StepResult::garbage_recv)
+        .def_readonly("garbage_fell_pos", &StepResult::garbage_fell_pos);
+    auto game_sim =
+        py::class_<GameSim, std::shared_ptr<GameSim>>(m, "GameSim")
+            .def("make_new", &GameSim::makeNew)
+            .def("field_copy", [](const GameSim &sim) { return sim.field; })
+            .def("current_step",
+                 [](const GameSim &sim) { return sim.current_step; })
+            .def_readwrite("enable_garbage", &GameSim::enable_garbage)
+            .def_readwrite("is_over", &GameSim::is_over)
+            .def("set_opponent_sim", &GameSim::setOpponentSim)
+            .def("move_pair", &GameSim::movePair)
+            .def("rot_pair", &GameSim::rotPair)
+            .def("quick_drop", &GameSim::quickDrop)
+            .def("soft_drop", &GameSim::softDrop)
+            .def("step", &GameSim::step)
+            .def("put", &GameSim::put)
+            .def("soft_put", &GameSim::softPut)
+            .def("phase_get",
+                 [](const GameSim &sim) {
+                     return sim.phase ? sim.phase->get() : GameSim::Phase::none;
+                 })
+            .def("fall_phase_current_chain",
+                 [](const GameSim &sim) -> std::size_t {
+                     auto fall_phase =
+                         dynamic_cast<GameSim::FallPhase *>(sim.phase.get());
+                     if (fall_phase) {
+                         return fall_phase->current_chain;
+                     } else {
+                         return 0;
+                     }
+                 })
+            .def("fall_phase_display_field",
+                 [](const GameSim &sim) -> std::optional<FieldState3> {
+                     auto fall_phase =
+                         dynamic_cast<GameSim::FallPhase *>(sim.phase.get());
+                     if (fall_phase) {
+                         return fall_phase->display_field;
+                     } else {
+                         return std::nullopt;
+                     }
+                 });
+    py::enum_<GameSim::Phase::PhaseEnum>(game_sim, "PhaseEnum")
+        .value("none", GameSim::Phase::none)
+        .value("garbage", GameSim::Phase::garbage)
+        .value("free", GameSim::Phase::free)
+        .value("fall", GameSim::Phase::fall)
+        .export_values();
     py::class_<Matrix>(m, "Matrix", py::buffer_protocol())
         .def_buffer([](Matrix &m) -> py::buffer_info {
             return py::buffer_info(m.ptr(), sizeof(double),

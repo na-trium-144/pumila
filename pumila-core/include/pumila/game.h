@@ -2,6 +2,7 @@
 #include "def.h"
 #include "field3.h"
 #include "chain.h"
+#include "pumila/step.h"
 #include <random>
 #include <memory>
 #include <optional>
@@ -63,6 +64,7 @@ class GameSim : public std::enable_shared_from_this<GameSim> {
          */
         virtual std::unique_ptr<Phase> step() = 0;
         enum PhaseEnum {
+            none,
             free,
             fall,
             garbage,
@@ -70,6 +72,12 @@ class GameSim : public std::enable_shared_from_this<GameSim> {
         virtual PhaseEnum get() const = 0;
     };
     std::unique_ptr<Phase> phase;
+
+    /*!
+     * \brief FreePhaseを抜ける時に作られ、
+     * Fall, GarbagePhaseで情報が更新される
+     */
+    std::shared_ptr<StepResult> current_step;
 
   private:
     // PUMILA_DLL explicit GameSim(
@@ -133,21 +141,12 @@ class GameSim : public std::enable_shared_from_this<GameSim> {
      */
     PUMILA_DLL void softPut(const Action &action);
 
-    PUMILA_DLL bool isFreePhase();
-
     struct GarbagePhase final : Phase {
-        explicit GarbagePhase(GameSim *sim)
-            : GarbagePhase(sim, std::vector<Chain>()) {}
-        PUMILA_DLL explicit GarbagePhase(GameSim *sim,
-                                         std::vector<Chain> &&chains);
+        PUMILA_DLL explicit GarbagePhase(GameSim *sim);
         PhaseEnum get() const override { return PhaseEnum::garbage; }
         PUMILA_DLL std::unique_ptr<Phase> step() override;
         static constexpr int WAIT_T = 20;
         int wait_t;
-        std::vector<Chain> chains;
-        std::array<std::pair<std::size_t, std::size_t>, 30> garbage;
-        std::size_t garbage_num;
-        FieldState3 field_prev;
     };
     struct FreePhase final : Phase {
         PUMILA_DLL explicit FreePhase(GameSim *sim);
@@ -164,7 +163,6 @@ class GameSim : public std::enable_shared_from_this<GameSim> {
         PUMILA_DLL std::unique_ptr<Phase> step() override;
         static constexpr int FALL_T = 20;
         static constexpr int CHAIN_T = 30;
-        std::vector<Chain> chains;
         std::vector<int> chain_t;
         std::size_t current_chain;
         int fall_wait_t;

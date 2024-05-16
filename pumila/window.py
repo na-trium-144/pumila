@@ -165,9 +165,11 @@ class Window:
                 width=1,
             )
 
-            field = s.field_copy()
+            field = s.fall_phase_display_field()
+            if field is None:
+                field = s.field_copy()
             next_p = 0
-            if s.is_free_phase():
+            if s.phase_get() == pypumila.GameSim.PhaseEnum.free:
                 next_p = 1
                 pair = field.get_next(0)
                 self.draw_puyo(
@@ -232,6 +234,71 @@ class Window:
                         3,
                     ),
                 )
+
+            if s.phase_get() == pypumila.GameSim.PhaseEnum.fall:
+                current_chain = s.current_step().chains[s.fall_phase_current_chain()]
+                current_sc_text = self.font.render(
+                    f"{current_chain.score_a()} x {current_chain.score_b()}",
+                    True,
+                    black,
+                )
+                self.screen.blit(
+                    current_sc_text,
+                    (
+                        FIELD_X[i] + PUYO_SIZE * 6 - current_sc_text.get_width() - 10,
+                        FIELD_Y + 60,
+                    ),
+                )
+
+                current_chain_text = self.font.render(
+                    str(current_chain.chain_num),
+                    True,
+                    black,
+                )
+                self.screen.blit(
+                    current_chain_text,
+                    (
+                        round(
+                            FIELD_X[i]
+                            + PUYO_SIZE * 7.5
+                            - current_chain_text.get_width() / 2
+                        ),
+                        FIELD_Y - PUYO_SIZE * 3 - 30,
+                    ),
+                )
+
+                chain_text = self.font_sm.render(
+                    "chains!" if current_chain.chain_num >= 2 else "chain!",
+                    True,
+                    black,
+                )
+                self.screen.blit(
+                    chain_text,
+                    (
+                        round(
+                            FIELD_X[i] + PUYO_SIZE * 7.5 - chain_text.get_width() / 2
+                        ),
+                        FIELD_Y - PUYO_SIZE * 3,
+                    ),
+                )
+
+        if self.phase == Phase.READY:
+            text = self.font.render("Ready?", True, black)
+        elif self.phase == Phase.GAME:
+            if self.phase_t < 60:
+                text = self.font.render("Go!", True, black)
+            else:
+                text = None
+        elif self.phase == Phase.FINISH:
+            text = self.font.render("Finish", True, black)
+        if text is not None:
+            self.screen.blit(
+                text,
+                (
+                    round(WIDTH / 2 - text.get_width() / 2),
+                    round(HEIGHT / 2 - text.get_height() / 2),
+                ),
+            )
 
         pygame.display.flip()
 

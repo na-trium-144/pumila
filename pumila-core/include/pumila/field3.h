@@ -146,9 +146,8 @@ class FieldState3 {
      * garbageReadyを0にする or 30減らす
      * \param garbage_list おじゃまが降った位置が返る
      */
-    PUMILA_DLL void putGarbage(std::array<std::pair<std::size_t, std::size_t>,
-                                          30> *garbage_list = nullptr,
-                               std::size_t *garbage_num = nullptr);
+    PUMILA_DLL void putGarbage(std::vector<std::pair<std::size_t, std::size_t>>
+                                   *garbage_list = nullptr);
     static constexpr int GARBAGE_RATE = 70;
     /*!
      * \brief 生成されるおじゃま数を計算, garbage_scoreに加算

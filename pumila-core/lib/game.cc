@@ -1,4 +1,5 @@
 #include "pumila/garbage.h"
+#include "pumila/step.h"
 #include <memory>
 #include <pumila/game.h>
 #include <cassert>
@@ -6,7 +7,7 @@
 namespace PUMILA_NS {
 GameSim::GameSim(typename std::mt19937::result_type seed, bool enable_garbage)
     : enable_garbage(enable_garbage), opponent(), field(std::nullopt),
-      phase(nullptr) {
+      phase(nullptr), current_step(nullptr) {
     /*if (model) {
         model_action_thread = std::make_optional<std::thread>([this] {
             while (running.load()) {
@@ -65,7 +66,7 @@ void GameSim::setOpponentSim(const std::shared_ptr<GameSim> &opponent_s) {
 
 void GameSim::movePair(int dx) {
     // std::lock_guard lock(step_m);
-    if (isFreePhase()) {
+    if (phase && phase->get() == Phase::free) {
         // std::lock_guard lock_f(field_m);
         auto pp = field->getNext(0);
         if (FieldState3::inRange(pp.bottomX() + dx) &&
@@ -81,7 +82,8 @@ void GameSim::movePair(int dx) {
 }
 void GameSim::rotPair(int r) {
     // std::lock_guard lock(step_m);
-    if (isFreePhase() && rot_fail_count < ROT_FAIL_COUNT) {
+    if (phase && phase->get() == Phase::free &&
+        rot_fail_count < ROT_FAIL_COUNT) {
         // std::lock_guard lock_f(field_m);
         PuyoPair new_pp = field->getNext(0);
         if (r == rot_fail) {
@@ -117,7 +119,7 @@ void GameSim::rotPair(int r) {
 }
 void GameSim::quickDrop() {
     // std::lock_guard lock(step_m);
-    if (isFreePhase()) {
+    if (phase && phase->get() == Phase::free) {
         // std::lock_guard lock_f(field_m);
         PuyoPair pp = field->getNext(0);
         pp.y = -1;
@@ -128,7 +130,7 @@ void GameSim::quickDrop() {
 }
 void GameSim::softDrop() {
     // std::lock_guard lock(step_m);
-    if (isFreePhase()) {
+    if (phase && phase->get() == Phase::free) {
         // std::lock_guard lock_f(field_m);
         PuyoPair pp = field->getNext(0);
         pp.y -= FreePhase::SOFT_SPEED / 60;
@@ -173,7 +175,7 @@ void GameSim::step() {
 }
 void GameSim::put(const Action &action) {
     // std::lock_guard lock(step_m);
-    if (isFreePhase()) {
+    if (phase && phase->get() == Phase::free) {
         // std::lock_guard lock_f(field_m);
         PuyoPair pp = field->getNext(0);
         field->updateNext({pp, action});
@@ -186,18 +188,12 @@ void GameSim::softPut(const Action &action) {
     soft_put_target = action;
 }
 
-bool GameSim::isFreePhase() {
-    // std::lock_guard lock(step_m);
-    return phase && phase->get() == Phase::free;
-}
-
-GameSim::GarbagePhase::GarbagePhase(GameSim *sim, std::vector<Chain> &&chains)
-    : Phase(sim), wait_t(WAIT_T), chains(std::move(chains)), garbage(),
-      garbage_num(0), field_prev(*sim->field) {
+GameSim::GarbagePhase::GarbagePhase(GameSim *sim) : Phase(sim), wait_t(WAIT_T) {
+    assert(sim->current_step);
     std::size_t garbage_send;
     // std::lock_guard lock(sim->field_m);
     garbage_send = sim->field->calcGarbage(std::accumulate(
-        this->chains.cbegin(), this->chains.cend(), 0,
+        sim->current_step->chains.cbegin(), sim->current_step->chains.cend(), 0,
         [](int acc, const Chain &chain) { return acc + chain.score(); }));
     garbage_send -= sim->field->cancelGarbage(garbage_send);
     // todo: これをsimに返す
@@ -214,7 +210,7 @@ GameSim::GarbagePhase::GarbagePhase(GameSim *sim, std::vector<Chain> &&chains)
     if (sim->field->getGarbageNumTotal() == 0) {
         wait_t = 0;
     } else {
-        sim->field->putGarbage(&garbage, &garbage_num);
+        sim->field->putGarbage(&sim->current_step->garbage_fell_pos);
     }
 }
 std::unique_ptr<GameSim::Phase> GameSim::GarbagePhase::step() {
@@ -248,6 +244,7 @@ std::unique_ptr<GameSim::Phase> GameSim::FreePhase::step() {
         }
         sim->field->updateNext(current_pair);
         if (put_t < 0) {
+            sim->current_step = std::make_shared<StepResult>(*sim->field);
             sim->soft_put_target = std::nullopt;
             sim->field->putNext();
             go_fall = true;
@@ -266,16 +263,17 @@ GameSim::FallPhase::FallPhase(GameSim *sim)
     if (sim->field->fall()) {
         fall_wait_t = FALL_T;
     }
-    chains = sim->field->deleteChainRecurse();
-    chain_t.assign(chains.size(), CHAIN_T + FALL_T);
+    assert(sim->current_step);
+    sim->current_step->chains = sim->field->deleteChainRecurse();
+    chain_t.assign(sim->current_step->chains.size(), CHAIN_T + FALL_T);
 }
 std::unique_ptr<GameSim::Phase> GameSim::FallPhase::step() {
     if (fall_wait_t > 0) {
         fall_wait_t--;
     } else {
-        if (current_chain >= chains.size()) {
-            return std::make_unique<GameSim::GarbagePhase>(sim,
-                                                           std::move(chains));
+        assert(sim->current_step);
+        if (current_chain >= sim->current_step->chains.size()) {
+            return std::make_unique<GameSim::GarbagePhase>(sim);
         } else if (--chain_t.at(current_chain) <= 0) {
             current_chain++;
             display_field.deleteChain(current_chain + 1);

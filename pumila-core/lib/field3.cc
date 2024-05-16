@@ -102,20 +102,18 @@ std::size_t FieldState3::getHeight(std::size_t x) const {
 }
 
 void FieldState3::putGarbage(
-    std::array<std::pair<std::size_t, std::size_t>, 30> *garbage_list,
-    std::size_t *garbage_num) {
+    std::vector<std::pair<std::size_t, std::size_t>> *garbage_list) {
     static std::mt19937 rnd_general{std::random_device()()};
     std::lock_guard lock(mtx);
     std::size_t r = 0;
     std::size_t garbage_num_all = getGarbageNumTotal();
-    std::size_t garbage_index = 0;
     std::size_t garbage_num_actual;
     for (; (r + 1) * WIDTH <= garbage_num_all && r < 5; r++) {
         for (std::size_t x = 0; x < WIDTH; x++) {
             auto y = getHeight(x);
             set(x, y, Puyo::garbage);
             if (garbage_list) {
-                garbage_list->at(garbage_index++) = std::make_pair(x, y);
+                garbage_list->emplace_back(x, y);
             }
         }
     }
@@ -126,16 +124,12 @@ void FieldState3::putGarbage(
             auto y = getHeight(target_x[i]);
             set(target_x[i], y, Puyo::garbage);
             if (garbage_list) {
-                garbage_list->at(garbage_index++) =
-                    std::make_pair(target_x[i], y);
+                garbage_list->emplace_back(target_x[i], y);
             }
         }
         garbage_num_actual = garbage_num_all;
     } else {
         garbage_num_actual = WIDTH * 5;
-    }
-    if (garbage_num) {
-        *garbage_num = garbage_num_actual;
     }
     while (garbage_num_actual > 0) {
         auto &gg = garbage_ready.front();
