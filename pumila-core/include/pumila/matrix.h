@@ -14,6 +14,14 @@ class Matrix {
         : data(rows * cols), rows_(rows), cols_(cols) {}
     double *ptr() { return data.data(); }
     const double *ptr() const { return data.data(); }
+    double &at(std::size_t y, std::size_t x) {
+        assert(y < rows_ && x < cols_);
+        return data.at(y * cols_ + x);
+    }
+    double at(std::size_t y, std::size_t x) const {
+        assert(y < rows_ && x < cols_);
+        return data.at(y * cols_ + x);
+    }
     template <typename T>
     T *rowPtr(std::size_t y) {
         assert(y < rows_);

@@ -1,12 +1,13 @@
-#include "pumila/game.h"
+#include "pumila/garbage.h"
 #include <pumila/pumila.h>
+#include <pybind11/detail/common.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
 using namespace PUMILA_NS;
 namespace py = pybind11;
 
-PYBIND11_MODULE(pypumila_core, m) {
+PYBIND11_MODULE(pypumila, m) {
     py::enum_<Puyo>(m, "Puyo")
         .value("none", Puyo::none)
         .value("red", Puyo::red)
@@ -56,8 +57,32 @@ PYBIND11_MODULE(pypumila_core, m) {
                    ", y = " + std::to_string(a.y) +
                    ", rot = " + std::to_string(static_cast<int>(a.rot)) + ">";
         });
+    py::class_<GarbageGroup, std::shared_ptr<GarbageGroup>>(m, "GarbageGroup")
+        .def(py::init<std::size_t>())
+        .def("garbage_num", &GarbageGroup::garbageNum)
+        .def("rest_garbage_num", &GarbageGroup::restGarbageNum)
+        .def("cancel", &GarbageGroup::cancel)
+        .def("fall", &GarbageGroup::fall)
+        .def("done", &GarbageGroup::done)
+        .def("cancelled_num", &GarbageGroup::cancelledNum)
+        .def("fell_num", &GarbageGroup::fellNum);
     py::class_<FieldState3, std::shared_ptr<FieldState3>>(m, "FieldState3")
-        .def(py::init<>());
+        .def(py::init<>())
+        .def("in_range", &FieldState3::inRange)
+        .def("get", &FieldState3::get)
+        .def("set", &FieldState3::set)
+        .def("get_next", &FieldState3::getNext)
+        .def("update_next", &FieldState3::updateNext)
+        .def("add_garbage", &FieldState3::addGarbage)
+        .def("get_garbage_num_total", &FieldState3::getGarbageNumTotal)
+        .def("calc_garbage", &FieldState3::calcGarbage)
+        .def("cancel_garbage", &FieldState3::cancelGarbage)
+        .def("put_next", &FieldState3::putNext)
+        .def("delete_chain", &FieldState3::deleteChain)
+        .def("fall", &FieldState3::fall)
+        .def("delete_chain_recurse", &FieldState3::deleteChainRecurse)
+        .def("calc_chain_all", &FieldState3::calcChainAll)
+        .def("is_game_over", &FieldState3::isGameOver);
     py::class_<Chain>(m, "Chain")
         .def_readwrite("connections", &Chain::connections)
         .def_readwrite("chain_num", &Chain::chain_num)
@@ -66,7 +91,7 @@ PYBIND11_MODULE(pypumila_core, m) {
         .def("score", &Chain::score);
     py::class_<GameSim, std::shared_ptr<GameSim>>(m, "GameSim")
         .def("make_new", &GameSim::makeNew)
-        .def_readonly("field_copy", &GameSim::field)
+        .def("field_copy", [](const GameSim &sim) { return sim.field; })
         .def_readwrite("enable_garbage", &GameSim::enable_garbage)
         .def_readwrite("is_over", &GameSim::is_over)
         .def("set_opponent_sim", &GameSim::setOpponentSim)
@@ -78,4 +103,36 @@ PYBIND11_MODULE(pypumila_core, m) {
         .def("put", &GameSim::put)
         .def("soft_put", &GameSim::softPut)
         .def("is_free_phase", &GameSim::isFreePhase);
+    py::class_<Matrix>(m, "Matrix", py::buffer_protocol())
+        .def_buffer([](Matrix &m) -> py::buffer_info {
+            return py::buffer_info(m.ptr(), sizeof(double),
+                                   py::format_descriptor<double>::format(), 2,
+                                   {m.rows(), m.cols()},
+                                   {sizeof(double) * m.cols(), sizeof(double)});
+        })
+        .def(py::init([](py::buffer b) {
+            /* Request a buffer descriptor from Python */
+            py::buffer_info info = b.request();
+
+            /* Some basic validation checks ... */
+            if (info.format != py::format_descriptor<double>::format()) {
+                throw std::runtime_error(
+                    "Incompatible format: expected a double array!");
+            }
+            if (info.ndim != 2) {
+                throw std::runtime_error("Incompatible buffer dimension!");
+            }
+            auto strides_row = info.strides[0] / (py::ssize_t)sizeof(double);
+            auto strides_col = info.strides[1] / (py::ssize_t)sizeof(double);
+            auto rows = info.shape[0];
+            auto cols = info.shape[1];
+            Matrix m(rows, cols);
+            for (int y = 0; y < rows; y++) {
+                for (int x = 0; x < cols; x++) {
+                    m.at(y, x) = static_cast<const double *>(
+                        info.ptr)[y * strides_row + x * strides_col];
+                }
+            }
+            return m;
+        }));
 }
