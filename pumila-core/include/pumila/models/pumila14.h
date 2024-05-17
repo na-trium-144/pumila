@@ -11,18 +11,14 @@ namespace PUMILA_NS {
  */
 struct Pumila14 {
     struct InFeature {
-        double bias;
         double field_colors[FieldState3::WIDTH * FieldState3::HEIGHT * 4];
         double field_chains[FieldState3::WIDTH * FieldState3::HEIGHT * 4];
         double score_diff[20];
     };
-
-    PUMILA_DLL static Matrix
-    calcAction(const FieldState3 &field,
-               const std::optional<FieldState3> &op_field);
-
+    static constexpr std::size_t FEATURE_NUM =
+        sizeof(InFeature) / sizeof(double);
+    PUMILA_DLL static Matrix calcAction(const StepResult &result);
     PUMILA_DLL static Matrix transpose(const Matrix &in);
-
     PUMILA_DLL static double reward(const StepResult &result);
 };
 } // namespace PUMILA_NS

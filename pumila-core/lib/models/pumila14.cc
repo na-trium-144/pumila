@@ -9,7 +9,7 @@ void calcActionEach(Pumila14::InFeature *feat, FieldState3 field_copy, int a) {
     field_copy.putNext();
     auto chains = field_copy.deleteChainRecurse();
 
-    feat->bias = 1;
+    // feat->bias = 1;
     auto chain_all = field_copy.calcChainAll();
     for (std::size_t y = 0; y < FieldState3::HEIGHT; y++) {
         for (std::size_t x = 0; x < FieldState3::WIDTH; x++) {
@@ -47,14 +47,14 @@ void calcActionEach(Pumila14::InFeature *feat, FieldState3 field_copy, int a) {
     }
 }
 
-Matrix Pumila14::calcAction(const FieldState3 &field,
-                            const std::optional<FieldState3> &) {
-    Matrix m(ACTIONS_NUM, sizeof(InFeature) / sizeof(double));
+Matrix Pumila14::calcAction(const StepResult &result) {
+    Matrix m(ACTIONS_NUM, FEATURE_NUM);
     std::array<std::future<void>, ACTIONS_NUM> tasks;
     for (int a = 0; a < ACTIONS_NUM; a++) {
         auto m_ptr = m.rowPtr<InFeature>(a);
-        tasks[a] = pool.submit_task(
-            [m_ptr, &field, a] { calcActionEach(m_ptr, field, a); });
+        tasks[a] = pool.submit_task([m_ptr, &result, a] {
+            calcActionEach(m_ptr, result.field_before, a);
+        });
     }
     for (int a = 0; a < ACTIONS_NUM; a++) {
         tasks[a].get();
@@ -76,7 +76,7 @@ Matrix Pumila14::transpose(const Matrix &in) {
         for (std::size_t a = 0; a < in.rows(); a++) {
             auto in_ptr = in.rowPtr<InFeature>(a);
             auto ret_ptr = ret.rowPtr<InFeature>(a * 24 + r);
-            ret_ptr->bias = 1;
+            // ret_ptr->bias = 1;
             for (std::size_t p = 0;
                  p < FieldState3::WIDTH * FieldState3::HEIGHT * 4; p += 4) {
                 for (int i = 0; i < 4; i++) {

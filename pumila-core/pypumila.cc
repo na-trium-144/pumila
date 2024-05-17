@@ -1,3 +1,4 @@
+#include "pumila/step.h"
 #include <pumila/pumila.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/pybind11.h>
@@ -104,7 +105,9 @@ PYBIND11_MODULE(pypumila, m) {
         .def_readonly("op_field_before", &StepResult::op_field_before)
         .def_readonly("op_field_after", &StepResult::op_field_after)
         .def_readonly("garbage_recv", &StepResult::garbage_recv)
-        .def_readonly("garbage_fell_pos", &StepResult::garbage_fell_pos);
+        .def_readonly("garbage_fell_pos", &StepResult::garbage_fell_pos)
+        .def("done", &StepResult::done)
+        .def("next", &StepResult::next);
     auto game_sim =
         py::class_<GameSim, std::shared_ptr<GameSim>>(m, "GameSim")
             .def("make_new",
@@ -186,4 +189,10 @@ PYBIND11_MODULE(pypumila, m) {
             }
             return m;
         }));
+
+    py::class_<Pumila14>(m, "Pumila14")
+        .def("feature_num", []() { return Pumila14::FEATURE_NUM; })
+        .def("calc_action", &Pumila14::calcAction)
+        .def("transpose", &Pumila14::transpose)
+        .def("reward", &Pumila14::reward);
 }

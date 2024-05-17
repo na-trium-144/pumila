@@ -6,6 +6,7 @@
 #include <memory>
 #include <optional>
 #include <vector>
+#include <cassert>
 
 namespace PUMILA_NS {
 struct StepResult {
@@ -53,5 +54,25 @@ struct StepResult {
     StepResult(const StepResult &) = delete;
     StepResult &operator=(const StepResult &) = delete;
     ~StepResult() = default;
+
+    bool done() const {
+        if (!field_after) {
+            return false;
+        }
+        if (garbage_send && !garbage_send->done()) {
+            return false;
+        }
+        return std::all_of(garbage_recv.cbegin(), garbage_recv.cend(),
+                           [](const auto &gr) { return gr->done(); });
+    }
+
+    std::shared_ptr<StepResult> next() const {
+        assert(field_after);
+        auto n = std::make_shared<StepResult>(*field_after);
+        if (op_field_after) {
+            n->op_field_before = op_field_after;
+        }
+        return n;
+    }
 };
 } // namespace PUMILA_NS

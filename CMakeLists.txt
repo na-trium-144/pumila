@@ -82,7 +82,7 @@ list(APPEND PUMILA_TEST_SRC
     pumila-core/test/game_test.cc
 )
 if(WIN32)
-    list(APPEND PUMILA_CORE_SRC pumila-core/lib/version.rc)
+    # list(APPEND PUMILA_CORE_SRC pumila-core/lib/version.rc)
 endif()
 
 add_library(pumila-core STATIC ${PUMILA_CORE_SRC})
