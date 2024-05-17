@@ -85,7 +85,7 @@ if(WIN32)
     list(APPEND PUMILA_CORE_SRC pumila-core/lib/version.rc)
 endif()
 
-add_library(pumila-core SHARED ${PUMILA_CORE_SRC})
+add_library(pumila-core STATIC ${PUMILA_CORE_SRC})
 target_include_directories(pumila-core PUBLIC pumila-core/include)
 target_compile_features(pumila-core PUBLIC cxx_std_20)
 target_link_libraries(pumila-core PUBLIC bs_thread_pool)
