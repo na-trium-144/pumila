@@ -41,7 +41,7 @@ class KeyState:
         self.key_repeat_wait = 0
 
 
-class Phase(Enum):
+class WindowPhase(Enum):
     READY = 0
     GAME = 1
     FINISH = 2
@@ -53,7 +53,7 @@ class Window:
     font: pygame.font.Font
     key_state: KeyState
     phase_t: int
-    phase: Phase
+    phase: WindowPhase
     sim: List[pypumila.GameSim]
     is_player: List[bool]
 
@@ -61,6 +61,7 @@ class Window:
         if Window.window_init:
             raise RuntimeError("pygame already initialized")
         pygame.init()
+        pygame.key.set_repeat()
         self.screen = pygame.display.set_mode((700, 560))
         pygame.font.init()
         self.font = pygame.font.Font("Roboto-Regular.ttf", 24)
@@ -68,7 +69,7 @@ class Window:
         Window.window_init = True
         self.key_state = KeyState()
         self.phase_t = 0
-        self.phase = Phase.READY
+        self.phase = WindowPhase.READY
         self.sim = []
         self.is_player = []
 
@@ -85,6 +86,7 @@ class Window:
     def handle_event(self) -> None:
         for event in pygame.event.get():
             if event.type in [KEYDOWN, KEYUP]:
+                self.key_state.key_repeat_wait = 0
                 is_down = event.type == KEYDOWN
                 if event.key in [K_w, K_UP]:
                     self.key_state.quick_drop = is_down
@@ -105,17 +107,17 @@ class Window:
         if self.key_state.reset:
             for s in self.sim:
                 s.reset()
-            self.phase = Phase.READY
+            self.phase = WindowPhase.READY
             self.phase_t = 0
         self.key_state.reset = False
 
-        if self.key_state.quick_drop and self.phase == Phase.GAME:
+        if self.key_state.quick_drop and self.phase == WindowPhase.GAME:
             for s, p in zip(self.sim, self.is_player):
                 if p:
                     s.quick_drop()
         self.key_state.quick_drop = False
 
-        if self.key_state.soft_drop and self.phase == Phase.GAME:
+        if self.key_state.soft_drop and self.phase == WindowPhase.GAME:
             for s, p in zip(self.sim, self.is_player):
                 if p:
                     s.soft_drop()
@@ -123,7 +125,7 @@ class Window:
 
         if (
             self.key_state.left
-            and self.phase == Phase.GAME
+            and self.phase == WindowPhase.GAME
             and not self.key_state.key_repeat_wait
         ):
             for s, p in zip(self.sim, self.is_player):
@@ -132,20 +134,20 @@ class Window:
 
         if (
             self.key_state.right
-            and self.phase == Phase.GAME
+            and self.phase == WindowPhase.GAME
             and not self.key_state.key_repeat_wait
         ):
             for s, p in zip(self.sim, self.is_player):
                 if p:
                     s.move_pair(1)
 
-        if self.key_state.rot_left and self.phase == Phase.GAME:
+        if self.key_state.rot_left and self.phase == WindowPhase.GAME:
             for s, p in zip(self.sim, self.is_player):
                 if p:
                     s.rot_pair(-1)
         self.key_state.rot_left = False
 
-        if self.key_state.rot_right and self.phase == Phase.GAME:
+        if self.key_state.rot_right and self.phase == WindowPhase.GAME:
             for s, p in zip(self.sim, self.is_player):
                 if p:
                     s.rot_pair(1)
@@ -200,7 +202,7 @@ class Window:
                 for x in range(6):
                     self.draw_puyo(field.get(x, y), x, y, i, True)
 
-            score_text = self.font.render(str(field.total_score), True, black)
+            score_text = self.font.render(str(field.total_score()), True, black)
             self.screen.blit(
                 score_text,
                 (
@@ -240,7 +242,10 @@ class Window:
                     ),
                 )
 
-            if s.phase_get() == pypumila.GameSim.PhaseEnum.fall:
+            if (
+                s.phase_get() == pypumila.GameSim.PhaseEnum.fall
+                and s.fall_phase_current_chain() < len(s.current_step().chains)
+            ):
                 current_chain = s.current_step().chains[s.fall_phase_current_chain()]
                 current_sc_text = self.font.render(
                     f"{current_chain.score_a()} x {current_chain.score_b()}",
@@ -287,14 +292,21 @@ class Window:
                     ),
                 )
 
-        if self.phase == Phase.READY:
+        if self.phase == WindowPhase.READY:
             text = self.font.render("Ready?", True, black)
-        elif self.phase == Phase.GAME:
+            if self.phase_t >= 60:
+                self.phase_t = 0
+                self.phase = WindowPhase.GAME
+        elif self.phase == WindowPhase.GAME:
             if self.phase_t < 60:
                 text = self.font.render("Go!", True, black)
             else:
                 text = None
-        elif self.phase == Phase.FINISH:
+            for s in self.sim:
+                if s.is_over:
+                    self.phase_t = 0
+                    self.phase = WindowPhase.FINISH
+        elif self.phase == WindowPhase.FINISH:
             text = self.font.render("Finish", True, black)
         if text is not None:
             self.screen.blit(

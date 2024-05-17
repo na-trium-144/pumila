@@ -37,7 +37,7 @@ void GameSim::reset(typename std::mt19937::result_type seed) {
     // std::lock_guard lock(step_m);
     // std::lock_guard lock2(field_m);
     field.emplace(seed);
-    phase = std::make_unique<GameSim::GarbagePhase>(this);
+    phase = std::make_unique<GameSim::FreePhase>(this);
 }
 
 // void GameSim::stopAction() {
@@ -228,7 +228,7 @@ GameSim::FreePhase::FreePhase(GameSim *sim) : Phase(sim), put_t(PUT_T) {
 }
 
 std::unique_ptr<GameSim::Phase> GameSim::FreePhase::step() {
-    bool go_fall = false;
+    // bool go_fall = false;
     // std::lock_guard lock(sim->field_m);
     auto current_pair = sim->field->getNext(0);
     current_pair.y -= FALL_SPEED / 60;
@@ -247,14 +247,14 @@ std::unique_ptr<GameSim::Phase> GameSim::FreePhase::step() {
             sim->current_step = std::make_shared<StepResult>(*sim->field);
             sim->soft_put_target = std::nullopt;
             sim->field->putNext();
-            go_fall = true;
+            // go_fall = true;
+            return std::make_unique<GameSim::FallPhase>(sim);
         }
     }
-    if (go_fall) {
-        return std::make_unique<GameSim::FallPhase>(sim);
-    } else {
-        return nullptr;
-    }
+    // if (go_fall) {
+    // } else {
+    return nullptr;
+    // }
 }
 
 GameSim::FallPhase::FallPhase(GameSim *sim)
@@ -266,6 +266,7 @@ GameSim::FallPhase::FallPhase(GameSim *sim)
     assert(sim->current_step);
     sim->current_step->chains = sim->field->deleteChainRecurse();
     chain_t.assign(sim->current_step->chains.size(), CHAIN_T + FALL_T);
+    display_field.fall();
 }
 std::unique_ptr<GameSim::Phase> GameSim::FallPhase::step() {
     if (fall_wait_t > 0) {
@@ -274,12 +275,15 @@ std::unique_ptr<GameSim::Phase> GameSim::FallPhase::step() {
         assert(sim->current_step);
         if (current_chain >= sim->current_step->chains.size()) {
             return std::make_unique<GameSim::GarbagePhase>(sim);
-        } else if (--chain_t.at(current_chain) <= 0) {
-            current_chain++;
+        }
+        if (chain_t.at(current_chain) == FALL_T + CHAIN_T) {
             display_field.deleteChain(current_chain + 1);
         }
         if (chain_t.at(current_chain) == FALL_T) {
             display_field.fall();
+        }
+        if (--chain_t.at(current_chain) <= 0) {
+            current_chain++;
         }
     }
     return nullptr;

@@ -84,13 +84,16 @@ class GameSim : public std::enable_shared_from_this<GameSim> {
     //     std::shared_ptr<Pumila> model, const std::string &name = "",
     //     typename std::mt19937::result_type seed = std::random_device()(),
     //     bool enable_garbage = true);
-    PUMILA_DLL explicit GameSim(typename std::mt19937::result_type seed,
-                                bool enable_garbage);
+    PUMILA_DLL explicit GameSim(
+        typename std::mt19937::result_type seed = std::random_device()(),
+        bool enable_garbage = true);
 
   public:
+    static std::shared_ptr<GameSim> makeNew() {
+        return std::shared_ptr<GameSim>(new GameSim());
+    }
     static std::shared_ptr<GameSim>
-    makeNew(typename std::mt19937::result_type seed = std::random_device()(),
-            bool enable_garbage = true) {
+    makeNew(typename std::mt19937::result_type seed, bool enable_garbage) {
         return std::shared_ptr<GameSim>(new GameSim(seed, enable_garbage));
     }
 

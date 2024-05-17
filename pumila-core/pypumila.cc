@@ -1,6 +1,3 @@
-#include "pumila/game.h"
-#include "pumila/garbage.h"
-#include "pumila/step.h"
 #include <pumila/pumila.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/pybind11.h>
@@ -68,7 +65,7 @@ PYBIND11_MODULE(pypumila, m) {
         .def("done", &GarbageGroup::done)
         .def("cancelled_num", &GarbageGroup::cancelledNum)
         .def("fell_num", &GarbageGroup::fellNum);
-    py::class_<FieldState3, std::shared_ptr<FieldState3>>(m, "FieldState3")
+    py::class_<FieldState3>(m, "FieldState3")
         .def(py::init<>())
         .def("in_range", &FieldState3::inRange)
         .def("get", &FieldState3::get)
@@ -79,11 +76,17 @@ PYBIND11_MODULE(pypumila, m) {
         .def("get_garbage_num_total", &FieldState3::getGarbageNumTotal)
         .def("calc_garbage", &FieldState3::calcGarbage)
         .def("cancel_garbage", &FieldState3::cancelGarbage)
+        .def("get_next_height", py::overload_cast<const Action &>(
+                                    &FieldState3::getNextHeight, py::const_))
+        .def("get_next_height",
+             py::overload_cast<>(&FieldState3::getNextHeight, py::const_))
+        .def("get_height", &FieldState3::getHeight)
         .def("put_next", &FieldState3::putNext)
         .def("delete_chain", &FieldState3::deleteChain)
         .def("fall", &FieldState3::fall)
         .def("delete_chain_recurse", &FieldState3::deleteChainRecurse)
         .def("calc_chain_all", &FieldState3::calcChainAll)
+        .def("total_score", &FieldState3::totalScore)
         .def("is_game_over", &FieldState3::isGameOver);
     py::class_<Chain>(m, "Chain")
         .def_readonly("connections", &Chain::connections)
@@ -105,7 +108,10 @@ PYBIND11_MODULE(pypumila, m) {
         .def_readonly("garbage_fell_pos", &StepResult::garbage_fell_pos);
     auto game_sim =
         py::class_<GameSim, std::shared_ptr<GameSim>>(m, "GameSim")
-            .def("make_new", &GameSim::makeNew)
+            .def("make_new",
+                 py::overload_cast<typename std::mt19937::result_type, bool>(
+                     &GameSim::makeNew))
+            .def("make_new", py::overload_cast<>(&GameSim::makeNew))
             .def("field_copy", [](const GameSim &sim) { return sim.field; })
             .def("current_step",
                  [](const GameSim &sim) { return sim.current_step; })

@@ -63,10 +63,9 @@ TEST(FieldTest, garbage) {
     EXPECT_EQ(garbage2->fellNum(), 0);
     EXPECT_FALSE(garbage2->done());
 
-    std::array<std::pair<std::size_t, std::size_t>, 30> garbage_list;
-    std::size_t garbage_num;
-    field.putGarbage(&garbage_list, &garbage_num);
-    EXPECT_EQ(garbage_num, 30);
+    std::vector<std::pair<std::size_t, std::size_t>> garbage_list;
+    field.putGarbage(&garbage_list);
+    EXPECT_EQ(garbage_list.size(), 30);
     EXPECT_EQ(field.getGarbageNumTotal(), 39);
     EXPECT_EQ(garbage->garbageNum(), 20);
     EXPECT_EQ(garbage->restGarbageNum(), 0);

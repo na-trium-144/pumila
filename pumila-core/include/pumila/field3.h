@@ -73,10 +73,12 @@ class FieldState3 {
      */
     int garbage_score;
 
+    int total_score;
+
   public:
     FieldState3()
         : field(), updated(), rnd_next(), next(), garbage_ready(),
-          garbage_score() {}
+          garbage_score(0), total_score(0) {}
     explicit FieldState3(std::uint_fast32_t seed) : FieldState3() {
         rnd_next.seed(seed);
         for (std::size_t i = 0; i < NextNum; i++) {
@@ -91,19 +93,23 @@ class FieldState3 {
     FieldState3 &operator=(const FieldState3 &other) {
         std::lock_guard lock(other.mtx);
         field = other.field;
-        clearUpdated();
+        updated = other.updated;
         rnd_next = other.rnd_next;
         next = other.next;
         garbage_ready = other.garbage_ready;
+        garbage_score = other.garbage_score;
+        total_score = other.total_score;
         return *this;
     }
     FieldState3 &operator=(FieldState3 &&other) {
         std::lock_guard lock(other.mtx);
         field = std::move(other.field);
-        clearUpdated();
+        updated = std::move(other.updated);
         rnd_next = std::move(other.rnd_next);
         next = std::move(other.next);
         garbage_ready = std::move(other.garbage_ready);
+        garbage_score = other.garbage_score;
+        total_score = other.total_score;
         return *this;
     }
 
@@ -209,6 +215,7 @@ class FieldState3 {
     PUMILA_DLL std::array<std::array<std::size_t, WIDTH>, HEIGHT>
     calcChainAll() const;
 
+    PUMILA_DLL int totalScore() const;
     /*!
      * \brief 11,2を調べ埋まっているかどうか返す
      */

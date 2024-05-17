@@ -1,2 +1,2 @@
 from pypumila import *
-from .window import Window
+from .window import Window, WindowPhase

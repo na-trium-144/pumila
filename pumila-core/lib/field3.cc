@@ -224,6 +224,7 @@ Chain FieldState3::deleteChain(std::size_t chain_num) {
             }
         }
     }
+    total_score += chain.score();
     return chain;
 }
 bool FieldState3::fall() {
@@ -281,4 +282,8 @@ std::vector<Chain> FieldState3::deleteChainRecurse() {
     return chains;
 }
 
+int FieldState3::totalScore() const {
+    std::lock_guard lock(mtx);
+    return total_score;
+}
 } // namespace PUMILA_NS
