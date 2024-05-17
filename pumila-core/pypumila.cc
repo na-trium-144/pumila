@@ -103,7 +103,6 @@ PYBIND11_MODULE(pypumila, m) {
         .def_readonly("garbage_send", &StepResult::garbage_send)
         .def_readonly("op_field_before", &StepResult::op_field_before)
         .def_readonly("op_field_after", &StepResult::op_field_after)
-        .def_readonly("op_chains", &StepResult::op_chains)
         .def_readonly("garbage_recv", &StepResult::garbage_recv)
         .def_readonly("garbage_fell_pos", &StepResult::garbage_fell_pos);
     auto game_sim =

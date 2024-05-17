@@ -191,20 +191,23 @@ void GameSim::softPut(const Action &action) {
 GameSim::GarbagePhase::GarbagePhase(GameSim *sim) : Phase(sim), wait_t(WAIT_T) {
     assert(sim->current_step);
     std::size_t garbage_send;
+    auto sim_op = sim->opponent.lock();
     // std::lock_guard lock(sim->field_m);
     garbage_send = sim->field->calcGarbage(std::accumulate(
         sim->current_step->chains.cbegin(), sim->current_step->chains.cend(), 0,
         [](int acc, const Chain &chain) { return acc + chain.score(); }));
     garbage_send -= sim->field->cancelGarbage(garbage_send);
-    // todo: これをsimに返す
-    std::shared_ptr<GarbageGroup> garbage_send_g = nullptr;
     if (garbage_send > 0) {
-        garbage_send_g = std::make_shared<GarbageGroup>(garbage_send);
-    }
-    auto opponent_sim = sim->opponent.lock();
-    if (opponent_sim && sim->enable_garbage) {
-        // std::lock_guard lock(opponent_sim->field_m);
-        opponent_sim->field->addGarbage(garbage_send_g);
+        sim->current_step->garbage_send =
+            std::make_shared<GarbageGroup>(garbage_send);
+        if (sim_op && sim->enable_garbage) {
+            // std::lock_guard lock(sim_op->field_m);
+            if (sim_op->current_step) {
+                sim_op->current_step->garbage_recv.push_back(
+                    sim->current_step->garbage_send);
+            }
+            sim_op->field->addGarbage(sim->current_step->garbage_send);
+        }
     }
     // std::lock_guard lock(sim->field_m);
     if (sim->field->getGarbageNumTotal() == 0) {
@@ -223,8 +226,23 @@ std::unique_ptr<GameSim::Phase> GameSim::GarbagePhase::step() {
 
 GameSim::FreePhase::FreePhase(GameSim *sim) : Phase(sim), put_t(PUT_T) {
     // std::lock_guard lock(sim->field_m);
+    auto sim_op = sim->opponent.lock();
+
+    // 前ターンのデータ残り
+    if (sim->current_step) {
+        sim->current_step->field_after = sim->field;
+        if (sim_op) {
+            sim->current_step->op_field_after = sim_op->field;
+        }
+    }
+
     sim->rot_fail_count = 0;
     sim->is_over = sim->field->isGameOver();
+
+    sim->current_step = std::make_shared<StepResult>(*sim->field);
+    if (sim_op) {
+        sim->current_step->op_field_before = sim_op->field;
+    }
 }
 
 std::unique_ptr<GameSim::Phase> GameSim::FreePhase::step() {
@@ -244,7 +262,6 @@ std::unique_ptr<GameSim::Phase> GameSim::FreePhase::step() {
         }
         sim->field->updateNext(current_pair);
         if (put_t < 0) {
-            sim->current_step = std::make_shared<StepResult>(*sim->field);
             sim->soft_put_target = std::nullopt;
             sim->field->putNext();
             // go_fall = true;
@@ -267,6 +284,11 @@ GameSim::FallPhase::FallPhase(GameSim *sim)
     sim->current_step->chains = sim->field->deleteChainRecurse();
     chain_t.assign(sim->current_step->chains.size(), CHAIN_T + FALL_T);
     display_field.fall();
+
+    auto sim_op = sim->opponent.lock();
+    if (sim_op) {
+        sim->current_step->op_field_before = sim_op->field;
+    }
 }
 std::unique_ptr<GameSim::Phase> GameSim::FallPhase::step() {
     if (fall_wait_t > 0) {

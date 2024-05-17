@@ -9,35 +9,46 @@
 
 namespace PUMILA_NS {
 struct StepResult {
+    /*!
+     * putするまえ (Fallの直前)
+     */
     FieldState3 field_before;
+    /*!
+     * おじゃまが降った後 (Free)
+     */
     std::optional<FieldState3> field_after;
+    /*!
+     * 自分の連鎖 (Fall)
+     */
     std::vector<Chain> chains;
     /*!
+     * 自分が送ったおじゃま (Garbage)
      * 自分のgarbageと相殺した場合無
      * 相手に送られた場合は相殺されても落ちてもここに含む
      */
     std::shared_ptr<GarbageGroup> garbage_send;
     /*!
-     * 連鎖中の場合は終了後のfield
+     * 自分のfield_before時点(Free)の相手のfield
+     * 相手連鎖中の場合は相手連鎖終了後のfieldになる
      */
-    std::optional<FieldState3> op_field_before, op_field_after;
+    std::optional<FieldState3> op_field_before;
     /*!
-     * 送られてきたおじゃま
-     * beforeの前→afterの前
-     * beforeの前→afterの時点で未完
-     * beforeの後→afterの前: 複数存在する可能性がある
+     * 自分のfield_after時点(Free = 自フィールドに降った直後)の相手のfield
+     * 相手連鎖中の場合は相手連鎖終了後のfieldになる
      */
-    std::vector<std::vector<Chain>> op_chains;
+    std::optional<FieldState3> op_field_after;
+    /*!
+     * 自分のbefore→after間(Free→Free)に送られてきたおじゃま
+     */
     std::vector<std::shared_ptr<GarbageGroup>> garbage_recv;
-
     /*!
-     * \brief このターンに降ったおじゃま
+     * このターンに降ったおじゃま (Garbage)
      */
     std::vector<std::pair<std::size_t, std::size_t>> garbage_fell_pos;
 
-    StepResult(const FieldState3 &field_before)
+    explicit StepResult(const FieldState3 &field_before)
         : field_before(field_before), field_after(), chains(), garbage_send(),
-          op_field_before(), op_field_after(), op_chains(), garbage_recv(),
+          op_field_before(), op_field_after(), garbage_recv(),
           garbage_fell_pos() {}
     StepResult(const StepResult &) = delete;
     StepResult &operator=(const StepResult &) = delete;

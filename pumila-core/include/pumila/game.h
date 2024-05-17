@@ -74,7 +74,7 @@ class GameSim : public std::enable_shared_from_this<GameSim> {
     std::unique_ptr<Phase> phase;
 
     /*!
-     * \brief FreePhaseを抜ける時に作られ、
+     * \brief FreePhaseに入る時に作られ、
      * Fall, GarbagePhaseで情報が更新される
      */
     std::shared_ptr<StepResult> current_step;
