@@ -1,8 +1,14 @@
 import pypumila
 from collections import deque
 import random
-from typing import List, Tuple, Optional
+from typing import List, Optional, NamedTuple
 import numpy as np
+
+
+class ReplayData(NamedTuple):
+    step: pypumila.StepResult
+    feat: np.ndarray
+    action: int
 
 
 class ReplayMemory:
@@ -15,22 +21,19 @@ class ReplayMemory:
         self.memory_unchecked = deque([], maxlen=capacity)
         self.capacity = capacity
 
-    def push(self, step: pypumila.StepResult, feat: np.ndarray, a: int):
+    def push(self, data: ReplayData):
         """Save a transition"""
-        self.memory_unchecked.append((step, feat, a))
+        self.memory_unchecked.append(data)
 
-    def sample(
-        self, batch_size: int
-    ) -> Optional[List[Tuple[pypumila.StepResult, np.ndarray, int]]]:
-        memory_yet = deque([], maxlen=self.capacity)
+    def sample(self, batch_size: int) -> Optional[List[ReplayData]]:
+        memory_yet: deque = deque([], maxlen=self.capacity)
         while len(self.memory_unchecked):
-            step = self.memory_unchecked.pop()
-            if step[0].done():
-                self.memory_done.append(step)
+            data = self.memory_unchecked.pop()
+            if data[0].done():
+                self.memory_done.append(data)
             else:
-                memory_yet.append(step)
+                memory_yet.append(data)
         self.memory_unchecked = memory_yet
         if len(self.memory_done) < batch_size:
             return None
-        else:
-            return random.sample(self.memory_done, batch_size)
+        return random.sample(self.memory_done, batch_size)
