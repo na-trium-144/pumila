@@ -7,7 +7,7 @@
 using namespace pumila;
 
 TEST(GameTest, put) {
-    auto sim = GameSim::makeNew();
+    auto sim = std::make_shared<GameSim>();
     EXPECT_EQ(sim->phase->get(), GameSim::Phase::free);
     ASSERT_TRUE(sim->field.has_value());
     EXPECT_NE(sim->current_step, nullptr);
@@ -66,8 +66,8 @@ TEST(GameTest, put) {
 }
 
 TEST(GameTest, chain) {
-    auto sim = GameSim::makeNew();
-    auto sim2 = GameSim::makeNew();
+    auto sim = std::make_shared<GameSim>();
+    auto sim2 = std::make_shared<GameSim>();
     sim->setOpponentSim(sim2);
 
     sim->field->updateNext({Puyo::red, Puyo::red});

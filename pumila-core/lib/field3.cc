@@ -1,4 +1,5 @@
 #include "pumila/action.h"
+#include <cassert>
 #include <cstddef>
 #include <numeric>
 #include <pumila/field3.h>
@@ -6,12 +7,14 @@
 namespace PUMILA_NS {
 void FieldState3::set(std::size_t x, std::size_t y, Puyo p) {
     std::lock_guard lock(mtx);
+    assert(inRange(x, y) && "out of range in FieldState3::set");
     field.at(y).at(x) = p;
     updated.at(y).at(x) = true;
 }
 
 Puyo FieldState3::get(std::size_t x, std::size_t y) const {
     std::lock_guard lock(mtx);
+    assert(inRange(x, y) && "out of range in FieldState3::get");
     return field.at(y).at(x);
 }
 void FieldState3::clearUpdated() {
@@ -39,6 +42,7 @@ Puyo FieldState3::nextColor() {
 
 PuyoPair FieldState3::getNext(std::size_t i) const {
     std::lock_guard lock(mtx);
+    assert(i < next.size() && "out of range in FieldState3::getNext");
     return next.at(i);
 }
 void FieldState3::updateNext(const PuyoPair &pp) {
@@ -69,14 +73,19 @@ std::size_t FieldState3::getGarbageNumTotal() const {
         });
 }
 
-void FieldState3::putNext() {
+bool FieldState3::putNext() {
     std::lock_guard lock(mtx);
     auto [yb, yt] = getNextHeight();
     clearUpdated();
     PuyoPair action = getNext(0);
-    set(action.topX(), yt, action.top);
-    set(action.bottomX(), yb, action.bottom);
+    if (yt < FieldState3::HEIGHT) {
+        set(action.topX(), yt, action.top);
+    }
+    if (yb < FieldState3::HEIGHT) {
+        set(action.bottomX(), yb, action.bottom);
+    }
     shiftNext();
+    return yt < FieldState3::HEIGHT && yb < FieldState3::HEIGHT;
 }
 
 std::pair<std::size_t, std::size_t>

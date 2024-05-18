@@ -15,6 +15,7 @@ torch = [
     {platform = "linux", version = "^2.3.0+cpu", source = "pytorch-cpu"},
     {platform = "darwin", version = "^2.3.0", source = "pypi"},
 ]
+psutil = "^5.9.8"
 
 [[tool.poetry.source]]
 name = "pytorch-cpu"

@@ -7,6 +7,7 @@
 #include <optional>
 #include <vector>
 #include <cassert>
+#include <iostream>
 
 namespace PUMILA_NS {
 struct StepResult {
@@ -62,8 +63,13 @@ struct StepResult {
         if (garbage_send && !garbage_send->done()) {
             return false;
         }
-        return std::all_of(garbage_recv.cbegin(), garbage_recv.cend(),
-                           [](const auto &gr) { return gr->done(); });
+        if (!garbage_recv.empty()) {
+            if (!std::all_of(garbage_recv.cbegin(), garbage_recv.cend(),
+                             [](const auto &gr) { return gr->done(); })) {
+                return false;
+            }
+        }
+        return true;
     }
 
     std::shared_ptr<StepResult> next() const {

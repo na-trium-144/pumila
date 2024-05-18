@@ -51,6 +51,12 @@ class GameSim : public std::enable_shared_from_this<GameSim> {
 
     bool is_over = false;
 
+    /*!
+     * FreePhaseに入る時に加算
+     * reset()で0からスタート
+     */
+    int step_count = 0;
+
     struct Phase {
         GameSim *sim;
         explicit Phase(GameSim *sim) : sim(sim) {}
@@ -79,7 +85,6 @@ class GameSim : public std::enable_shared_from_this<GameSim> {
      */
     std::shared_ptr<StepResult> current_step;
 
-  private:
     // PUMILA_DLL explicit GameSim(
     //     std::shared_ptr<Pumila> model, const std::string &name = "",
     //     typename std::mt19937::result_type seed = std::random_device()(),
@@ -87,15 +92,6 @@ class GameSim : public std::enable_shared_from_this<GameSim> {
     PUMILA_DLL explicit GameSim(
         typename std::mt19937::result_type seed = std::random_device()(),
         bool enable_garbage = true);
-
-  public:
-    static std::shared_ptr<GameSim> makeNew() {
-        return std::shared_ptr<GameSim>(new GameSim());
-    }
-    static std::shared_ptr<GameSim>
-    makeNew(typename std::mt19937::result_type seed, bool enable_garbage) {
-        return std::shared_ptr<GameSim>(new GameSim(seed, enable_garbage));
-    }
 
     GameSim(const GameSim &sim) = delete;
     GameSim &operator=(const GameSim &) = delete;
@@ -107,8 +103,8 @@ class GameSim : public std::enable_shared_from_this<GameSim> {
 
     // bool hasModel() { return model != nullptr; }
 
-    PUMILA_DLL void
-    reset(typename std::mt19937::result_type seed = std::random_device()());
+    PUMILA_DLL void reset(typename std::mt19937::result_type seed);
+    void reset() { reset(std::random_device()()); }
 
     /*!
      * \brief 相手simを相互にセットする

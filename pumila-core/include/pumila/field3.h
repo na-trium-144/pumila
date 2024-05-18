@@ -187,8 +187,9 @@ class FieldState3 {
      * \brief nextを指定した位置に落とす
      * * field.updatedをクリア
      * * nextを削除する
+     * \return フィールド内に収まっていればtrue
      */
-    PUMILA_DLL void putNext();
+    PUMILA_DLL bool putNext();
 
     /*!
      * \brief 4連結を探し、消す

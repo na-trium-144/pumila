@@ -38,6 +38,7 @@ void GameSim::reset(typename std::mt19937::result_type seed) {
     // std::lock_guard lock2(field_m);
     field.emplace(seed);
     phase = std::make_unique<GameSim::FreePhase>(this);
+    step_count = 0;
 }
 
 // void GameSim::stopAction() {
@@ -243,6 +244,8 @@ GameSim::FreePhase::FreePhase(GameSim *sim) : Phase(sim), put_t(PUT_T) {
     if (sim_op) {
         sim->current_step->op_field_before = sim_op->field;
     }
+
+    sim->step_count++;
 }
 
 std::unique_ptr<GameSim::Phase> GameSim::FreePhase::step() {

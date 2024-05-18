@@ -18,7 +18,7 @@ struct Pumila14 {
     static constexpr std::size_t FEATURE_NUM =
         sizeof(InFeature) / sizeof(double);
     PUMILA_DLL static Matrix calcAction(const StepResult &result);
-    PUMILA_DLL static Matrix transpose(const Matrix &in);
+    PUMILA_DLL static Matrix rotateColor(const Matrix &in);
     PUMILA_DLL static double reward(const StepResult &result);
 };
 } // namespace PUMILA_NS

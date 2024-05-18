@@ -11,7 +11,6 @@ if(MSVC)
         set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${CONF} ${CMAKE_CURRENT_BINARY_DIR})
         set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${CONF} ${CMAKE_CURRENT_BINARY_DIR})
     endforeach()
-    message(${CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG})
 endif()
 
 include(FetchContent)
@@ -66,8 +65,7 @@ if(MSVC)
         _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING
     )
 else()
-    add_compile_options(-Wall -Wpedantic -Wextra)
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -UNDEBUG")
+    add_compile_options(-Wall -Wpedantic -Wextra -UNDEBUG)
 endif()
 
 list(APPEND PUMILA_CORE_SRC

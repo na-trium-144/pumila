@@ -1,3 +1,4 @@
+#include "pumila/game.h"
 #include "pumila/step.h"
 #include <pumila/pumila.h>
 #include <pybind11/detail/common.h>
@@ -110,15 +111,14 @@ PYBIND11_MODULE(pypumila, m) {
         .def("next", &StepResult::next);
     auto game_sim =
         py::class_<GameSim, std::shared_ptr<GameSim>>(m, "GameSim")
-            .def("make_new",
-                 py::overload_cast<typename std::mt19937::result_type, bool>(
-                     &GameSim::makeNew))
-            .def("make_new", py::overload_cast<>(&GameSim::makeNew))
+            .def(py::init<typename std::mt19937::result_type, bool>())
+            .def(py::init<>())
             .def("field_copy", [](const GameSim &sim) { return sim.field; })
             .def("current_step",
                  [](const GameSim &sim) { return sim.current_step; })
             .def_readwrite("enable_garbage", &GameSim::enable_garbage)
             .def_readwrite("is_over", &GameSim::is_over)
+            .def_readwrite("step_count", &GameSim::step_count)
             .def("set_opponent_sim", &GameSim::setOpponentSim)
             .def("move_pair", &GameSim::movePair)
             .def("rot_pair", &GameSim::rotPair)
@@ -127,6 +127,9 @@ PYBIND11_MODULE(pypumila, m) {
             .def("step", &GameSim::step)
             .def("put", &GameSim::put)
             .def("soft_put", &GameSim::softPut)
+            .def("reset", py::overload_cast<typename std::mt19937::result_type>(
+                              &GameSim::reset))
+            .def("reset", py::overload_cast<>(&GameSim::reset))
             .def("phase_get",
                  [](const GameSim &sim) {
                      return sim.phase ? sim.phase->get() : GameSim::Phase::none;
@@ -193,6 +196,6 @@ PYBIND11_MODULE(pypumila, m) {
     py::class_<Pumila14>(m, "Pumila14")
         .def("feature_num", []() { return Pumila14::FEATURE_NUM; })
         .def("calc_action", &Pumila14::calcAction)
-        .def("transpose", &Pumila14::transpose)
+        .def("rotate_color", &Pumila14::rotateColor)
         .def("reward", &Pumila14::reward);
 }

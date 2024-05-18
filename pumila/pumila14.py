@@ -18,8 +18,8 @@ class Net14(nn.Module):
     def calc_action(self, state: StepResult) -> np.ndarray:
         return np.array(Pumila14.calc_action(state), copy=False)
 
-    def truncate(self, feat: np.ndarray) -> np.ndarray:
-        return np.array(Pumila14.truncate(feat), copy=False)
+    def rotate_color(self, feat: np.ndarray) -> np.ndarray:
+        return np.array(Pumila14.rotate_color(feat), copy=False)
 
     def reward(self, state: StepResult) -> float:
-        return pypumila(Pumila14.reward(state))
+        return Pumila14.reward(state)

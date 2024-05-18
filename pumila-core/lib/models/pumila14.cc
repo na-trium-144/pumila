@@ -6,7 +6,7 @@
 namespace PUMILA_NS {
 void calcActionEach(Pumila14::InFeature *feat, FieldState3 field_copy, int a) {
     field_copy.updateNext({field_copy.getNext(0), actions[a]});
-    field_copy.putNext();
+    bool action_in_field = field_copy.putNext();
     auto chains = field_copy.deleteChainRecurse();
 
     // feat->bias = 1;
@@ -62,12 +62,9 @@ Matrix Pumila14::calcAction(const StepResult &result) {
     return m;
 }
 
-Matrix Pumila14::transpose(const Matrix &in) {
-    if (in.cols() != sizeof(InFeature) / sizeof(double)) {
-        throw std::invalid_argument(
-            "invalid size in transpose: in -> " + std::to_string(in.cols()) +
-            ", expected " + std::to_string(sizeof(InFeature) / sizeof(double)));
-    }
+Matrix Pumila14::rotateColor(const Matrix &in) {
+    assert(in.cols() == sizeof(InFeature) / sizeof(double) &&
+           "invalid size in Pumila14::rotateColor");
     Matrix ret(in.rows() * 24, sizeof(InFeature) / sizeof(double));
     std::array<int, 4> index = {0, 1, 2, 3};
     int r = 0;
@@ -75,7 +72,7 @@ Matrix Pumila14::transpose(const Matrix &in) {
         assert(r < 24);
         for (std::size_t a = 0; a < in.rows(); a++) {
             auto in_ptr = in.rowPtr<InFeature>(a);
-            auto ret_ptr = ret.rowPtr<InFeature>(a * 24 + r);
+            auto ret_ptr = ret.rowPtr<InFeature>(a + r * in.rows());
             // ret_ptr->bias = 1;
             for (std::size_t p = 0;
                  p < FieldState3::WIDTH * FieldState3::HEIGHT * 4; p += 4) {
@@ -86,7 +83,8 @@ Matrix Pumila14::transpose(const Matrix &in) {
                         in_ptr->field_chains[p + i];
                 }
             }
-            for (std::size_t i = 0; i < sizeof(InFeature::score_diff); i++) {
+            for (std::size_t i = 0;
+                 i < sizeof(InFeature::score_diff) / sizeof(double); i++) {
                 ret_ptr->score_diff[i] = in_ptr->score_diff[i];
             }
         }
@@ -96,6 +94,7 @@ Matrix Pumila14::transpose(const Matrix &in) {
 }
 
 double Pumila14::reward(const StepResult &result) {
+    assert(result.done());
     return std::accumulate(
         result.chains.cbegin(), result.chains.end(), 0,
         [](int acc, const Chain &c) { return acc + c.score(); });
