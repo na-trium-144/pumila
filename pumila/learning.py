@@ -80,8 +80,8 @@ class Learning:
                 print(
                     "MPS not available because the current PyTorch install was not built with MPS enabled."
                 )
-        if self.device is None and torch.backends.mkldnn.is_available():
-            self.device = torch.device("mkldnn")
+        # if self.device is None and torch.backends.mkldnn.is_available():
+        #     self.device = torch.device("mkldnn")
         if self.device is None:
             self.device = torch.device("cpu")
         return self.device

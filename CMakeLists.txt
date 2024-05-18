@@ -89,6 +89,8 @@ target_compile_features(pumila-core PUBLIC cxx_std_20)
 target_link_libraries(pumila-core PUBLIC bs_thread_pool)
 if(MSVC)
     set_target_properties(pumila-core PROPERTIES DEBUG_POSTFIX d)
+else()
+    target_compile_options(pumila-core PRIVATE -fPIC)
 endif()
 
 pybind11_add_module(pypumila pumila-core/pypumila.cc)
