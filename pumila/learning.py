@@ -7,6 +7,7 @@ import math
 import random
 import pypumila
 from typing import Tuple, Optional
+from concurrent.futures import ThreadPoolExecutor
 
 
 class Params:
@@ -48,6 +49,7 @@ class Learning:
     optimizer: optim.AdamW
     memory: ReplayMemory
     steps_done: int
+    pool: ThreadPoolExecutor
 
     def __init__(self, Net=None, file=None, **kwargs) -> None:
         self.init_device()
@@ -64,17 +66,16 @@ class Learning:
         )
         self.memory = ReplayMemory(self.params.memory_size)
         self.steps_done = 0
+        self.pool = ThreadPoolExecutor()
 
     def init_device(self) -> torch.device:
-        # デバイスによってfloat64が使えなかったりするので変換先を設定
         self.device = None
-        self.dtype = torch.float64
+        self.dtype = torch.float32
         if torch.cuda.is_available():
             self.device = torch.device("cuda")
         if self.device is None and torch.backends.mps.is_built():
             if torch.backends.mps.is_available():
                 self.device = torch.device("mps")
-                self.dtype = torch.float32
             else:
                 print(
                     "MPS not available because the current PyTorch install was not built with MPS enabled."
@@ -113,38 +114,41 @@ class Learning:
 
         # batch = (step, feat, action)
         step_batch = [s[0] for s in batch]
-        feat_batch_np = self.policy_net.rotate_color(
-            pypumila.Matrix(np.vstack([s[1][s[2], :] for s in batch]))
-        )
-        feat_batch = torch.from_numpy(feat_batch_np).to(self.dtype).to(self.device)
 
-        state_action_values = self.policy_net(feat_batch)
+        def fn_feat_batch():
+            feat_batch_np = self.policy_net.rotate_color(
+                pypumila.Matrix(np.vstack([s[1][s[2], :] for s in batch]))
+            )
+            feat_batch = torch.from_numpy(feat_batch_np).to(self.dtype).to(self.device)
+            return self.policy_net(feat_batch)
 
-        reward_batch = torch.tensor(
-            [self.policy_net.reward(step) for step in step_batch] * 24,
-            dtype=self.dtype,
-            device=self.device,
-        )
+        def fn_reward_batch():
+            reward_batch = torch.tensor(
+                [self.policy_net.reward(step) for step in step_batch] * 24,
+                dtype=self.dtype,
+                device=self.device,
+            )
+            next_feat_batch_np = np.array(
+                [self.policy_net.calc_action(step.next()) for step in step_batch]
+            )
+            next_feat_batch = (
+                torch.from_numpy(next_feat_batch_np).to(self.dtype).to(self.device)
+            )
+            next_state_values = (
+                self.target_net(next_feat_batch).max(1).indices.squeeze()
+            )
+            next_state_values = torch.tensor(
+                next_state_values.tolist() * 24, dtype=self.dtype, device=self.device
+            )
+            # Compute the expected Q values
+            return (next_state_values * self.params.gamma + reward_batch).unsqueeze(1)
 
-        next_feat_batch_np = np.array(
-            [self.policy_net.calc_action(step.next()) for step in step_batch]
-        )
-        next_feat_batch = (
-            torch.from_numpy(next_feat_batch_np).to(self.dtype).to(self.device)
-        )
-        next_state_values = self.target_net(next_feat_batch).max(1).indices.squeeze()
-        next_state_values = torch.tensor(
-            next_state_values.tolist() * 24, dtype=self.dtype, device=self.device
-        )
-
-        # Compute the expected Q values
-        expected_state_action_values = (
-            next_state_values * self.params.gamma
-        ) + reward_batch
+        q_values = self.pool.submit(fn_feat_batch)
+        expected_q_values = self.pool.submit(fn_reward_batch)
 
         # Compute Huber loss
         criterion = nn.SmoothL1Loss()
-        loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
+        loss = criterion(q_values.result(), expected_q_values.result())
 
         # Optimize the model
         self.optimizer.zero_grad()
