@@ -64,6 +64,7 @@ PYBIND11_MODULE(pypumila, m) {
         .def("rest_garbage_num", &GarbageGroup::restGarbageNum)
         .def("cancel", &GarbageGroup::cancel)
         .def("fall", &GarbageGroup::fall)
+        .def("fall_all", &GarbageGroup::fallAll)
         .def("done", &GarbageGroup::done)
         .def("cancelled_num", &GarbageGroup::cancelledNum)
         .def("fell_num", &GarbageGroup::fellNum);

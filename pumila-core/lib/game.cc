@@ -201,6 +201,10 @@ GameSim::GarbagePhase::GarbagePhase(GameSim *sim) : Phase(sim), wait_t(WAIT_T) {
     if (garbage_send > 0) {
         sim->current_step->garbage_send =
             std::make_shared<GarbageGroup>(garbage_send);
+        if (!sim->enable_garbage) {
+            sim->current_step->garbage_send->fallAll();
+            assert(sim->current_step->garbage_send->done());
+        }
         if (sim_op && sim->enable_garbage) {
             // std::lock_guard lock(sim_op->field_m);
             if (sim_op->current_step) {

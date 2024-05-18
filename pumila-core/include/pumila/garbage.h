@@ -57,6 +57,10 @@ class GarbageGroup {
         fell_num += fall_actual;
         return fall_actual;
     }
+    /*!
+     * \brief ぷよをすべて降らせる
+     */
+    std::size_t fallAll() { return fall(restGarbageNum()); }
 
     bool done() const {
         std::lock_guard lock(mtx);
