@@ -124,7 +124,8 @@ PYBIND11_MODULE(pypumila, m) {
             .def("rot_pair", &GameSim::rotPair)
             .def("quick_drop", &GameSim::quickDrop)
             .def("soft_drop", &GameSim::softDrop)
-            .def("step", &GameSim::step)
+            .def("step", &GameSim::step,
+                 py::call_guard<py::gil_scoped_release>())
             .def("put", &GameSim::put)
             .def("soft_put", &GameSim::softPut)
             .def("reset", py::overload_cast<typename std::mt19937::result_type>(
@@ -195,7 +196,10 @@ PYBIND11_MODULE(pypumila, m) {
 
     py::class_<Pumila14>(m, "Pumila14")
         .def("feature_num", []() { return Pumila14::FEATURE_NUM; })
-        .def("calc_action", &Pumila14::calcAction)
-        .def("rotate_color", &Pumila14::rotateColor)
-        .def("reward", &Pumila14::reward);
+        .def("calc_action", &Pumila14::calcAction,
+             py::call_guard<py::gil_scoped_release>())
+        .def("rotate_color", &Pumila14::rotateColor,
+             py::call_guard<py::gil_scoped_release>())
+        .def("reward", &Pumila14::reward,
+             py::call_guard<py::gil_scoped_release>());
 }
