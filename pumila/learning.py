@@ -109,7 +109,7 @@ class Learning:
     def optimize_model(self) -> None:
         # Perform one step of the optimization (on the policy network)
         batch = self.memory.sample(self.params.batch_size)
-        if len(batch) < self.params.batch_size:
+        if batch is None:
             return
 
         # batch = (step, feat, action)
