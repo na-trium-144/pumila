@@ -5,10 +5,6 @@
 #include "../matrix.h"
 
 namespace PUMILA_NS {
-/*!
- * Pumila11と同じ
- * 報酬は自分のスコア
- */
 struct Pumila14 {
     struct InFeature {
         double field_colors[FieldState3::WIDTH * FieldState3::HEIGHT * 4];
