@@ -67,9 +67,9 @@ class Pumila : public std::enable_shared_from_this<Pumila> {
         }
         auto op = sim->opponent.lock();
         if (op) {
-            return getAction(*sim->field, op->field);
+            return getAction(*sim->field2(), op->field2());
         } else {
-            return getAction(*sim->field);
+            return getAction(*sim->field2());
         }
     }
     double actionCoeff() const { return action_coeff.load(); }

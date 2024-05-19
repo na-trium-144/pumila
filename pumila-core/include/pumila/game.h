@@ -1,19 +1,17 @@
 #pragma once
 #include "def.h"
-#include "field2.h"
+#include "field3.h"
 #include "chain.h"
+#include "pumila/step.h"
 #include <random>
 #include <memory>
 #include <optional>
-#include <atomic>
-#include <thread>
-#include <mutex>
-#include <shared_mutex>
-#include <deque>
+#include <vector>
 
 namespace PUMILA_NS {
-class Pumila;
-struct FieldState;
+// class Pumila;
+// struct FieldState;
+
 /*!
  * \brief fieldに加えてネクスト、落下時間、スコアなども管理する(1プレイヤー分)
  *
@@ -21,9 +19,10 @@ struct FieldState;
  *
  */
 class GameSim : public std::enable_shared_from_this<GameSim> {
-    std::optional<std::thread> model_action_thread;
-    std::atomic<bool> running;
+    // std::optional<std::thread> model_action_thread;
+    // std::atomic<bool> running;
     std::optional<Action> soft_put_target = std::nullopt;
+
     /*!
      * \brief rotPairして失敗した場合その回転方向が入る
      * 回転できた場合0
@@ -39,50 +38,78 @@ class GameSim : public std::enable_shared_from_this<GameSim> {
      * \brief おじゃまぷよを送る相手をセットしてね
      */
     std::weak_ptr<GameSim> opponent;
-    /*!
-     * \brief 相手simを相互にセットする
-     */
-    PUMILA_DLL void setOpponentSim(const std::shared_ptr<GameSim> &opponent_s);
 
-    std::optional<FieldState2> field;
-    PUMILA_DLL std::shared_ptr<FieldState> field1();
-    /*!
-     * \brief fieldにアクセスするときはmutexつかってね
-     *
-     */
-    std::shared_mutex field_m;
+    std::optional<FieldState3> field;
+    // PUMILA_DLL std::optional<FieldState2> field2();
+    // PUMILA_DLL std::shared_ptr<FieldState> field1();
 
-    std::shared_ptr<Pumila> model;
-    std::string name;
+    // std::shared_ptr<Pumila> model;
+    // std::string name;
 
     int soft_put_interval = 6;
     int soft_put_cnt = 0;
 
     bool is_over = false;
 
+    /*!
+     * FreePhaseに入る時に加算
+     * reset()で0からスタート
+     */
+    int step_count = 0;
+
+    struct Phase {
+        GameSim *sim;
+        explicit Phase(GameSim *sim) : sim(sim) {}
+        virtual ~Phase() {}
+        /*!
+         * \brief 処理を1周期進める
+         *
+         * \return 別のフェーズに移行する場合新しいフェーズ、
+         * そうでなければnullptr
+         *
+         */
+        virtual std::unique_ptr<Phase> step() = 0;
+        enum PhaseEnum {
+            none,
+            free,
+            fall,
+            garbage,
+        };
+        virtual PhaseEnum get() const = 0;
+    };
+    std::unique_ptr<Phase> phase;
+
+    /*!
+     * \brief FreePhaseに入る時に作られ、
+     * Fall, GarbagePhaseで情報が更新される
+     */
+    std::shared_ptr<StepResult> current_step;
+
+    // PUMILA_DLL explicit GameSim(
+    //     std::shared_ptr<Pumila> model, const std::string &name = "",
+    //     typename std::mt19937::result_type seed = std::random_device()(),
+    //     bool enable_garbage = true);
     PUMILA_DLL explicit GameSim(
-        std::shared_ptr<Pumila> model, const std::string &name = "",
         typename std::mt19937::result_type seed = std::random_device()(),
         bool enable_garbage = true);
-    explicit GameSim(
-        typename std::mt19937::result_type seed = std::random_device()(),
-        bool enable_garbage = true)
-        : GameSim(nullptr, "", seed, enable_garbage) {}
 
     GameSim(const GameSim &sim) = delete;
     GameSim &operator=(const GameSim &) = delete;
     GameSim(GameSim &&sim) = delete;
     GameSim &operator=(GameSim &&sim) = delete;
 
-    ~GameSim() { stopAction(); }
-    PUMILA_DLL void stopAction();
+    // ~GameSim() { stopAction(); }
+    // PUMILA_DLL void stopAction();
 
-    bool hasModel() { return model != nullptr; }
+    // bool hasModel() { return model != nullptr; }
 
-    PUMILA_DLL void
-    reset(typename std::mt19937::result_type seed = std::random_device()());
+    PUMILA_DLL void reset(typename std::mt19937::result_type seed);
+    void reset() { reset(std::random_device()()); }
 
-    std::recursive_mutex step_m;
+    /*!
+     * \brief 相手simを相互にセットする
+     */
+    PUMILA_DLL void setOpponentSim(const std::shared_ptr<GameSim> &opponent_s);
 
     /*!
      * \brief freePhase時のみぷよを操作する
@@ -97,7 +124,6 @@ class GameSim : public std::enable_shared_from_this<GameSim> {
 
     /*!
      * \brief 1フレーム時間を進める
-     * コンストラクタでmodelをセットしていればそれの返すアクションにしたがってsoftPut()する
      *
      */
     PUMILA_DLL void step();
@@ -114,38 +140,12 @@ class GameSim : public std::enable_shared_from_this<GameSim> {
      */
     PUMILA_DLL void softPut(const Action &action);
 
-    struct Phase {
-        GameSim *sim;
-        explicit Phase(GameSim *sim) : sim(sim) {}
-        virtual ~Phase() {}
-        /*!
-         * \brief 処理を1周期進める
-         *
-         * \return 別のフェーズに移行する場合新しいフェーズ、
-         * そうでなければnullptr
-         *
-         */
-        virtual std::unique_ptr<Phase> step() = 0;
-        enum PhaseEnum {
-            free,
-            fall,
-            garbage,
-        };
-        virtual PhaseEnum get() const = 0;
-    };
-    std::unique_ptr<Phase> phase;
-
-    PUMILA_DLL bool isFreePhase();
-
     struct GarbagePhase final : Phase {
         PUMILA_DLL explicit GarbagePhase(GameSim *sim);
         PhaseEnum get() const override { return PhaseEnum::garbage; }
         PUMILA_DLL std::unique_ptr<Phase> step() override;
         static constexpr int WAIT_T = 20;
         int wait_t;
-        std::array<std::pair<std::size_t, std::size_t>, 30> garbage;
-        std::size_t garbage_num;
-        FieldState2 field_prev;
     };
     struct FreePhase final : Phase {
         PUMILA_DLL explicit FreePhase(GameSim *sim);
@@ -160,9 +160,12 @@ class GameSim : public std::enable_shared_from_this<GameSim> {
         PUMILA_DLL explicit FallPhase(GameSim *sim);
         PhaseEnum get() const override { return PhaseEnum::fall; }
         PUMILA_DLL std::unique_ptr<Phase> step() override;
-        const Chain *current_chain;
+        static constexpr int FALL_T = 20;
+        static constexpr int CHAIN_T = 30;
+        std::vector<int> chain_t;
+        std::size_t current_chain;
         int fall_wait_t;
-        FieldState2 display_field;
+        FieldState3 display_field;
     };
 };
 

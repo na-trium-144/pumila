@@ -7,11 +7,20 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.9"
-numpy = "^1.26.3"
 jupyter = "^1.0.0"
 tqdm = "^4.66.1"
 matplotlib = "^3.8.2"
+pygame = "^2.5.2"
+torch = [
+    {platform = "linux", version = "^2.3.0+cpu", source = "pytorch-cpu"},
+    {platform = "darwin", version = "^2.3.0", source = "pypi"},
+]
+psutil = "^5.9.8"
 
+[[tool.poetry.source]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+priority = "explicit"
 
 [build-system]
 requires = ["poetry-core"]

@@ -1,4 +1,5 @@
 #pragma once
+/* staticライブラリにしたら要らない
 #ifdef _MSC_VER
 #ifdef pumila_EXPORTS
 #define PUMILA_DLL __declspec(dllexport)
@@ -11,7 +12,8 @@
 #define PUMILA_NS pumila
 #endif
 #else
+*/
 #define PUMILA_DLL
 #define PUMILA_NS pumila
-#endif
+// #endif
 

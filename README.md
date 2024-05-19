@@ -2,12 +2,32 @@
 
 ニューラルネットワークにぷよぷよを学習させたい
 
-5〜8連鎖が打てます
+<del>5〜8連鎖が打てます</del>
 
 ![pumila11.gif](pumila11.gif)
 
-## ビルド
+pumila13以前はC++(Eigen)で実装していたのをpumila14からPyTorchに移行しました
+
+## ビルド、環境構築
+
 * C++17が使えるコンパイラが必要です
+    * Windows,Linux,MacOSでビルドできるはず
+* 依存ライブラリとして [pybind11](https://github.com/pybind/pybind11), [BS::thread_pool](https://github.com/bshoshany/thread-pool), [googletest](https://github.com/google/googletest.git) とroboto-font(GUIの表示に必要)がFetchContentでダウンロードされます
+* ビルド
+```sh
+mkdir build
+cd build
+cmake ..
+make
+```
+
+* Python3.9以上が必要です
+* jupyter, tqdm, matplotlib, torch, (psutil, pygame) をインストールしてください
+    * poetryが使えれば `poetry install` でok
+    * GPU使う場合は別途GPUが有効なtorchをインストールする必要がある
+
+<details><summary>pumila13以前</summary>
+
 * Eigen3がインストールされていればそれを使い、なければFetchContentで自動的にダウンロードします
     * ubuntu: `sudo apt install libeigen3-dev`
     * mac: `brew install eigen3`
@@ -22,19 +42,26 @@
         * インストール場所がデフォルト (`C:\Program Files (x86)\Intel\oneAPI`) でない場合は `-DPUMILA_MKL_ROOT=Path\To\oneAPI`
     * ubuntu: `sudo apt install libmkl-dev` (古めのCPUでも動く)
 * MacOSの場合cmake時に`-DPUMILA_ACCELERATE=ON`オプションを追加するとAccelerateを使用し計算が速くなります
-* ビルド
-```sh
-mkdir build
-cd build
-cmake ..
-make
-```
+
+</details>
 
 ## 使い方
 
 [Releases](https://github.com/na-trium-144/pumila/releases)に適当に学習後のモデルを置いているのでこれをダウンロードしてbuildディレクトリの中に置いてください
 
-### シミュレータ
+### pumila-core
+
+* C++でぷよぷよのゲームシステムを実装したものです
+* pythonからアクセスできるようbindingを作ります (pypumila)
+* pumila-test に簡単なテストを書いています (buildディレクトリの中で `ctest` で実行できます)
+
+### pumila
+
+* Pythonで書いたpypumilaのラッパー+ニューラルネット周りの処理を書いたライブラリです
+* pygameを使ってぷよぷよの盤面を可視化しユーザーが操作することもできるシミュレータがあります (pumila.Window クラス)
+
+<details><summary>pumila13以前</summary>
+
 buildディレクトリの中で`./pumila-sim`を実行するとシミュレータが起動します
 引数にAIのモデル(pumila3, pumila5)または player を最大2つまで指定してください
 
@@ -44,18 +71,8 @@ buildディレクトリの中で`./pumila-sim`を実行するとシミュレー�
 ```
 playerの操作は A / D キーで横移動、N / M キーで回転、S キーで高速落下、(Wキーで瞬間落下) です
 
-### 学習させる
-notebook/ ディレクトリのnotebookで学習させています
+</details>
 
-jupyter, tqdm, numpy, matplotlib があれば動くと思います
+### notebook
 
-AIの実装は複数ありますが、これは実装を変更するときに比較のため前のバージョンも動くよう残しているからです。
-それぞれのモデルの違いは[include/pumila/models](https://github.com/na-trium-144/pumila/tree/main/include/pumila/models)内の各ファイルにコメントを書いています
-
-学習後のモデルは`model.save_file()`によりbuildディレクトリに保存されます。
-`model.load_file()`でbuildディレクトリから読み込みます。
-
-### API
-C++、PythonからシミュレータとAIを使用できます
-
-使い方はヘッダーやnodebookを読んで
+* notebook ディレクトリにあるノートブックで学習させています
