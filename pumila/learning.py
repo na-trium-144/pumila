@@ -36,24 +36,29 @@ class Learning:
     optimizer: optim.AdamW
     memory: ReplayMemory
     steps_done: int
+    Net: type
 
     def __init__(
-        self, Net: Optional[type] = None, file: Optional[str] = None, **kwargs
+        self, Net: type, file: Optional[str] = None, **kwargs
     ) -> None:
         self.init_device()
         self.params = Params(**kwargs)
-        if Net is not None:
+        if file is not None:
+            self.policy_net = torch.jit.load(file).to(self.device)
+            self.target_net = torch.jit.load(file).to(self.device)
+        else:
             self.policy_net = Net().to(self.device)
             self.target_net = Net().to(self.device)
             self.target_net.load_state_dict(self.policy_net.state_dict())
-        if file is not None:
-            self.policy_net = torch.load(file).to(self.device)
-            self.target_net = torch.load(file).to(self.device)
+        self.Net = Net
         self.optimizer = optim.AdamW(
             self.policy_net.parameters(), lr=self.params.lr, amsgrad=True
         )
         self.memory = ReplayMemory(self.params.memory_size)
         self.steps_done = 0
+
+    def save_scripted(self, file: str) -> None:
+        torch.jit.save(torch.jit.script(self.policy_net), file)
 
     def init_device(self) -> torch.device:
         self.device = None
@@ -77,7 +82,7 @@ class Learning:
         return self.memory.sample(self.params.batch_size)
 
     def calc_q_batch(self, batch: List[ReplayData]) -> torch.Tensor:
-        feat_batch_np = self.policy_net.rotate_color(
+        feat_batch_np = self.Net.rotate_color(
             pypumila.Matrix(np.vstack([s.feat[s.action, :] for s in batch]))
         )
         feat_batch = torch.from_numpy(feat_batch_np).to(self.dtype).to(self.device)
@@ -85,12 +90,12 @@ class Learning:
 
     def calc_expected_q_batch(self, batch: List[ReplayData]) -> torch.Tensor:
         reward_batch = torch.tensor(
-            [self.policy_net.reward(data.step) for data in batch] * 24,
+            [self.Net.reward(data.step) for data in batch] * 24,
             dtype=self.dtype,
             device=self.device,
         )
         next_feat_batch_np = np.array(
-            [self.policy_net.calc_action(data.step.next()) for data in batch]
+            [self.Net.calc_action(data.step.next()) for data in batch]
         )
         next_feat_batch = (
             torch.from_numpy(next_feat_batch_np).to(self.dtype).to(self.device)
@@ -127,7 +132,7 @@ class Learning:
 
     def get_step(self, sim: pypumila.GameSim) -> ReplayData:
         step = sim.current_step()
-        feat = self.policy_net.calc_action(step)
+        feat = self.Net.calc_action(step)
         return ReplayData(step=step, feat=feat, action=0)
 
     def random_eps(self) -> float:

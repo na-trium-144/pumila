@@ -15,11 +15,14 @@ class Net14(nn.Module):
         x = F.sigmoid(x)
         return self.layer2(x)
 
-    def calc_action(self, state: StepResult) -> np.ndarray:
+    @staticmethod
+    def calc_action(state: StepResult) -> np.ndarray:
         return np.array(Pumila14.calc_action(state), copy=False)
 
-    def rotate_color(self, feat: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def rotate_color(feat: np.ndarray) -> np.ndarray:
         return np.array(Pumila14.rotate_color(feat), copy=False)
 
-    def reward(self, state: StepResult) -> float:
+    @staticmethod
+    def reward(state: StepResult) -> float:
         return Pumila14.reward(state)
