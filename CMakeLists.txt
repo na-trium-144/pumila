@@ -31,13 +31,6 @@ FetchContent_Populate(bs_thread_pool)
 add_library(bs_thread_pool INTERFACE)
 target_include_directories(bs_thread_pool INTERFACE ${bs_thread_pool_SOURCE_DIR}/include)
 
-message(STATUS "Fetching cli11 source...")
-FetchContent_Declare(cli11
-    GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
-    GIT_TAG v2.3.2
-)
-FetchContent_MakeAvailable(cli11)
-
 message(STATUS "Fetching roboto font...")
 FetchContent_Declare(roboto-font
     URL https://github.com/googlefonts/roboto/releases/download/v2.138/roboto-android.zip
