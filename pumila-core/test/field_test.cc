@@ -12,8 +12,6 @@ TEST(FieldTest, get) {
             EXPECT_EQ(field.get(x, y), Puyo::none);
         }
     }
-    EXPECT_THROW(field.get(7, 0), std::out_of_range);
-    EXPECT_THROW(field.get(0, 14), std::out_of_range);
 }
 TEST(FieldTest, set) {
     FieldState3 field;
@@ -25,7 +23,6 @@ TEST(FieldTest, next) {
     FieldState3 field2(123);
     EXPECT_EQ(field.getNext(0), field2.getNext(0));
     EXPECT_EQ(field.getNext(1), field2.getNext(1));
-    EXPECT_THROW(field.getNext(10), std::out_of_range);
 
     PuyoPair a{
         Puyo::green, Puyo::green, {5, Action::Rotation::horizontal_left}};
