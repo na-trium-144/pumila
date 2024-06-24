@@ -30,8 +30,22 @@ class ReplayMemory:
             self.memory_unchecked.append(data)
 
     def sample(self, batch_size: int) -> Optional[List[ReplayData]]:
+        """memoryにあるデータのうちdone()なものをbatch_size数返す"""
         with self.m:
             while len(self.memory_unchecked) and self.memory_unchecked[0].step.done():
+                self.memory_done.append(self.memory_unchecked.popleft())
+        if len(self.memory_done) < batch_size:
+            return None
+        return random.sample(self.memory_done, batch_size)
+
+    def sample2(self, batch_size: int) -> Optional[List[ReplayData]]:
+        """memoryにあるデータのうちnext()までdone()なものをbatch_size数返す"""
+        with self.m:
+            while (
+                len(self.memory_unchecked)
+                and self.memory_unchecked[0].step.done()
+                and self.memory_unchecked[0].step.next().done()
+            ):
                 self.memory_done.append(self.memory_unchecked.popleft())
         if len(self.memory_done) < batch_size:
             return None

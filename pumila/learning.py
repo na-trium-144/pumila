@@ -38,9 +38,7 @@ class Learning:
     steps_done: int
     Net: type
 
-    def __init__(
-        self, Net: type, file: Optional[str] = None, **kwargs
-    ) -> None:
+    def __init__(self, Net: type, file: Optional[str] = None, **kwargs) -> None:
         self.init_device()
         self.params = Params(**kwargs)
         if file is not None:
@@ -79,9 +77,15 @@ class Learning:
         return self.device
 
     def get_batch(self) -> Optional[List[ReplayData]]:
+        """memoryからbatch_sizeぶんデータをとってくる"""
         return self.memory.sample(self.params.batch_size)
 
+    def get_batch_2(self) -> Optional[List[ReplayData]]:
+        """memoryからbatch_sizeぶんデータをとってくる"""
+        return self.memory.sample2(self.params.batch_size)
+
     def calc_q_batch(self, batch: List[ReplayData]) -> torch.Tensor:
+        """batchをネットワークに渡してforwardしたqを返す"""
         feat_batch_np = self.Net.rotate_color(
             pypumila.Matrix(np.vstack([s.feat[s.action, :] for s in batch]))
         )
@@ -89,6 +93,7 @@ class Learning:
         return self.policy_net(feat_batch)
 
     def calc_expected_q_batch(self, batch: List[ReplayData]) -> torch.Tensor:
+        """batchのそれぞれのstepのnextのq + reward"""
         reward_batch = torch.tensor(
             [self.Net.reward(data.step) for data in batch] * 24,
             dtype=self.dtype,
@@ -106,6 +111,35 @@ class Learning:
         )
         # Compute the expected Q values
         return (next_state_values * self.params.gamma + reward_batch).unsqueeze(1)
+
+    def calc_expected_q_batch_2(self, batch: List[ReplayData]) -> torch.Tensor:
+        """batchのそれぞれのstepのnextのnextのq + nextのreward + reward"""
+        reward_batch = torch.tensor(
+            [self.Net.reward(data.step) for data in batch] * 24,
+            dtype=self.dtype,
+            device=self.device,
+        )
+        reward_batch_2 = torch.tensor(
+            [self.Net.reward(data.step.next()) for data in batch] * 24,
+            dtype=self.dtype,
+            device=self.device,
+        )
+        next_feat_batch_2_np = np.array(
+            [self.Net.calc_action(data.step.next().next()) for data in batch]
+        )
+        next_feat_batch_2 = (
+            torch.from_numpy(next_feat_batch_2_np).to(self.dtype).to(self.device)
+        )
+        next_state_values = self.target_net(next_feat_batch_2).max(1).indices.squeeze()
+        next_state_values = torch.tensor(
+            next_state_values.tolist() * 24, dtype=self.dtype, device=self.device
+        )
+        # Compute the expected Q values
+        return (
+            next_state_values * self.params.gamma * self.params.gamma
+            + reward_batch_2 * self.params.gamma
+            + reward_batch
+        ).unsqueeze(1)
 
     def optimize_batch(self, q: torch.Tensor, expected_q: torch.Tensor) -> None:
         # Perform one step of the optimization (on the policy network)

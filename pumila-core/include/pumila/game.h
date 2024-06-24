@@ -83,7 +83,7 @@ class GameSim : public std::enable_shared_from_this<GameSim> {
      * \brief FreePhaseに入る時に作られ、
      * Fall, GarbagePhaseで情報が更新される
      */
-    std::shared_ptr<StepResult> current_step;
+    std::shared_ptr<StepResult> current_step, prev_step;
 
     // PUMILA_DLL explicit GameSim(
     //     std::shared_ptr<Pumila> model, const std::string &name = "",

@@ -37,6 +37,8 @@ struct StepResult {
     /*!
      * 自分のfield_after時点(Free = 自フィールドに降った直後)の相手のfield
      * 相手連鎖中の場合は相手連鎖終了後のfieldになる
+     * 
+     * next()->op_field_before と同じはず?
      */
     std::optional<FieldState3> op_field_after;
     /*!
@@ -48,16 +50,21 @@ struct StepResult {
      */
     std::vector<std::pair<std::size_t, std::size_t>> garbage_fell_pos;
 
+    std::shared_ptr<StepResult> next_;
+
     explicit StepResult(const FieldState3 &field_before)
         : field_before(field_before), field_after(), chains(), garbage_send(),
           op_field_before(), op_field_after(), garbage_recv(),
-          garbage_fell_pos() {}
+          garbage_fell_pos(), next_(nullptr) {}
     StepResult(const StepResult &) = delete;
     StepResult &operator=(const StepResult &) = delete;
     ~StepResult() = default;
 
     bool done() const {
         if (!field_after) {
+            return false;
+        }
+        if(!next_){
             return false;
         }
         if (garbage_send && !garbage_send->done()) {
@@ -73,12 +80,8 @@ struct StepResult {
     }
 
     std::shared_ptr<StepResult> next() const {
-        assert(field_after);
-        auto n = std::make_shared<StepResult>(*field_after);
-        if (op_field_after) {
-            n->op_field_before = op_field_after;
-        }
-        return n;
+        assert(next_);
+        return next_;
     }
 };
 } // namespace PUMILA_NS

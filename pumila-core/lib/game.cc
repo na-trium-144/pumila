@@ -7,7 +7,7 @@
 namespace PUMILA_NS {
 GameSim::GameSim(typename std::mt19937::result_type seed, bool enable_garbage)
     : enable_garbage(enable_garbage), opponent(), field(std::nullopt),
-      phase(nullptr), current_step(nullptr) {
+      phase(nullptr), current_step(nullptr), prev_step(nullptr) {
     /*if (model) {
         model_action_thread = std::make_optional<std::thread>([this] {
             while (running.load()) {
@@ -244,7 +244,11 @@ GameSim::FreePhase::FreePhase(GameSim *sim) : Phase(sim), put_t(PUT_T) {
     sim->rot_fail_count = 0;
     sim->is_over = sim->field->isGameOver();
 
+    sim->prev_step = sim->current_step;
     sim->current_step = std::make_shared<StepResult>(*sim->field);
+    if(sim->prev_step){
+        sim->prev_step->next_ = sim->current_step;
+    }
     if (sim_op) {
         sim->current_step->op_field_before = sim_op->field;
     }
@@ -291,11 +295,6 @@ GameSim::FallPhase::FallPhase(GameSim *sim)
     sim->current_step->chains = sim->field->deleteChainRecurse();
     chain_t.assign(sim->current_step->chains.size(), CHAIN_T + FALL_T);
     display_field.fall();
-
-    auto sim_op = sim->opponent.lock();
-    if (sim_op) {
-        sim->current_step->op_field_before = sim_op->field;
-    }
 }
 std::unique_ptr<GameSim::Phase> GameSim::FallPhase::step() {
     if (fall_wait_t > 0) {

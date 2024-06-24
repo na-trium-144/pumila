@@ -52,6 +52,7 @@ TEST(GameTest, put) {
     }
     EXPECT_EQ(sim->phase->get(), GameSim::Phase::free);
     EXPECT_NE(sim->current_step, current_step);
+    EXPECT_EQ(sim->prev_step, current_step);
     EXPECT_EQ(current_step->field_before.get(0, 0), Puyo::none);
     EXPECT_EQ(current_step->field_before.get(0, 1), Puyo::none);
     ASSERT_TRUE(current_step->field_after.has_value());
@@ -63,6 +64,8 @@ TEST(GameTest, put) {
     EXPECT_FALSE(current_step->op_field_after.has_value());
     EXPECT_TRUE(current_step->garbage_recv.empty());
     EXPECT_TRUE(current_step->garbage_fell_pos.empty());
+    ASSERT_TRUE(current_step->done());
+    EXPECT_EQ(current_step->next(), sim->current_step);
 }
 
 TEST(GameTest, chain) {
